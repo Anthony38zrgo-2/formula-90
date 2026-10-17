@@ -861,6 +861,28 @@ pub extern "C" fn f1_94_physics_get_center_of_mass_local(
 }
 
 #[no_mangle]
+pub extern "C" fn f1_94_physics_get_inertia_diagonal(
+    sim_ptr: *const c_void,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    out_z: *mut f64,
+) {
+    if sim_ptr.is_null() || out_x.is_null() || out_y.is_null() || out_z.is_null() {
+        return;
+    }
+    // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
+    let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
+    let moments = crate::vehicle_mass_properties::resolve_vehicle_mass_properties(&sim.config)
+        .principal_moments();
+    // SAFETY: `out_x`/`out_y`/`out_z` are non-null (checked above) and point to writable `f64`s.
+    unsafe {
+        *out_x = moments[0];
+        *out_y = moments[1];
+        *out_z = moments[2];
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn f1_94_physics_get_ray_length(sim_ptr: *const c_void, wheel_idx: u32) -> f64 {
     if sim_ptr.is_null() {
         return 0.6;

@@ -510,24 +510,6 @@ impl VehicleSimulator {
             st.powertrain.brake_torques[i] *= brake_efficiency[i];
         }
 
-        // GEVP applies wheel torque before calculating this frame's tire force.
-        for wheel in WheelIndex::ALL {
-            let i = wheel as usize;
-            if coupled_context.is_some() { continue; }
-            st.tires.process_wheel_torque(
-                cfg,
-                wheel,
-                st.powertrain.drive_torques[i],
-                if crate::tire::is_driven(cfg, wheel) {
-                    st.powertrain.drive_inertia
-                } else {
-                    0.0
-                },
-                st.powertrain.brake_torques[i],
-                dt,
-            );
-        }
-
         let mut total_force = Vec3::ZERO;
         let mut total_torque = Vec3::ZERO;
         let cg_world = center_of_mass_world(cfg, &st.transform);
@@ -553,6 +535,8 @@ impl VehicleSimulator {
         let is_geo = matches!(cfg.suspension.suspension_model, SuspensionModelKind::Geometric)
             && cfg.suspension.geometric_suspension.is_some();
         let cg_local = center_of_mass_local(cfg);
+        let total_mass_initial = cfg.chassis.total_vehicle_mass(&cfg.tires, &cfg.fuel).max(1e-6);
+        let body_inertia = principal_inertia(cfg);
         let body_transform = st.transform;
         for wheel in WheelIndex::ALL {
             let i = wheel as usize;
@@ -582,18 +566,31 @@ impl VehicleSimulator {
                 st.suspension.wheels[i].contact_fraction,
             );
             if !st.suspension.wheels[i].is_grounded {
-                st.tires.process_wheel_forces(
-                    cfg,
-                    wheel,
-                    0.0,
-                    st.suspension.wheels[i].effective_surface,
-                    st.suspension.wheels[i].effective_friction,
-                    st.suspension.wheels[i].effective_stiffness,
-                    st.suspension.wheels[i].effective_rolling_resistance,
-                    braking,
-                    Vec3::ZERO,
-                    dt,
-                );
+                if coupled_context.is_some() {
+                    st.tires.process_wheel_forces(
+                        cfg,
+                        wheel,
+                        0.0,
+                        st.suspension.wheels[i].effective_surface,
+                        st.suspension.wheels[i].effective_friction,
+                        st.suspension.wheels[i].effective_stiffness,
+                        st.suspension.wheels[i].effective_rolling_resistance,
+                        braking,
+                        Vec3::ZERO,
+                        dt,
+                    );
+                } else {
+                    st.tires.integrate_wheel_contact(
+                        cfg, wheel, 0.0,
+                        st.suspension.wheels[i].effective_surface,
+                        st.suspension.wheels[i].effective_friction,
+                        st.suspension.wheels[i].effective_stiffness,
+                        st.suspension.wheels[i].effective_rolling_resistance,
+                        Vec3::ZERO, dt, st.powertrain.drive_torques[i],
+                        if crate::tire::is_driven(cfg, wheel) { st.powertrain.drive_inertia } else { 0.0 },
+                        st.powertrain.brake_torques[i],
+                    );
+                }
                 // SUS-GEO-05: airborne wheels still hang on the linkage: the
                 // hanging unsprung weight distributes to the anchors instead
                 // of vanishing (legacy `continue`s with no body load).
@@ -672,22 +669,55 @@ impl VehicleSimulator {
             );
             wheel_lateral_slip_ms[i] = point_velocity_wheel.x.abs();
 
-            st.tires.process_wheel_forces(
-                cfg,
-                wheel,
-                st.suspension.wheels[i].total_normal_force,
-                st.suspension.wheels[i].effective_surface,
-                st.suspension.wheels[i].effective_friction,
-                st.suspension.wheels[i].effective_stiffness,
-                st.suspension.wheels[i].effective_rolling_resistance,
-                braking,
-                point_velocity_wheel,
-                dt,
-            );
+            if coupled_context.is_some() {
+                st.tires.process_wheel_forces(
+                    cfg,
+                    wheel,
+                    st.suspension.wheels[i].total_normal_force,
+                    st.suspension.wheels[i].effective_surface,
+                    st.suspension.wheels[i].effective_friction,
+                    st.suspension.wheels[i].effective_stiffness,
+                    st.suspension.wheels[i].effective_rolling_resistance,
+                    braking,
+                    point_velocity_wheel,
+                    dt,
+                );
+            } else {
+                st.tires.integrate_wheel_contact(
+                    cfg, wheel, st.suspension.wheels[i].total_normal_force,
+                    st.suspension.wheels[i].effective_surface,
+                    st.suspension.wheels[i].effective_friction,
+                    st.suspension.wheels[i].effective_stiffness,
+                    st.suspension.wheels[i].effective_rolling_resistance,
+                    point_velocity_wheel, dt, st.powertrain.drive_torques[i],
+                    if crate::tire::is_driven(cfg, wheel) { st.powertrain.drive_inertia } else { 0.0 },
+                    st.powertrain.brake_torques[i],
+                );
+            }
 
+            let mut lateral_force = st.tires.wheels[i].lateral_force;
+            let static_weight = static_contact_blend(point_velocity_wheel.x, point_velocity_wheel.z);
+            if static_weight > 0.0 {
+                let static_force = static_contact_lateral_force(
+                    total_mass_initial,
+                    body_inertia,
+                    arm,
+                    contact_right,
+                    point_velocity_wheel.x,
+                    dt,
+                );
+                let lateral_capacity = ((st.tires.wheels[i].lateral_capacity_newtons.powi(2)
+                    - st.tires.wheels[i].longitudinal_force.powi(2))
+                .max(0.0))
+                .sqrt();
+                let bounded_force = static_force.clamp(-lateral_capacity, lateral_capacity);
+                lateral_force =
+                    bounded_force * static_weight + lateral_force * (1.0 - static_weight);
+                st.tires.wheels[i].lateral_force = lateral_force;
+            }
             let tire = &st.tires.wheels[i];
             let tire_force_world =
-                contact_right * tire.lateral_force + contact_forward * tire.longitudinal_force;
+                contact_right * lateral_force + contact_forward * tire.longitudinal_force;
             let suspension_force_world =
                 contact_normal * st.suspension.wheels[i].total_normal_force;
             let wheel_force = tire_force_world + suspension_force_world;
@@ -789,7 +819,7 @@ impl VehicleSimulator {
 
         // In external mode this is force-derived acceleration for telemetry only;
         // Godot will add gravity itself.
-        let total_mass = cfg.chassis.total_vehicle_mass(&cfg.tires, &cfg.fuel).max(1e-6);
+        let total_mass = total_mass_initial;
         st.linear_acceleration = total_force / total_mass;
         let engine_mechanical_power_watts = st.powertrain.engine_torque.max(0.0)
             * st.powertrain.rpm
@@ -878,6 +908,7 @@ impl VehicleSimulator {
                 } else { 0.0 }
             } else { 0.0 };
             let thermal_input = TireThermalInput {
+                integrated_slip_power_watts: tire.integrated_slip_power_watts,
                 normal_force_n: suspension.total_normal_force.max(0.0),
                 longitudinal_force_n: tire.longitudinal_force,
                 lateral_force_n: tire.lateral_force,
@@ -1369,8 +1400,8 @@ impl VehicleSimulator {
 }
 
 pub fn center_of_mass_local(config: &VehicleConfig) -> Vec3 {
-    let com_z = (0.50 - config.chassis.effective_front_weight_distribution(&config.tires, &config.fuel)) * config.chassis.wheelbase;
-    Vec3::new(0.0, config.chassis.center_of_gravity_height_offset, com_z)
+    crate::vehicle_mass_properties::resolve_vehicle_mass_properties(config)
+        .center_of_mass_local_metres
 }
 
 pub fn center_of_mass_world(config: &VehicleConfig, transform: &Transform3D) -> Vec3 {
@@ -1378,6 +1409,18 @@ pub fn center_of_mass_world(config: &VehicleConfig, transform: &Transform3D) -> 
 }
 
 pub fn default_spawn_height(config: &VehicleConfig) -> f64 {
+    if config.suspension.use_authored_wheel_centers {
+        if let Some(geometry) = &config.suspension.geometric_suspension {
+            return WheelIndex::ALL.into_iter().map(|wheel| {
+                let tire_radius = if wheel.is_front() {
+                    config.tires.front_tire_radius
+                } else {
+                    config.tires.rear_tire_radius
+                };
+                tire_radius - geometry.corners.get(wheel).hub_center.y
+            }).fold(0.0, f64::max);
+        }
+    }
     (config.tires.front_tire_radius + config.tires.rear_tire_radius) * 0.5
 }
 
@@ -1499,15 +1542,75 @@ pub fn steering_angle_for_wheel_geo(
 }
 
 fn principal_inertia(config: &VehicleConfig) -> Vec3 {
-    let w = (config.chassis.front_track + config.chassis.rear_track) * 0.5;
-    let h = 0.75;
-    let l = config.chassis.wheelbase;
-    let mass = config.chassis.total_vehicle_mass(&config.tires, &config.fuel);
-    Vec3::new(
-        (mass / 12.0) * (h * h + l * l) * config.chassis.inertia_multipliers.x,
-        (mass / 12.0) * (w * w + l * l) * config.chassis.inertia_multipliers.y,
-        (mass / 12.0) * (w * w + h * h) * config.chassis.inertia_multipliers.z,
-    )
+    let moments = crate::vehicle_mass_properties::resolve_vehicle_mass_properties(config)
+        .principal_moments();
+    Vec3::new(moments[0], moments[1], moments[2])
+}
+
+/// Below this contact lateral speed the tire is treated as a sticking contact.
+pub const STATIC_CONTACT_FULL_BLEND_SPEED_M_S: f64 = 0.10;
+/// Above this contact lateral speed the dynamic tire model owns the force.
+pub const STATIC_CONTACT_FADE_SPEED_M_S: f64 = 0.60;
+/// The sticking contact models the rest and creep regime only; rolling wheels
+/// above this forward speed belong to the dynamic tire model alone.
+pub const STATIC_CONTACT_FULL_FORWARD_SPEED_M_S: f64 = 0.50;
+pub const STATIC_CONTACT_ZERO_FORWARD_SPEED_M_S: f64 = 2.00;
+
+pub fn static_contact_blend(
+    lateral_velocity_metres_per_second: f64,
+    forward_velocity_metres_per_second: f64,
+) -> f64 {
+    let lateral_speed = lateral_velocity_metres_per_second.abs();
+    let forward_speed = forward_velocity_metres_per_second.abs();
+    if !lateral_speed.is_finite() || !forward_speed.is_finite() {
+        return 0.0;
+    }
+    let lateral_weight = ((STATIC_CONTACT_FADE_SPEED_M_S - lateral_speed)
+        / (STATIC_CONTACT_FADE_SPEED_M_S - STATIC_CONTACT_FULL_BLEND_SPEED_M_S))
+        .clamp(0.0, 1.0);
+    let forward_weight = ((STATIC_CONTACT_ZERO_FORWARD_SPEED_M_S - forward_speed)
+        / (STATIC_CONTACT_ZERO_FORWARD_SPEED_M_S - STATIC_CONTACT_FULL_FORWARD_SPEED_M_S))
+        .clamp(0.0, 1.0);
+    lateral_weight * forward_weight
+}
+
+/// Force required at one contact to cancel its lateral velocity within the step,
+/// accounting for the effective mass of the body at that contact (linear mass plus
+/// the rotational contribution of the arm to the center of mass). The result is
+/// bounded by the caller with the friction capacity, so it can only dissipate.
+pub fn static_contact_lateral_force(
+    total_mass_kilograms: f64,
+    principal_inertia: Vec3,
+    arm_from_center: Vec3,
+    contact_right: Vec3,
+    lateral_velocity_metres_per_second: f64,
+    duration_seconds: f64,
+) -> f64 {
+    if !lateral_velocity_metres_per_second.is_finite()
+        || !duration_seconds.is_finite()
+        || duration_seconds <= 0.0
+    {
+        return 0.0;
+    }
+    let rotational_arm = arm_from_center.cross(contact_right);
+    let inverse_inertia = Vec3::new(
+        1.0 / principal_inertia.x.max(1e-6),
+        1.0 / principal_inertia.y.max(1e-6),
+        1.0 / principal_inertia.z.max(1e-6),
+    );
+    let angular_response = Vec3::new(
+        inverse_inertia.x * rotational_arm.x,
+        inverse_inertia.y * rotational_arm.y,
+        inverse_inertia.z * rotational_arm.z,
+    );
+    let effective_inverse_mass = 1.0 / total_mass_kilograms.max(1e-6)
+        + angular_response
+            .cross(arm_from_center)
+            .dot(contact_right);
+    if !effective_inverse_mass.is_finite() || effective_inverse_mass <= 1e-9 {
+        return 0.0;
+    }
+    -lateral_velocity_metres_per_second / (effective_inverse_mass * duration_seconds)
 }
 
 fn move_toward(current: f64, target: f64, max_delta: f64) -> f64 {
@@ -1701,5 +1804,51 @@ mod tests {
             t.length() < 1e-9,
             "yaw inside the bounded reference must not be corrected"
         );
+    }
+}
+
+#[cfg(test)]
+mod authored_startup_tests {
+    use super::*;
+
+    fn williams_configuration() -> VehicleConfig {
+        let repository_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        crate::vehicle_configuration::load_vehicle_configuration_from_authorized_root(
+            &repository_root.join("game/data/vehicles/f1_1997/williams/profiles/hockenheim/vehicle.json"),
+            &repository_root,
+        ).expect("Williams configuration")
+    }
+
+    #[test]
+    fn authored_spawn_places_all_williams_tires_on_ground() {
+        let configuration = williams_configuration();
+        let spawn_height = default_spawn_height(&configuration);
+        assert!((spawn_height - 0.53865).abs() < 1e-9);
+        for wheel in WheelIndex::ALL {
+            let geometry = configuration.suspension.geometric_suspension.as_ref().unwrap();
+            let radius = if wheel.is_front() { configuration.tires.front_tire_radius } else { configuration.tires.rear_tire_radius };
+            assert!((spawn_height + geometry.corners.get(wheel).hub_center.y - radius).abs() < 1e-9);
+        }
+        let legacy = VehicleConfig::f1_94_canonical();
+        assert_eq!(default_spawn_height(&legacy), (legacy.tires.front_tire_radius + legacy.tires.rear_tire_radius) * 0.5);
+    }
+
+    #[test]
+    fn williams_steering_stays_monotonic_and_faces_forward() {
+        let configuration = williams_configuration();
+        let mut previous_angles = [f64::NEG_INFINITY; 2];
+        for index in 0..=200 {
+            let input = -1.0 + index as f64 * 0.01;
+            let mut average_angle = 0.0;
+            for (corner_index, wheel) in [WheelIndex::FrontLeft, WheelIndex::FrontRight].into_iter().enumerate() {
+                let angle = steering_angle_for_wheel_geo(&configuration, wheel, input, 0.0);
+                assert!(angle > previous_angles[corner_index]);
+                assert!(angle.abs() < 22.0_f64.to_radians());
+                assert!(angle.cos() > 0.0);
+                previous_angles[corner_index] = angle;
+                average_angle += angle * 0.5;
+            }
+            assert!((average_angle - input * configuration.steering.max_steering_angle).abs() < 1e-9);
+        }
     }
 }

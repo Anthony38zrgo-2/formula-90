@@ -31,6 +31,9 @@ impl JsonSuspension {
                 self.model_version
             ));
         }
+        if self.use_authored_wheel_centers && self.geometry_physical.is_none() {
+            return Err("Authored wheel centers require physical suspension geometry".to_string());
+        }
         match model {
             SuspensionModelKind::Legacy1Dof => {
                 if self.geometry_physical.is_some() {

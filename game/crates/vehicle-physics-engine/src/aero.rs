@@ -754,11 +754,7 @@ impl AeroForces {
         _pitch_rad: f64,
         dt: f64,
     ) {
-        let cg = Vec3::new(
-            0.0,
-            config.chassis.center_of_gravity_height_offset,
-            (0.5 - config.chassis.effective_front_weight_distribution(&config.tires, &config.fuel)) * config.chassis.wheelbase,
-        );
+        let cg = crate::simulation::center_of_mass_local(config);
         self.step_with_kinematics(
             config,
             &AeroKinematics {

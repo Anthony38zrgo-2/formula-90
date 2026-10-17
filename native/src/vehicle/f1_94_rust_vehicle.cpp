@@ -247,15 +247,14 @@ bool F194RustVehicle::load_rust_dll() {
 
 #ifdef _WIN32
 	// List of candidate paths for the compiled Rust DLL
+	const String configuration_suffix = OS::get_singleton()->has_feature("debug") ? "template_debug" : "template_release";
+	const String configured_library_name = "vehicle_physics_engine.windows." + configuration_suffix + ".x86_64.dll";
 	Array candidate_paths;
-	candidate_paths.append("res://addons/formula90s/bin/vehicle_physics_engine.windows.template_release.x86_64.dll");
-	candidate_paths.append("res://addons/formula90s/bin/vehicle_physics_engine.windows.template_debug.x86_64.dll");
+	candidate_paths.append("res://addons/formula90s/bin/" + configured_library_name);
 	candidate_paths.append("res://addons/formula90s/bin/vehicle_physics_engine.dll");
-	candidate_paths.append("game/addons/formula90s/bin/vehicle_physics_engine.windows.template_release.x86_64.dll");
-	candidate_paths.append("game/addons/formula90s/bin/vehicle_physics_engine.windows.template_debug.x86_64.dll");
+	candidate_paths.append("game/addons/formula90s/bin/" + configured_library_name);
 	candidate_paths.append("game/addons/formula90s/bin/vehicle_physics_engine.dll");
-	candidate_paths.append("vehicle_physics_engine.windows.template_release.x86_64.dll");
-	candidate_paths.append("vehicle_physics_engine.windows.template_debug.x86_64.dll");
+	candidate_paths.append(configured_library_name);
 	candidate_paths.append("vehicle_physics_engine.dll");
 
 	HMODULE hDll = nullptr;
@@ -297,6 +296,7 @@ bool F194RustVehicle::load_rust_dll() {
 	fn_get_vehicle_mass_ = reinterpret_cast<FnPhysicsGetVehicleMass>(GetProcAddress(hDll, "f1_94_physics_get_vehicle_mass"));
 	fn_get_default_spawn_height_ = reinterpret_cast<FnPhysicsGetDefaultSpawnHeight>(GetProcAddress(hDll, "f1_94_physics_get_default_spawn_height"));
 	fn_get_center_of_mass_local_ = reinterpret_cast<FnPhysicsGetCenterOfMassLocal>(GetProcAddress(hDll, "f1_94_physics_get_center_of_mass_local"));
+	fn_get_inertia_diagonal_ = reinterpret_cast<FnPhysicsGetInertiaDiagonal>(GetProcAddress(hDll, "f1_94_physics_get_inertia_diagonal"));
 	fn_destroy_ = reinterpret_cast<FnPhysicsDestroy>(GetProcAddress(hDll, "f1_94_physics_destroy"));
 
 	uint32_t abi_ver = fn_abi_version_ ? fn_abi_version_() : 0;
@@ -516,12 +516,7 @@ void F194RustVehicle::_ready() {
 	sync_runtime_config_from_rust();
 
 	// 3. Center of mass mode and position from Rust
-	if (fn_get_center_of_mass_local_) {
-		double com_x = 0.0, com_y = 0.0, com_z = 0.0;
-		fn_get_center_of_mass_local_(sim_ptr_, &com_x, &com_y, &com_z);
-		set_center_of_mass_mode(RigidBody3D::CENTER_OF_MASS_MODE_CUSTOM);
-		set_center_of_mass(Vector3(com_x, com_y, com_z));
-	}
+	synchronize_rigid_body_mass_properties();
 
 	// 4. Setup 12 RayCast3D nodes (inner, center, outer per wheel)
 	setup_raycasts();
@@ -843,6 +838,7 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 	fuel_telemetry_available_ = true;
 	if (total_vehicle_mass_kg_ > 0.0 && std::abs((double)get_mass() - total_vehicle_mass_kg_) > 0.01) {
 		set_mass((float)total_vehicle_mass_kg_);
+		synchronize_rigid_body_mass_properties();
 	}
 	wheel_normal_forces_[0] = telem.fl_normal_force;
 	wheel_normal_forces_[1] = telem.fr_normal_force;
@@ -1086,6 +1082,45 @@ Vector3 F194RustVehicle::get_center_of_mass_local_value() const {
 		return Vector3(x, y, z);
 	}
 	return get_center_of_mass();
+}
+
+Vector3 F194RustVehicle::get_inertia_diagonal_value() const {
+	if (sim_ptr_ && fn_get_inertia_diagonal_) {
+		double x = 0.0, y = 0.0, z = 0.0;
+		fn_get_inertia_diagonal_(sim_ptr_, &x, &y, &z);
+		return Vector3((float)x, (float)y, (float)z);
+	}
+	return get_inertia();
+}
+
+void F194RustVehicle::synchronize_rigid_body_mass_properties() {
+	if (!sim_ptr_) {
+		return;
+	}
+	if (fn_get_center_of_mass_local_) {
+		double com_x = 0.0, com_y = 0.0, com_z = 0.0;
+		fn_get_center_of_mass_local_(sim_ptr_, &com_x, &com_y, &com_z);
+		if (std::isfinite(com_x) && std::isfinite(com_y) && std::isfinite(com_z)) {
+			set_center_of_mass_mode(RigidBody3D::CENTER_OF_MASS_MODE_CUSTOM);
+			set_center_of_mass(Vector3((float)com_x, (float)com_y, (float)com_z));
+		}
+	}
+	if (fn_get_inertia_diagonal_) {
+		const Vector3 resolved_inertia = get_inertia_diagonal_value();
+		if (resolved_inertia.is_finite() && resolved_inertia.x > 0.0F && resolved_inertia.y > 0.0F && resolved_inertia.z > 0.0F) {
+			PhysicsServer3D *physics_server = PhysicsServer3D::get_singleton();
+			if (physics_server) {
+				physics_server->body_set_param(get_rid(), PhysicsServer3D::BODY_PARAM_INERTIA, resolved_inertia);
+			}
+			if (!inertia_initialized_) {
+				UtilityFunctions::print(String("[F194RustVehicle] Resolved body properties COM=") + Variant(get_center_of_mass()).stringify() +
+					" inertia=" + Variant(resolved_inertia).stringify());
+			}
+			inertia_initialized_ = true;
+		} else {
+			UtilityFunctions::push_warning("[F194RustVehicle] Resolved inertia is invalid; retaining automatic inertia.");
+		}
+	}
 }
 
 Vector3 F194RustVehicle::get_wheel_anchor_local_value(int p_wheel_idx) const {
@@ -2123,6 +2158,7 @@ void F194RustVehicle::set_core_powertrain_telemetry(const F90CoreFrameOut &p_fra
 	fuel_telemetry_available_ = true;
 	if (total_vehicle_mass_kg_ > 0.0 && std::abs((double)get_mass() - total_vehicle_mass_kg_) > 0.01) {
 		set_mass((float)total_vehicle_mass_kg_);
+		synchronize_rigid_body_mass_properties();
 	}
 }
 

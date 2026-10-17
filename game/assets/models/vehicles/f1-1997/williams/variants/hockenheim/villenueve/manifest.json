@@ -379,7 +379,7 @@
   ],
   "physics_digest_contract": "vehicle_profile_provenance_v1",
   "physics_profile": "res://data/vehicles/f1_1997/williams/profiles/hockenheim/vehicle.json",
-  "physics_sha256": "c33b248101fc433df0a389a28eb22020541e09d74b80602cc0e370b0af85d044",
+  "physics_sha256": "a44787eebbd0ed08591f98ec38be951dc8a295c9f09cc2dd260923ce28fd6ef8",
   "physics_state": "resolved by the native profile resolver",
   "profile_provenance": {
     "domain_count": 18,
@@ -391,8 +391,8 @@
       "driving_assistance": "fbf2e5298355e4e6da4727a29ee75d6bf4317c9c57401e0213bf1be7f5e394a1",
       "fuel": "788169efbcafcfd722283e6c21da608a5dc1c27a2ede6caccb88a70feaa8acad",
       "powertrain": "1d9a276f29c74c2da009c74db2b115f1598e6b4f5a97123a0b941ac610e6be49",
-      "steering": "ef9ad5bf55cc63320f011f8e529129a46fecd9e552dcf9b4cb6773b485ea4b97",
-      "suspension": "698ef118bcd8eb692f0e84a7a0c68150a05a660ac4526f5ad0d02ae5ad4c542e",
+      "steering": "16a83857b2159b22c4e73510e3afdd7a2ab322dd34b5246a43b044b1c228097d",
+      "suspension": "674514710094be2719a6e0d5a5afa6e70d42f970906569ea3088f5b4a3182c4c",
       "tires": "34a6ea49aecb60201d8c7150fad89a69699d1c20593fc2824628f6bfc00cf3e9",
       "underfloor_contact": "6b6f9c4bb82f0e1067e3213f82def931e648bdcd5350ddeab3b204c697c5b557"
     },
@@ -651,8 +651,8 @@
     "godot_import": "pending",
     "physics_profile": {
       "digest_contract": "vehicle_profile_provenance_v1",
-      "evidence": "scratch/williams_profile_build_20261017/profile_resolution.json",
-      "global_digest_sha256": "c33b248101fc433df0a389a28eb22020541e09d74b80602cc0e370b0af85d044",
+      "evidence": "scratch/williams_physics_corrections_20261017_182303/resolved_profile_after.json",
+      "global_digest_sha256": "a44787eebbd0ed08591f98ec38be951dc8a295c9f09cc2dd260923ce28fd6ef8",
       "resolved_domains": 18,
       "status": "PASS"
     },

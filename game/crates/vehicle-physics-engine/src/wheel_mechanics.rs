@@ -53,12 +53,6 @@ pub struct WheelMechanicalTuning {
 
 impl WheelMechanicalTuning {
     pub fn for_wheel(config: &VehicleConfig, wheel: WheelIndex) -> Self {
-        let wheel_mass = if wheel.is_front() {
-            config.tires.front_wheel_mass
-        } else {
-            config.tires.rear_wheel_mass
-        }
-        .max(1.0);
         let radius = if wheel.is_front() {
             config.tires.front_tire_radius
         } else {
@@ -72,10 +66,11 @@ impl WheelMechanicalTuning {
         }
         .max(0.05);
 
-        // The existing wheel mass contains the rotating assembly only. A modest multiplier
-        // represents hub/brake and a fraction of the suspension links without changing the
-        // Godot rigid-body mass contract.
-        let unsprung_mass_kg = wheel_mass * 1.35;
+        // The virtual unsprung mass is a resolved corner property when the profile
+        // declares a complete mass inventory (wheel assembly plus upright and
+        // corner-attached members). Profiles without one keep the legacy filter
+        // heuristic so their behaviour does not change.
+        let unsprung_mass_kg = crate::vehicle_mass_properties::unsprung_mass(config, wheel);
 
         // Tune radial stiffness from the existing static corner load. Roughly 8 mm of
         // static radial deflection keeps the carcass visibly/mechanically relevant while

@@ -506,12 +506,13 @@ pub fn advance_after_mechanics(
         WheelMechanicalSample {
             brake_input,
             brake_energy_joules: mechanical_brake_energy,
-            friction_power_watts: tire.longitudinal_force.abs() * tire.spin_velocity_diff.abs()
-                + tire.lateral_force.abs()
-                    * context.wheel_lateral_slip_metres_per_second[index].abs(),
+            friction_power_watts: tire.integrated_slip_power_watts.unwrap_or_else(||
+                tire.longitudinal_force.abs() * tire.spin_velocity_diff.abs()
+                    + tire.lateral_force.abs() * context.wheel_lateral_slip_metres_per_second[index].abs()),
             additional_carcass_heat_watts,
             surface_friction: suspension.effective_friction,
             tire_input: TireThermalInput {
+                integrated_slip_power_watts: tire.integrated_slip_power_watts,
                 normal_force_n: suspension.total_normal_force.max(0.0),
                 longitudinal_force_n: tire.longitudinal_force,
                 lateral_force_n: tire.lateral_force,

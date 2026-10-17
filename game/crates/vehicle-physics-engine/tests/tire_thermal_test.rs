@@ -29,6 +29,7 @@ fn flat_samples(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
 
 fn braking_thermal_input() -> TireThermalInput {
     TireThermalInput {
+        integrated_slip_power_watts: None,
         normal_force_n: 5000.0,
         longitudinal_force_n: 4200.0,
         lateral_force_n: 1500.0,
@@ -184,6 +185,7 @@ fn heat_soak_tread_fastest_carcass_slower_gas_slowest() {
     let tread_before = sys.wheels[0].average_tread_c();
     let gas_before = sys.wheels[0].gas_c;
     let cool = TireThermalInput {
+        integrated_slip_power_watts: None,
         normal_force_n: 4000.0,
         longitudinal_force_n: 0.0,
         lateral_force_n: 0.0,
@@ -255,6 +257,7 @@ fn wheelspin_heats_driven_rear_but_not_unloaded_front() {
 
     // Driven rear wheel spinning: positive longitudinal slip + load.
     let spin = TireThermalInput {
+        integrated_slip_power_watts: None,
         normal_force_n: 4000.0,
         longitudinal_force_n: 3600.0,
         lateral_force_n: 0.0,
@@ -275,6 +278,7 @@ fn wheelspin_heats_driven_rear_but_not_unloaded_front() {
 
     // Unloaded front wheel: no normal force -> no slip heat (airborne path).
     let idle = TireThermalInput {
+        integrated_slip_power_watts: None,
         normal_force_n: 0.0,
         longitudinal_force_n: 0.0,
         lateral_force_n: 0.0,
@@ -311,6 +315,7 @@ fn partial_tricast_outer_only_heats_outer_zone() {
     let mut sys = TireThermalSystem::new(p, t);
 
     let outer_only = TireThermalInput {
+        integrated_slip_power_watts: None,
         normal_force_n: 4000.0,
         longitudinal_force_n: 2500.0,
         lateral_force_n: 1200.0,
@@ -351,6 +356,7 @@ fn airborne_no_road_heat_but_state_stays_finite() {
     let mut sys = TireThermalSystem::new(p, t);
 
     let airborne = TireThermalInput {
+        integrated_slip_power_watts: None,
         normal_force_n: 0.0,
         longitudinal_force_n: 0.0,
         lateral_force_n: 0.0,
@@ -591,6 +597,7 @@ fn thermal_step_is_nan_safe_under_extreme_inputs() {
     let env = TireEnvironment::fallback(t);
     let mut sys = TireThermalSystem::new(p, t);
     let brutal = TireThermalInput {
+        integrated_slip_power_watts: None,
         normal_force_n: f64::MAX / 1e10,
         longitudinal_force_n: f64::MAX / 1e10,
         lateral_force_n: -f64::MAX / 1e10,

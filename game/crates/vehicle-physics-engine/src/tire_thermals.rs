@@ -264,6 +264,7 @@ impl Default for TireMechanicalModifiers {
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TireThermalInput {
+    pub integrated_slip_power_watts: Option<f64>,
     pub normal_force_n: f64,
     pub longitudinal_force_n: f64,
     pub lateral_force_n: f64,
@@ -503,7 +504,7 @@ impl TireThermalSystem {
         let contact_total = zone_weights.iter().sum::<f64>().clamp(0.0, 1.0);
 
         // Slip work at the footprint. Both longitudinal and lateral work contribute.
-        let slip_power_w = (
+        let slip_power_w = input.integrated_slip_power_watts.unwrap_or_else(||
             input.longitudinal_force_n.abs() * input.slip_velocity_long_ms.abs()
                 + input.lateral_force_n.abs() * input.slip_velocity_lat_ms.abs()
         ) * thermal.slip_heat_efficiency.clamp(0.0, 1.5);

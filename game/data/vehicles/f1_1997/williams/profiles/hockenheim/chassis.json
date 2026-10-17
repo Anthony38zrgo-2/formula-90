@@ -1013,8 +1013,8 @@
           },
           "center_of_mass_in_attachment_metres": {
             "x": 0.0,
-            "y": -0.226701,
-            "z": -1.146992
+            "y": 0.0,
+            "z": 0.0
           },
           "inertia_about_center_of_mass": {
             "entries_kilogram_square_metres": [
@@ -1063,8 +1063,8 @@
           },
           "center_of_mass_in_attachment_metres": {
             "x": 0.0,
-            "y": -0.226701,
-            "z": -1.146992
+            "y": 0.0,
+            "z": 0.0
           },
           "inertia_about_center_of_mass": {
             "entries_kilogram_square_metres": [
@@ -1113,8 +1113,8 @@
           },
           "center_of_mass_in_attachment_metres": {
             "x": 0.0,
-            "y": -0.216634,
-            "z": 1.743008
+            "y": 0.0,
+            "z": 0.0
           },
           "inertia_about_center_of_mass": {
             "entries_kilogram_square_metres": [
@@ -1163,8 +1163,8 @@
           },
           "center_of_mass_in_attachment_metres": {
             "x": 0.0,
-            "y": -0.216634,
-            "z": 1.743008
+            "y": 0.0,
+            "z": 0.0
           },
           "inertia_about_center_of_mass": {
             "entries_kilogram_square_metres": [

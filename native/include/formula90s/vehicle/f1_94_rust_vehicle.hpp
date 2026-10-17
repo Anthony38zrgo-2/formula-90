@@ -59,6 +59,7 @@ typedef double (*FnPhysicsGetRayLength)(void *sim, uint32_t wheel_idx);
 typedef double (*FnPhysicsGetVehicleMass)(void *sim);
 typedef double (*FnPhysicsGetDefaultSpawnHeight)(void *sim);
 typedef void (*FnPhysicsGetCenterOfMassLocal)(void *sim, double *x, double *y, double *z);
+typedef void (*FnPhysicsGetInertiaDiagonal)(void *sim, double *x, double *y, double *z);
 typedef void (*FnPhysicsDestroy)(void *sim);
 typedef uint32_t (*FnPhysicsAbiVersion)(void);
 typedef const char *(*FnPhysicsBuildSha)(void);
@@ -93,6 +94,7 @@ private:
 	FnPhysicsGetVehicleMass fn_get_vehicle_mass_ = nullptr;
 	FnPhysicsGetDefaultSpawnHeight fn_get_default_spawn_height_ = nullptr;
 	FnPhysicsGetCenterOfMassLocal fn_get_center_of_mass_local_ = nullptr;
+	FnPhysicsGetInertiaDiagonal fn_get_inertia_diagonal_ = nullptr;
 	FnPhysicsDestroy fn_destroy_ = nullptr;
 
 	// Visual NodePaths
@@ -343,6 +345,8 @@ public:
 	// Dimension & Anchor Queries
 	double get_vehicle_mass_value() const;
 	Vector3 get_center_of_mass_local_value() const;
+	Vector3 get_inertia_diagonal_value() const;
+	void synchronize_rigid_body_mass_properties();
 	Vector3 get_wheel_anchor_local_value(int p_wheel_idx) const;
 	double get_tri_ray_span_value(int p_wheel_idx) const;
 	double get_ray_length_value(int p_wheel_idx) const;

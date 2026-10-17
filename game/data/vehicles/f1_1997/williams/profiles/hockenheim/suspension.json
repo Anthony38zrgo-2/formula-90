@@ -1,5 +1,6 @@
 {
   "suspension": {
+    "use_authored_wheel_centers": true,
     "front": {
       "arb_ratio": 0.15,
       "bump_damp_multiplier": 1.0,
@@ -232,7 +233,7 @@
         "damper_max_m": 0.4,
         "damper_min_m": 0.15,
         "damper_rebound_Ns_per_m": 13500.0,
-        "spring_free_length_m": 0.3157343347865796,
+        "spring_free_length_m": 0.26962402941514846,
         "spring_installed_length_m": 0.26,
         "spring_rate_N_per_m": 158000.0,
         "wheel_bump_m": 0.025,

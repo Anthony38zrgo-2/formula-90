@@ -78,7 +78,10 @@ impl VehicleConfiguration {
 
     fn from_json_spec(spec: JsonVehicleSpec) -> Result<Self, String> {
         spec.validate()?;
-        let config = spec.to_config();
+        let mut config = spec.to_config();
+        config
+            .chassis
+            .bind_authored_wheel_centers(&config.suspension);
         crate::aero::validate_aero_config(&config)?;
         if let Some(inventory) = &config.chassis.physical_mass_inventory {
             inventory.validate(&config)?;

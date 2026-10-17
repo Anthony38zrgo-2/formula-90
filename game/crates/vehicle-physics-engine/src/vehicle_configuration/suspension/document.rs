@@ -6,6 +6,8 @@ pub(crate) struct JsonSuspension {
     #[serde(default)]
     pub(crate) front: JsonSuspensionAxle,
     #[serde(default)]
+    pub(crate) use_authored_wheel_centers: bool,
+    #[serde(default)]
     pub(crate) rear: JsonSuspensionAxle,
     #[serde(default = "default_tri_ray")]
     pub(crate) tri_ray_spacing_ratio: f64,
@@ -29,6 +31,7 @@ impl Default for JsonSuspension {
     fn default() -> Self {
         Self {
             front: JsonSuspensionAxle::default(),
+            use_authored_wheel_centers: false,
             rear: JsonSuspensionAxle::default(),
             tri_ray_spacing_ratio: default_tri_ray(),
             geometry: None,

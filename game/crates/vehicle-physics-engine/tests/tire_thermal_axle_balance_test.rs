@@ -15,6 +15,7 @@ fn geometric_config() -> VehicleConfig {
 
 fn corner_input() -> TireThermalInput {
     TireThermalInput {
+        integrated_slip_power_watts: None,
         normal_force_n: 3300.0,
         longitudinal_force_n: 300.0,
         lateral_force_n: 4500.0,
@@ -33,6 +34,7 @@ fn corner_input() -> TireThermalInput {
 
 fn straight_input() -> TireThermalInput {
     TireThermalInput {
+        integrated_slip_power_watts: None,
         normal_force_n: 3200.0,
         longitudinal_force_n: 1200.0,
         lateral_force_n: 300.0,

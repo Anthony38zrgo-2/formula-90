@@ -66,6 +66,7 @@ impl VehicleConfiguration {
                 front_track: 1.5925,
                 rear_track: 1.5246,
                 physical_mass_inventory: None,
+                authored_wheel_centers_local_metres: None,
             },
             fuel: FuelConfig::default(),
 
@@ -160,6 +161,7 @@ impl VehicleConfiguration {
                 rear_toe_gain_rad_per_m: 0.0,
                 suspension_model: SuspensionModelKind::Legacy1Dof,
                 suspension_model_version: default_suspension_model_version(),
+                use_authored_wheel_centers: false,
                 geometric_suspension: None,
             },
 
@@ -258,6 +260,7 @@ impl VehicleConfiguration {
                 front_track: 1.762,
                 rear_track: 1.748,
                 physical_mass_inventory: None,
+                authored_wheel_centers_local_metres: None,
             },
             fuel: FuelConfig::default(),
 
@@ -350,6 +353,7 @@ impl VehicleConfiguration {
                 rear_toe_gain_rad_per_m: 0.0,
                 suspension_model: SuspensionModelKind::Legacy1Dof,
                 suspension_model_version: default_suspension_model_version(),
+                use_authored_wheel_centers: false,
                 geometric_suspension: None,
             },
 

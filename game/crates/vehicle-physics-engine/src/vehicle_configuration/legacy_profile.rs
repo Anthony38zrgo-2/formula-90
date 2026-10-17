@@ -152,6 +152,7 @@ impl JsonVehicleSpec {
                 front_track: self.geometry.front_track,
                 rear_track: self.geometry.rear_track,
                 physical_mass_inventory: self.physical_mass_inventory.clone(),
+                authored_wheel_centers_local_metres: None,
             },
             fuel,
             steering: SteeringConfiguration {
@@ -235,6 +236,7 @@ impl JsonVehicleSpec {
                 suspension_model: SuspensionModelKind::from_str_name(self.suspension.model.as_str())
                     .unwrap_or(SuspensionModelKind::Legacy1Dof),
                 suspension_model_version: self.suspension.model_version,
+                use_authored_wheel_centers: self.suspension.use_authored_wheel_centers,
                 geometric_suspension: self
                     .suspension
                     .geometry_physical
@@ -537,6 +539,7 @@ impl JsonVehicleSpec {
                 },
             },
             suspension: JsonSuspension {
+                use_authored_wheel_centers: cfg.suspension.use_authored_wheel_centers,
                 front: JsonSuspensionAxle {
                     spring_length: cfg.suspension.front_spring_length,
                     resting_ratio: cfg.suspension.front_resting_ratio,

@@ -42,6 +42,12 @@
     {
       "classification": "derived",
       "domain": "chassis.json",
+      "path": "physical_mass_inventory.components[wheel_rotor].center_of_mass_in_attachment_metres",
+      "source": "Wheel rotor and upright attachment centers are relative to the corner hub; the previous absolute axle coordinates added the hub offset twice (physics correction 2026-10-17)"
+    },
+    {
+      "classification": "derived",
+      "domain": "chassis.json",
       "path": "physical_mass_inventory",
       "source": "Component masses rescaled to close the 547 kg dry budget and 13/16 kg wheel assemblies (Q4, Q5, Q9)"
     },
@@ -229,7 +235,7 @@
       "classification": "estimated",
       "domain": "steering.json",
       "path": "steering.front_steering_ratio",
-      "source": "Q34"
+      "source": "Q34 mechanical ratio 12:1; normalized axle input gain is 1.0 in the runtime steering contract"
     },
     {
       "classification": "estimated",
@@ -657,17 +663,17 @@
     "domain_digests": {
       "aerodynamics": "b8c2b16b08d89ab357afb65c936b9bc758fb156f3974ff9813d15092b96bdb14",
       "brakes": "42fc0593846d009dc8bf1f03f703b6ebebea5c3e5a0572060e4521eed5e8e100",
-      "chassis": "4e720eca8fdced65b408dc41ae575690d231d928956e8fd037fa563a2ac66274",
+      "chassis": "504b41b070156bffc27360b57623bdcc5c1fbe96a614d3079723e59eab0004b5",
       "coupled_world": "079546b5cc16578ea90615ce6fd3a5a560739331c1ee0e9cd7cf30aed236f175",
       "driving_assistance": "fbf2e5298355e4e6da4727a29ee75d6bf4317c9c57401e0213bf1be7f5e394a1",
       "fuel": "788169efbcafcfd722283e6c21da608a5dc1c27a2ede6caccb88a70feaa8acad",
       "powertrain": "1d9a276f29c74c2da009c74db2b115f1598e6b4f5a97123a0b941ac610e6be49",
-      "steering": "ef9ad5bf55cc63320f011f8e529129a46fecd9e552dcf9b4cb6773b485ea4b97",
-      "suspension": "698ef118bcd8eb692f0e84a7a0c68150a05a660ac4526f5ad0d02ae5ad4c542e",
+      "steering": "16a83857b2159b22c4e73510e3afdd7a2ab322dd34b5246a43b044b1c228097d",
+      "suspension": "674514710094be2719a6e0d5a5afa6e70d42f970906569ea3088f5b4a3182c4c",
       "tires": "34a6ea49aecb60201d8c7150fad89a69699d1c20593fc2824628f6bfc00cf3e9",
       "underfloor_contact": "6b6f9c4bb82f0e1067e3213f82def931e648bdcd5350ddeab3b204c697c5b557"
     },
-    "global_digest_sha256": "c33b248101fc433df0a389a28eb22020541e09d74b80602cc0e370b0af85d044",
+    "global_digest_sha256": "a44787eebbd0ed08591f98ec38be951dc8a295c9f09cc2dd260923ce28fd6ef8",
     "manifest_digest_sha256": "33af96f7e95c02ef2d95a13f3288d00eb7772ae87e77b1cd6c311395a019638f",
     "resolved_domains": 18
   },

@@ -8,7 +8,7 @@ use crate::tire_thermals::TireMechanicalModifiers;
 use crate::types::{SurfaceType, Vec3, WheelIndex};
 use crate::vehicle_config::{TireForceProfile, VehicleConfig};
 use crate::wheel_mechanics::{
-    base_contact_patch, static_wheel_load, tire_radius, wheel_mass, WheelMechanicalTuning,
+    base_contact_patch, static_wheel_load, tire_radius, WheelMechanicalTuning,
 };
 use serde::{Deserialize, Serialize};
 
@@ -48,6 +48,8 @@ pub struct WheelTireState {
     pub rolling_resistance: f64,
     pub aligning_torque: f64,
     pub spin_velocity_diff: f64,
+    #[serde(skip)]
+    pub integrated_slip_power_watts: Option<f64>,
     pub wheel_moment: f64,
     pub applied_torque: f64,
     pub limit_spin: bool,
@@ -114,8 +116,6 @@ pub struct WheelTireState {
 impl WheelTireState {
     pub fn new(config: &VehicleConfig, wheel: WheelIndex) -> Self {
         let radius = tire_radius(config, wheel);
-        let mass = wheel_mass(config, wheel);
-        let tuning = WheelMechanicalTuning::for_wheel(config, wheel);
         Self {
             spin: 0.0,
             steer_angle_rad: 0.0,
@@ -128,7 +128,8 @@ impl WheelTireState {
             rolling_resistance: 0.0,
             aligning_torque: 0.0,
             spin_velocity_diff: 0.0,
-            wheel_moment: tuning.rotational_inertia_factor * mass * radius * radius,
+            integrated_slip_power_watts: None,
+            wheel_moment: crate::vehicle_mass_properties::wheel_spin_inertia(config, wheel),
             applied_torque: 0.0,
             limit_spin: false,
             reaction_torque: 0.0,
@@ -373,6 +374,7 @@ impl TireSystem {
         dt: f64,
     ) {
         let state = &mut self.wheels[wheel as usize];
+        state.integrated_slip_power_watts = None;
         let dt = dt.max(0.0);
         let tuning = WheelMechanicalTuning::for_wheel(config, wheel);
         let mut profile = *tire_force_profile(config, wheel);
@@ -736,6 +738,57 @@ impl TireSystem {
             finite_or_zero(-state.longitudinal_force * state.effective_rolling_radius);
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub fn integrate_wheel_contact(
+        &mut self,
+        configuration: &VehicleConfig,
+        wheel: WheelIndex,
+        normal_force_newtons: f64,
+        surface: SurfaceType,
+        effective_friction: f64,
+        effective_stiffness: f64,
+        effective_rolling_resistance: f64,
+        local_wheel_velocity: Vec3,
+        duration_seconds: f64,
+        drive_torque_newton_metres: f64,
+        reflected_drive_inertia: f64,
+        brake_torque_newton_metres: f64,
+    ) {
+        let duration_seconds = duration_seconds.max(0.0);
+        let maximum_contact_step_seconds = 1.0 / 960.0;
+        let step_count = (duration_seconds / maximum_contact_step_seconds).ceil().max(1.0) as usize;
+        let step_seconds = duration_seconds / step_count as f64;
+        let mut longitudinal_impulse = 0.0;
+        let mut lateral_impulse = 0.0;
+        let mut aligning_impulse = 0.0;
+        let mut slip_energy_joules = 0.0;
+        for _ in 0..step_count {
+            self.process_wheel_forces(
+                configuration, wheel, normal_force_newtons, surface,
+                effective_friction, effective_stiffness, effective_rolling_resistance,
+                brake_torque_newton_metres > 0.0, local_wheel_velocity, step_seconds,
+            );
+            let state = &self.wheels[wheel as usize];
+            longitudinal_impulse += state.longitudinal_force * step_seconds;
+            lateral_impulse += state.lateral_force * step_seconds;
+            aligning_impulse += state.aligning_torque * step_seconds;
+            slip_energy_joules += (state.longitudinal_force.abs() * state.spin_velocity_diff.abs()
+                + state.lateral_force.abs() * local_wheel_velocity.x.abs()) * step_seconds;
+            self.process_wheel_torque(
+                configuration, wheel, drive_torque_newton_metres, reflected_drive_inertia,
+                brake_torque_newton_metres, step_seconds,
+            );
+        }
+        if duration_seconds > 0.0 {
+            let state = &mut self.wheels[wheel as usize];
+            state.integrated_slip_power_watts = Some(slip_energy_joules / duration_seconds);
+            state.longitudinal_force = longitudinal_impulse / duration_seconds;
+            state.lateral_force = lateral_impulse / duration_seconds;
+            state.aligning_torque = aligning_impulse / duration_seconds;
+            state.reaction_torque = -state.longitudinal_force * state.effective_rolling_radius;
+        }
+    }
+
     /// Compatibility entry point retained for callers outside simulation.rs.
     #[allow(clippy::too_many_arguments)]
     pub fn step_wheel(
@@ -761,14 +814,6 @@ impl TireSystem {
         } else {
             0.0
         };
-        self.process_wheel_torque(
-            config,
-            wheel,
-            drive_torque_nm,
-            drive_inertia,
-            brake_torque_nm,
-            dt,
-        );
         let surface = SurfaceType::Road;
         let stiffness = *config.tires.surface_stiffness.get(&surface).unwrap_or(&5.0);
         let rolling = *config
@@ -780,17 +825,10 @@ impl TireSystem {
         // Compatibility callers do not have suspension mechanical state. Use neutral
         // full-contact values so old API users still get deterministic tire forces.
         self.set_mechanical_state(config, wheel, normal_force_n, 0.0, 0.0, 1.0);
-        self.process_wheel_forces(
-            config,
-            wheel,
-            normal_force_n,
-            surface,
-            effective_friction_coef,
-            stiffness,
-            rolling,
-            brake_torque_nm > 0.0,
-            local_wheel_velocity,
-            dt,
+        self.integrate_wheel_contact(
+            config, wheel, normal_force_n, surface, effective_friction_coef,
+            stiffness, rolling, local_wheel_velocity, dt, drive_torque_nm,
+            drive_inertia, brake_torque_nm,
         );
     }
 }
@@ -2347,5 +2385,89 @@ mod tests {
         assert!(s.limit_spin, "deep longitudinal slip must flag limit_spin");
         assert_eq!(s.tire_regime, 2, "wheel must report longitudinal post-peak regime");
         assert!(s.combined_utilization <= 1.0 + 1e-9);
+    }
+}
+
+#[cfg(test)]
+mod contact_integration_tests {
+    use super::*;
+
+    fn williams_configuration() -> VehicleConfig {
+        let repository_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        crate::vehicle_configuration::load_vehicle_configuration_from_authorized_root(
+            &repository_root.join("game/data/vehicles/f1_1997/williams/profiles/hockenheim/vehicle.json"),
+            &repository_root,
+        ).expect("Williams configuration")
+    }
+
+    fn advance_contact(system: &mut TireSystem, configuration: &VehicleConfig, speed: f64, load: f64, brake_torque: f64, duration: f64) {
+        system.integrate_wheel_contact(configuration, WheelIndex::FrontLeft, load, SurfaceType::Road,
+            *configuration.tires.surface_friction.get(&SurfaceType::Road).unwrap(),
+            *configuration.tires.surface_stiffness.get(&SurfaceType::Road).unwrap(),
+            *configuration.tires.surface_rolling_resistance.get(&SurfaceType::Road).unwrap(),
+            Vec3::new(0.0, 0.0, -speed), duration, 0.0, 0.0, brake_torque);
+    }
+
+    #[test]
+    fn loaded_free_wheel_recovery_is_stable_across_host_steps() {
+        let configuration = williams_configuration();
+        let mut final_speeds = Vec::new();
+        let mut friction_energies = Vec::new();
+        for frequency in [120.0, 240.0, 480.0, 960.0] {
+            let mut system = TireSystem::new(&configuration);
+            system.set_mechanical_state(&configuration, WheelIndex::FrontLeft, 7000.0, 0.0, 0.008, 1.0);
+            let mut friction_energy = 0.0;
+            for _ in 0..(frequency * 5.0) as usize {
+                advance_contact(&mut system, &configuration, 10.0, 7000.0, 0.0, 1.0 / frequency);
+                friction_energy += system.wheels[0].integrated_slip_power_watts.unwrap() / frequency;
+                assert!(system.wheels[0].spin >= -0.000001, "reverse spin at {frequency} Hz: {}", system.wheels[0].spin);
+            }
+            final_speeds.push(system.wheels[0].spin);
+            friction_energies.push(friction_energy);
+        }
+        assert!(final_speeds.iter().all(|speed| (speed - final_speeds[0]).abs() < 0.000001));
+        assert!(friction_energies.iter().all(|energy| (energy - friction_energies[0]).abs() < 0.000001));
+    }
+
+    #[test]
+    fn unbraked_forward_recovery_remains_forward_under_load_and_speed_changes() {
+        let configuration = williams_configuration();
+        for load in [1300.0, 7000.0, 12000.0] {
+            for speed in [3.0, 10.0, 50.0] {
+                let mut system = TireSystem::new(&configuration);
+                system.set_mechanical_state(&configuration, WheelIndex::FrontLeft, load, 0.0, 0.008, 1.0);
+                for _ in 0..600 {
+                    advance_contact(&mut system, &configuration, speed, load, 0.0, 1.0 / 120.0);
+                    assert!(system.wheels[0].spin >= -0.000001, "load {load} speed {speed} produced {}", system.wheels[0].spin);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn contact_impulse_matches_wheel_angular_momentum() {
+        let configuration = williams_configuration();
+        let mut system = TireSystem::new(&configuration);
+        system.set_mechanical_state(&configuration, WheelIndex::FrontLeft, 7000.0, 0.0, 0.008, 1.0);
+        let duration = 1.0 / 120.0;
+        advance_contact(&mut system, &configuration, 10.0, 7000.0, 0.0, duration);
+        let wheel = &system.wheels[0];
+        let road_angular_impulse = -wheel.longitudinal_force * duration * wheel.effective_rolling_radius;
+        assert!((wheel.wheel_moment * wheel.spin - road_angular_impulse).abs() < 1e-9);
+    }
+
+    #[test]
+    fn reverse_rolling_and_brake_release_remain_physical() {
+        let configuration = williams_configuration();
+        for direction in [-1.0, 1.0] {
+            let mut system = TireSystem::new(&configuration);
+            system.set_mechanical_state(&configuration, WheelIndex::FrontLeft, 3000.0, 0.0, 0.008, 1.0);
+            for tick in 0..600 {
+                let brake_torque = if (120..180).contains(&tick) { 1500.0 } else { 0.0 };
+                advance_contact(&mut system, &configuration, direction * 10.0, 3000.0, brake_torque, 1.0 / 120.0);
+                assert!(system.wheels[0].spin.is_finite());
+            }
+            assert!(direction * system.wheels[0].spin > 25.0);
+        }
     }
 }

@@ -4,6 +4,8 @@ use super::super::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SuspensionConfiguration {
+    #[serde(default)]
+    pub use_authored_wheel_centers: bool,
     pub front_spring_length: f64,
     pub front_resting_ratio: f64,
     pub front_damping_ratio: f64,
