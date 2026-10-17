@@ -93,6 +93,12 @@ diagnostics/
 # Local agent knowledge base
 .agents/data/
 reports/
+!game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/reports/
+game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/reports/*
+!game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/reports/AGENTS.md
+!game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/reports/authoring_source_promotion.json
+!game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/car/source/williams_fw19_hockenheim_1997_car.blend
+!game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/driver/source/jacques_villeneuve_williams_fw19_1997_driver.blend
 
 # Audio design raw samples (large assets)
 docs/audio-design/F_V10_Gen3_samples/

@@ -2,6 +2,64 @@
 
 Este archivo registra tanto dependencias incorporadas como dependencias evaluadas y rechazadas. Una evaluación no implica que su código forme parte del juego.
 
+## Créditos de la comunidad GP4 — F1 1997 Season Mod v2.0
+
+El trabajo de recuperación y adaptación visual de Formula90s utiliza como fuente local el **F1 1997 Season Mod v2.0**, organizado por **MSchumi24**. Agradecemos a sus creadores, conversores y colaboradores. La adaptación a Blender/GLB no reemplaza la autoría de los modelos, texturas y demás recursos originales.
+
+Las atribuciones siguientes proceden de `Data/Files/Documentation/credits.txt` y `help.txt` incluidos en el carset. En esta instalación se conservan en `game/assets/season/1997/extracted/combined/`. Se distinguen los créditos del conjunto del mod de los recursos efectivamente adaptados: el candidato visual Williams utiliza la carrocería Williams y los recursos de ruedas/neumáticos; esta lista no implica que todos los componentes del mod estén integrados en el juego.
+
+### Modelos de coches y actualizaciones
+
+| Equipo | Créditos indicados por el mod |
+|---|---|
+| Arrows | Kefla, MSchumi24 y Hega; actualizaciones de SkaningeN |
+| Williams | VRC, MSchumi24 y Hega; actualizaciones de SkaningeN |
+| Ferrari | VRC, MSchumi24 y Hega; actualizaciones de SkaningeN |
+| Benetton | Conversión desde el mod F1C 1997 por Intweb; actualizaciones de quickslick y SkaningeN |
+| McLaren | Soulbringer; actualizaciones de SkaningeN |
+| Jordan | Hega |
+| Prost | Conversión desde el mod F1C 1997 por Intweb; actualizaciones de quickslick y SkaningeN |
+| Sauber | Conversión desde el mod F1C 1997 por Intweb; actualizaciones de quickslick y SkaningeN |
+| Tyrrell | Conversión desde el mod F1C 1997 por Intweb; actualizaciones de quickslick y SkaningeN |
+| Minardi | Conversión desde el mod F1C 1997 por Intweb; actualizaciones de quickslick y SkaningeN |
+| Stewart | Conversión desde el mod F1C 1997 por Intweb; actualizaciones de quickslick y SkaningeN |
+| Lola | Conversión desde el mod F1C 1997; actualización de Turbo Lover; el archivo de créditos no identifica al conversor |
+
+### Otros recursos del carset
+
+| Recurso | Créditos indicados por el mod |
+|---|---|
+| Cockpit y sus texturas | Enzojz; texturas de MSchumi24 |
+| Modelo de casco Arai | jvinu2000 |
+| Texturas de cascos | jvinu2000 —Ferrari y Williams—, BlackToof, Hega, SkaningeN, DaiMon, KerleyF1 y MailsonTeles —Larini— |
+| Personal de boxes y accesorios de boxes | MSchumi24 |
+| Comisarios | Fongu |
+| Paneles de boxes | Tony (b-tone) |
+| Llantas y neumáticos | Ulf (Alesi_fan) y Turbo Lover |
+| Volantes | Hega; volante interior genérico de Genison Kobe |
+| Viseras | MSchumi24 |
+| HUD 1994 | Duffer |
+| Defpanel 2009 | Tony (b-tone) y Ruboy |
+| Teamart | Tony (b-tone) y MSchumi24 |
+| Pantallas de carga | SkaningeN y MSchumi24 |
+| Física y rendimiento | Gitanes |
+| Sonidos | Mitsuro Sano |
+| Sonidos de eventos | carl_gpgames |
+| Bruma atmosférica | Isaint |
+| GPaedia | petrus |
+| Fondos de menú | MSchumi24 |
+| Música de fondo | Procedente de Formula One 97, según los créditos del carset |
+| Parche de límite de memoria | Lee71 |
+| Configuración CSM | MSchumi24, petrus, Flash Formula y otros colaboradores no individualizados en los créditos |
+| Trackpack | plodekk y cleberpister |
+
+### Herramientas y agradecimientos
+
+- **ZaZ**: CSM, TSM y las herramientas reconocidas por los créditos originales del mod.
+- **Diego Noriega (Öggo)**: GP4 Mesh Tools para Blender, utilizado para interpretar e importar los modelos GP4. Atribución verificada en el `gp4form.txt` del bundle local V2.3.
+
+Los derechos de los recursos permanecen con sus autores originales, conforme a la documentación del carset. Estos créditos no conceden permisos adicionales de redistribución. Los paquetes, extracciones y candidatos se mantienen como contenido local privado; su organización y la adaptación de texturas se documentan en [Texturas y organización de GP4 1997](game/assets/season/1997/TEXTURAS_Y_ORGANIZACION.md).
+
 ## stb
 
 - Repositorio: <https://github.com/nothings/stb>

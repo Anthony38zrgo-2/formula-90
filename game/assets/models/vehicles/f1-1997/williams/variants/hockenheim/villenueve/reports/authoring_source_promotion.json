@@ -1,0 +1,20 @@
+{
+  "branch": "main-clean",
+  "head": "4f478b72977493656c2f2873e7fcee7ca21a1d62",
+  "operation": "User-authorized local promotion of two current authoring sources; original depot preserved",
+  "runtime_exports": "Not produced",
+  "sources": [
+    {
+      "source": "D:\\Formula90s\\game\\assets\\season\\1997\\williams_completed\\williams_fw19_textured.blend",
+      "destination": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-1997\\williams\\variants\\hockenheim\\villenueve\\car\\source\\williams_fw19_hockenheim_1997_car.blend",
+      "sha256": "b3e1bc8a2bdf45beacb4573345cdeb6e78f57ed02840d0d6266662954845a433",
+      "size_bytes": 23737004
+    },
+    {
+      "source": "D:\\Formula90s\\game\\assets\\season\\1997\\williams_completed\\jacques_villeneuve_williams_fw19_1997_driver.blend",
+      "destination": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-1997\\williams\\variants\\hockenheim\\villenueve\\driver\\source\\jacques_villeneuve_williams_fw19_1997_driver.blend",
+      "sha256": "cc67bb66be9700ecf15d5c5b56680579970d485470e61e7b63ffd8f3d01ca2d0",
+      "size_bytes": 14496537
+    }
+  ]
+}
