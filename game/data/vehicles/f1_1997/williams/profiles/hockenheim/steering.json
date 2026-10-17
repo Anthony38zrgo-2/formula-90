@@ -1,0 +1,13 @@
+{
+  "steering": {
+    "ackermann": 0.15,
+    "countersteer_assist": 0.0,
+    "front_steering_ratio": 12.0,
+    "max_steering_angle": 0.314,
+    "rear_steering_ratio": 0.0,
+    "steering_exponent": 1.0,
+    "steering_slip_assist": 0.0,
+    "steering_speed": 8.0,
+    "steering_speed_decay": 0.1
+  }
+}

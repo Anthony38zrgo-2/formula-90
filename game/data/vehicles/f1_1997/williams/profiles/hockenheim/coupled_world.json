@@ -1,0 +1,156 @@
+{
+  "coupled_world": {
+    "aerodynamic_probe_length_metres": 1,
+    "aerodynamic_probe_positions_local_metres": [
+      {
+        "x": -0.4,
+        "y": -0.24,
+        "z": -0.95
+      },
+      {
+        "x": 0.4,
+        "y": -0.24,
+        "z": -0.95
+      },
+      {
+        "x": 0,
+        "y": -0.24,
+        "z": 0
+      },
+      {
+        "x": -0.4,
+        "y": -0.24,
+        "z": 0.95
+      },
+      {
+        "x": 0.4,
+        "y": -0.24,
+        "z": 0.95
+      }
+    ],
+    "body_collision_boxes": [
+      {
+        "center_local_metres": {
+          "x": 0,
+          "y": -0.02,
+          "z": -0.35
+        },
+        "half_extents_metres": {
+          "x": 0.28,
+          "y": 0.22,
+          "z": 0.8
+        },
+        "identifier": "monocoque"
+      },
+      {
+        "center_local_metres": {
+          "x": 0,
+          "y": -0.03,
+          "z": 0.8
+        },
+        "half_extents_metres": {
+          "x": 0.3,
+          "y": 0.22,
+          "z": 0.6
+        },
+        "identifier": "engine_transmission"
+      },
+      {
+        "center_local_metres": {
+          "x": 0,
+          "y": -0.26,
+          "z": 0
+        },
+        "half_extents_metres": {
+          "x": 0.64,
+          "y": 0.02,
+          "z": 1.28
+        },
+        "identifier": "floor"
+      },
+      {
+        "center_local_metres": {
+          "x": 0,
+          "y": -0.17,
+          "z": -1.8
+        },
+        "half_extents_metres": {
+          "x": 0.8,
+          "y": 0.04,
+          "z": 0.17
+        },
+        "identifier": "front_wing"
+      },
+      {
+        "center_local_metres": {
+          "x": 0,
+          "y": 0.45,
+          "z": 1.7
+        },
+        "half_extents_metres": {
+          "x": 0.7,
+          "y": 0.04,
+          "z": 0.13
+        },
+        "identifier": "rear_wing"
+      }
+    ],
+    "contacts": {
+      "impact_friction_coefficient": 0.5,
+      "maximum_events_per_step": 128,
+      "maximum_iterations": 100,
+      "maximum_position_correction_metres": 0.001,
+      "maximum_supported_angular_speed_radians_per_second": 10,
+      "maximum_supported_speed_metres_per_second": 120,
+      "prediction_distance_metres": 0.001,
+      "restitution": 0.1,
+      "restitution_minimum_speed_metres_per_second": 1,
+      "velocity_tolerance_metres_per_second": 1e-06
+    },
+    "integration_owner": "rust_world_candidate",
+    "maximum_initial_overlap_metres": 0.05,
+    "physical_frequency_hertz": 120,
+    "road_query_extension_metres": 0.1,
+    "schema_version": 1,
+    "steering_rack_travel_metres": 0.02,
+    "suspension": {
+      "differentiation_step_metres": 0.0001,
+      "gravity_world_metres_per_second_squared": {
+        "x": 0,
+        "y": -9.80665,
+        "z": 0
+      },
+      "maximum_substep_seconds": 0.008333333333333333,
+      "tire_vertical_damping_newton_seconds_per_metre": [
+        1250,
+        1250,
+        1300,
+        1300
+      ],
+      "tire_vertical_stiffness_newtons_per_metre": [
+        144000,
+        144000,
+        153000,
+        153000
+      ],
+      "travel_stop_damping_newton_seconds_per_metre": [
+        1000,
+        1000,
+        1000,
+        1000
+      ],
+      "travel_stop_engagement_fraction": [
+        0.8,
+        0.8,
+        0.8,
+        0.8
+      ],
+      "travel_stop_stiffness_newtons_per_cubic_metre": [
+        100000000,
+        100000000,
+        100000000,
+        100000000
+      ]
+    }
+  }
+}

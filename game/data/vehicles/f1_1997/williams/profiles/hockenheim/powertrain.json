@@ -1,0 +1,145 @@
+{
+  "powertrain": {
+    "automatic_transmission": false,
+    "clutch_out_rpm_offset": 1100.0,
+    "constant_brake_ratio": 0.015,
+    "differential": {
+      "clutch_friction_coefficient": 0.09,
+      "clutches": 6.0,
+      "coast_ramp_angle_deg": 60.0,
+      "power_ramp_angle_deg": 65.0,
+      "preload_nm": 90.0,
+      "slip_transition_threshold_rad_s": 5.0
+    },
+    "downshift_blip_torque_fraction": 0.9,
+    "downshift_clutch_reengagement_seconds": 0.06,
+    "downshift_maximum_target_revolutions_per_minute_fraction": 0.96,
+    "downshift_minimum_interval_seconds": 0.18,
+    "downshift_rev_matching_enabled": true,
+    "final_drive": 4.65,
+    "front_torque_split": 0.0,
+    "gear_inertia": 0.014,
+    "gear_ratios": [
+      3.1,
+      2.4,
+      1.92,
+      1.57,
+      1.31,
+      1.12
+    ],
+    "handbrake_torque_fraction": 0.0,
+    "idle_disengagement_hysteresis_rpm": 150.0,
+    "idle_rpm": 3500.0,
+    "max_clutch_torque_ratio": 1.1,
+    "max_rpm": 15800.0,
+    "max_torque": 390.0,
+    "motor_moment": 0.1,
+    "reverse_ratio": 3.0,
+    "shift_time": 0.065,
+    "thermal": {
+      "engine_block_heat_capacity_joules_per_kelvin": 48000.0,
+      "engine_block_heat_fraction": 0.08,
+      "engine_to_oil_conductance_watts_per_kelvin": 420.0,
+      "engine_to_water_conductance_watts_per_kelvin": 900.0,
+      "exhaust_heat_fraction": 0.65,
+      "heat_generation_per_mechanical_power": 1.4,
+      "idle_heat_generation_watts": 18000.0,
+      "initial_engine_block_temperature_celsius": 100.0,
+      "initial_oil_temperature_celsius": 100.0,
+      "initial_water_temperature_celsius": 85.0,
+      "minimum_hot_engine_torque_fraction": 0.7,
+      "oil_cooling_duct": {
+        "air_specific_heat_joules_per_kilogram_kelvin": 1005.0,
+        "area_response_exponent": 1.15,
+        "base_cooling_conductance_watts_per_kelvin": 30.0,
+        "discharge_coefficient": 0.72,
+        "drag_coefficient": 0.65,
+        "heat_exchanger_conductance_watts_per_kelvin": 2500.0,
+        "maximum_inlet_area_square_meters": 0.05,
+        "opening": 0.35,
+        "pressure_recovery": 0.6
+      },
+      "oil_critical_temperature_celsius": 145.0,
+      "oil_heat_capacity_joules_per_kelvin": 13000.0,
+      "oil_heat_fraction": 0.07,
+      "oil_hot_derating_temperature_celsius": 130.0,
+      "oil_minimum_cold_engine_torque_fraction": 0.88,
+      "oil_optimal_maximum_temperature_celsius": 125.0,
+      "oil_optimal_minimum_temperature_celsius": 95.0,
+      "water_cooling_duct": {
+        "air_specific_heat_joules_per_kilogram_kelvin": 1005.0,
+        "area_response_exponent": 1.15,
+        "base_cooling_conductance_watts_per_kelvin": 60.0,
+        "discharge_coefficient": 0.72,
+        "drag_coefficient": 0.7,
+        "heat_exchanger_conductance_watts_per_kelvin": 4500.0,
+        "maximum_inlet_area_square_meters": 0.12,
+        "opening": 0.62,
+        "pressure_recovery": 0.65
+      },
+      "water_critical_temperature_celsius": 120.0,
+      "water_heat_capacity_joules_per_kelvin": 22000.0,
+      "water_heat_fraction": 0.2,
+      "water_hot_derating_temperature_celsius": 110.0,
+      "water_minimum_cold_engine_torque_fraction": 0.96,
+      "water_optimal_maximum_temperature_celsius": 105.0,
+      "water_optimal_minimum_temperature_celsius": 80.0
+    },
+    "torque_attack_rate_nm_s": 1100.0,
+    "torque_curve": [
+      [
+        0.0,
+        0.4230769230769231
+      ],
+      [
+        0.221519,
+        0.423077
+      ],
+      [
+        0.28481,
+        0.507692
+      ],
+      [
+        0.379747,
+        0.630769
+      ],
+      [
+        0.474684,
+        0.751282
+      ],
+      [
+        0.56962,
+        0.846154
+      ],
+      [
+        0.664557,
+        0.923077
+      ],
+      [
+        0.759494,
+        0.982051
+      ],
+      [
+        0.835443,
+        1.0
+      ],
+      [
+        0.886076,
+        0.976923
+      ],
+      [
+        0.924051,
+        0.944359
+      ],
+      [
+        0.962025,
+        0.884615
+      ],
+      [
+        1.0,
+        0.815385
+      ]
+    ],
+    "variable_drag_ratio": 0.075
+  }
+}

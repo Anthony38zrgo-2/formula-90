@@ -1,0 +1,2140 @@
+{
+  "absence_register": [
+    {
+      "contract_name": "GEO_WHEEL_<POSITION>_HUB",
+      "reason": "No existe malla de buje independiente; el buje forma parte de la malla de radios"
+    },
+    {
+      "contract_name": "GEO_WHEEL_<POSITION>_CENTER_LOCK_NUT",
+      "reason": "No existe malla independiente; la tuerca central es una regi\u00f3n de material de la malla TyreO"
+    },
+    {
+      "contract_name": "GEO_BRAKE_<POSITION>_DISC",
+      "reason": "No existe disco de freno modelado"
+    },
+    {
+      "contract_name": "GEO_BRAKE_<POSITION>_CALIPER",
+      "reason": "No existe pinza de freno modelada"
+    },
+    {
+      "contract_name": "GEO_BRAKE_<POSITION>_INBOARD_DUCT_COVER",
+      "reason": "No existe cubierta de conducto de freno"
+    },
+    {
+      "contract_name": "GEO_BRAKE_<POSITION>_DUCT",
+      "reason": "No existe conducto de freno independiente"
+    },
+    {
+      "contract_name": "GEO_FRONT_WING_UPPER_ELEMENT / INTERMEDIATE_ELEMENT",
+      "reason": "El aler\u00f3n delantero consta de una sola mitad por lado, sin elementos superiores separados"
+    },
+    {
+      "contract_name": "GEO_UNDERBODY_FLOOR_AND_DIFFUSER",
+      "reason": "El suelo y el difusor forman parte de la malla de carrocer\u00eda principal"
+    },
+    {
+      "contract_name": "GEO_EXHAUST_OUTLET_TUBE_LEFT / RIGHT",
+      "reason": "No hay tubos de escape independientes; esa zona pertenece al conjunto de motor"
+    },
+    {
+      "contract_name": "GEO_COCKPIT_DRIVER_SEAT",
+      "reason": "No existe asiento independiente; el habit\u00e1culo est\u00e1 integrado en la carrocer\u00eda principal"
+    },
+    {
+      "contract_name": "GEO_COCKPIT_HeadrestPadding",
+      "reason": "No existe reposacabezas independiente"
+    },
+    {
+      "contract_name": "GEO_REAR_WING_CENTRAL_SUPPORT",
+      "reason": "El soporte central del aler\u00f3n trasero no est\u00e1 separado de la carrocer\u00eda"
+    },
+    {
+      "contract_name": "GEO_ENGINE_COVER_REAR_CLOSURE",
+      "reason": "El cierre trasero del cap\u00f3 forma parte de la carrocer\u00eda principal"
+    }
+  ],
+  "contract_reference": "tools/blender/formula_one_2030_object_names.py",
+  "naming_notes": {
+    "contract_selector_limit": "is_wheel_object del contrato 2030 solo acepta el nombre exacto de componente; un adaptador Williams debe seleccionar por prefijo GEO_WHEEL_<POSITION>_ y no invocar is_wheel_object",
+    "mesh_data_shared_between_left_and_right": true,
+    "meshes_not_merged": true,
+    "paddle_sides": "GEO_STEERING_WHEEL_PADDLE_LEFT ocupa X -0.079 a -0.008 m y RIGHT X 0.008 a 0.079 m; -X es el lado izquierdo del coche, de modo que los nombres coinciden con el lado real despu\u00e9s del giro de 180 grados del control",
+    "wheel_pieces_per_corner": 7
+  },
+  "object_count": 64,
+  "operation": "Williams FW19 Hockenheim 1997 object name normalization",
+  "promotion": {
+    "candidate_blend": {
+      "path": "D:\\Formula90s\\scratch\\williams_step_two_object_names_20261017\\williams_fw19_hockenheim_1997_car_object_names_normalized.blend",
+      "sha256": "0d305d8db9207e677fc11e4f222d570b676ff5cf03eebd006e55faea078b22b9",
+      "size_bytes": 23675220,
+      "status": "Scratch candidate; not promoted to the variant"
+    },
+    "commands": [
+      "python \"D:\\Formula90s\\scratch\\williams_step_two_object_names_20261017\\build_object_name_mapping.py\"",
+      "\"C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe\" --background --factory-startup --python-exit-code 1 --python \"D:\\Formula90s\\scratch\\williams_step_two_object_names_20261017\\normalize_williams_object_names.py\" -- \"D:\\Formula90s\\scratch\\williams_step_two_object_names_20261017\\object_name_mapping.json\" \"D:\\Formula90s\\scratch\\williams_step_two_object_names_20261017\\rename_operations.json\" \"D:\\Formula90s\\game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve\\car/source/williams_fw19_hockenheim_1997_car.blend\" \"D:\\Formula90s\\scratch\\williams_step_two_object_names_20261017\\williams_fw19_hockenheim_1997_car_object_names_normalized.blend\"",
+      "\"C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe\" --background --factory-startup --python-exit-code 1 --python \"D:\\Formula90s\\scratch\\williams_step_two_object_names_20261017\\verify_normalized_asset.py\" -- \"D:\\Formula90s\\scratch\\williams_step_two_object_names_20261017\\object_name_mapping.json\" \"D:\\Formula90s\\scratch\\williams_step_two_object_names_20261017\\williams_fw19_hockenheim_1997_car_object_names_normalized.blend\"",
+      "python \"D:\\Formula90s\\scratch\\williams_step_two_object_names_20261017\\audit_name_consumers.py\""
+    ],
+    "promoted_by": "assistant",
+    "recorded_at_utc": "2026-10-17T18:24:22.488349+00:00",
+    "repository": {
+      "branch": "main-clean",
+      "build_head_parity": false,
+      "build_source": "304101829536cb63fb0c712fe4ae1020c4a130c0",
+      "head": "fbdae5d1f31beb8751e01a0c36bac3474506ff49",
+      "modified_paths": [
+        ".gitignore",
+        "game/BUILD_SOURCE",
+        "game/addons/formula90s/bin/formula90_core.dll",
+        "game/addons/formula90s/bin/formula90_core.windows.template_debug.x86_64.dll",
+        "game/addons/formula90s/bin/game_sim.dll",
+        "game/addons/formula90s/bin/game_sim.windows.template_debug.x86_64.dll",
+        "game/addons/formula90s/bin/libformula90s.windows.template_debug.x86_64.dll",
+        "game/addons/formula90s/bin/psx_art_plugin.dll",
+        "game/addons/formula90s/bin/psx_art_plugin.windows.template_debug.x86_64.dll",
+        "game/addons/formula90s/bin/vehicle_audio_engine.dll",
+        "game/addons/formula90s/bin/vehicle_audio_engine.windows.template_debug.x86_64.dll",
+        "game/addons/formula90s/bin/vehicle_physics_engine.windows.template_debug.x86_64.dll",
+        "game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/car/source/williams_fw19_hockenheim_1997_car.blend",
+        "game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/reports/authoring_source_promotion.json"
+      ],
+      "root": "D:\\Formula90s",
+      "status_entry_count": 433,
+      "untracked_entry_count": 419
+    },
+    "tools": [
+      {
+        "path": "scratch/williams_step_two_object_names_20261017/build_object_name_mapping.py",
+        "sha256": "2b4556deb0893abc6015031838b255ba9abd6a568e7cff200d22994d65f1eeae"
+      },
+      {
+        "path": "scratch/williams_step_two_object_names_20261017/normalize_williams_object_names.py",
+        "sha256": "47fba71e9c73379c2ff252289ea498542387ba4a5079999994ad588b702818ea"
+      },
+      {
+        "path": "scratch/williams_step_two_object_names_20261017/verify_normalized_asset.py",
+        "sha256": "c76b4ba634b927a4dc2817e4d61933affe4ac831f84a95dae453995aa237e74d"
+      },
+      {
+        "path": "scratch/williams_step_two_object_names_20261017/audit_name_consumers.py",
+        "sha256": "5f3d319109096b8fde53f5586e815d3830f43c421150dba1608176aff0d05b7b"
+      },
+      {
+        "path": "scratch/williams_step_two_object_names_20261017/blender_mcp_bridge.py",
+        "sha256": "0b4b0ba5d569aa4be718b6d37002aea13f80ad1d57356201e8b1061c896213ca"
+      }
+    ],
+    "user_request": "Allow the three reports to be versioned and promote the Step 1 and Step 2 evidence",
+    "validation_files": {
+      "consumer_audit.json": {
+        "path": "D:\\Formula90s\\scratch\\williams_step_two_object_names_20261017\\consumer_audit.json",
+        "sha256": "df99ad7ac7b089a4c5216065ba69f3d6ffc5831950b97ca123e4269e6b0b6ddd"
+      },
+      "normalization_validation.json": {
+        "path": "D:\\Formula90s\\scratch\\williams_step_two_object_names_20261017\\normalization_validation.json",
+        "sha256": "dafa2f0ef714a843efd9e265488515fa414e29a86b8a6f0b2f7f95966a8d4a4c"
+      },
+      "normalized_asset_verification.json": {
+        "path": "D:\\Formula90s\\scratch\\williams_step_two_object_names_20261017\\normalized_asset_verification.json",
+        "sha256": "92237ef0da512e321fc14ccb0cd13b300688d18cc98f8c162ef5945c71885e62"
+      }
+    }
+  },
+  "recorded_at_utc": "2026-10-17T17:58:10.307706+00:00",
+  "records": [
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_BODYWORK_MAIN_BODY_AND_COCKPIT_SHELL",
+      "fingerprint": {
+        "position_sha256": "1effd565675632bb4b60be75c663959533f2dee4851ebb096def6a5cb441aead",
+        "topology_sha256": "1fa8de430a3938b47f2f1d71474e39be2e1592c98531133ba013e713c6309467",
+        "triangle_count": 36273,
+        "uv_sha256": "bc16cb4b6d18d36484415c539316e8ffd45bd64b7e8aab546dbc431af096a455",
+        "vertex_count": 24824
+      },
+      "function": "Carrocer\u00eda central completa con abertura de cockpit y superficies interiores; no es un asiento",
+      "materials": [
+        "cockpit_damage.tGA:cockpit_damage.tga",
+        "fw19_s.tGA:fw19_s.tga",
+        "fw19_cf.tGA:fw19_cf.tga",
+        "fw19_1.tGA:fw19_1.tga",
+        "fw19_b.tGA:fw19_b.tga",
+        "fw19_m.tGA:fw19_m.tga",
+        "fw19_d.tGA:fw19_d.tga",
+        "fw19_int.tGA:fw19_int.tga"
+      ],
+      "original_name": "cockpit",
+      "rationale": "Caja envolvente de 1.40 x 3.44 x 1.16 m sobre casi toda la longitud; ocho materiales de carrocer\u00eda, interior y da\u00f1os",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.701089,
+          1.345404,
+          0.640612
+        ],
+        "minimum": [
+          -0.701091,
+          -2.090508,
+          -0.513751
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_BODYWORK_NOSE_CONE",
+      "fingerprint": {
+        "position_sha256": "87da7367db5fda8a64967bb1d694291963ce1e1604b99979ca20000d163bb1b3",
+        "topology_sha256": "27c55a1fd724835724f9d5b8f013dc3b9d6be9ae657f6257d300e9fd1d44b00f",
+        "triangle_count": 1360,
+        "uv_sha256": "344c5f4079509957def78add0120abb74762652f69372c27171322cc4a44f499",
+        "vertex_count": 982
+      },
+      "function": "Punta delantera estrecha entre el morro y el aler\u00f3n delantero",
+      "materials": [
+        "cockpit_damage.tGA:cockpit_damage.tga",
+        "fw19_1.tGA:fw19_1.tga",
+        "fw19_b.tGA:fw19_b.tga"
+      ],
+      "original_name": "nose_cone",
+      "rationale": "Extremo delantero en Y 1.345-2.140 m, 0.32 m de ancho, materiales de librea delantera",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.161031,
+          2.139685,
+          0.062342
+        ],
+        "minimum": [
+          -0.16103,
+          1.344771,
+          -0.429435
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_ENGINE_AND_GEARBOX_ASSEMBLY",
+      "fingerprint": {
+        "position_sha256": "60b7be23de51b481a56e9c659217f06d84c5cd77d5bfde744ba03a4658059fe0",
+        "topology_sha256": "1b4c644bf0046e742c6a7248f8276c6d2d909bb0859d664e1207a3c68a57b6ec",
+        "triangle_count": 876,
+        "uv_sha256": "0821bf93938384e028976e47610cc0966e071a9d5d22a4a4343af6edf28ca943",
+        "vertex_count": 557
+      },
+      "function": "Bloque central trasero de motor y caja de cambios",
+      "materials": [
+        "cockpit_damage.tGA:cockpit_damage.tga",
+        "fw19_s.tGA:fw19_s.tga",
+        "fw19_cf.tGA:fw19_cf.tga"
+      ],
+      "original_name": "engine",
+      "rationale": "S\u00f3lido de 0.12 x 0.53 x 0.33 m en Y -2.31 a -1.77 m; solo 21 por ciento de sus v\u00e9rtices queda dentro de la carrocer\u00eda y su distancia media a la superficie es 9.6 cm",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.061692,
+          -1.772665,
+          -0.026802
+        ],
+        "minimum": [
+          -0.06169,
+          -2.304584,
+          -0.359416
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_SIDEPOD_FRONT_FLOW_DEFLECTOR_LEFT",
+      "fingerprint": {
+        "position_sha256": "065f96489ac429dd1e268df52f0203a15af2709078da4a290a5628200d160a9c",
+        "topology_sha256": "a24273e152d5f4cca47e6fcd8bb2fcae960e42a2bc1593ac16e1061eba199861",
+        "triangle_count": 1762,
+        "uv_sha256": "d81de00c5ebf84465dd73744661c4fc7017a26df793f00d6bbd860db5eb33f9c",
+        "vertex_count": 1267
+      },
+      "function": "Deflector de flujo delantero del lateral izquierdo",
+      "materials": [
+        "fw19_s.tGA:fw19_s.tga",
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "original_name": "left_barge_board",
+      "rationale": "L\u00e1mina vertical de X -0.640 a -0.137 m junto al lateral, material de librea",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          -0.137345,
+          0.815392,
+          -0.045025
+        ],
+        "minimum": [
+          -0.639946,
+          -0.314268,
+          -0.488027
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_SIDEPOD_FRONT_FLOW_DEFLECTOR_RIGHT",
+      "fingerprint": {
+        "position_sha256": "30cbcf641eec9fccee8e1c0dfdea6de1144123fdf988cd70a05cff2c3f264d38",
+        "topology_sha256": "a961cdc6bc87eda929a76b27ca21fd44779521db537ba7fbe4f1f9fdd610b6e7",
+        "triangle_count": 1762,
+        "uv_sha256": "95e1ab587610b8e35bf7c586079e073227ace5ad8f05fc72cfdcca497d548085",
+        "vertex_count": 1264
+      },
+      "function": "Deflector de flujo delantero del lateral derecho",
+      "materials": [
+        "fw19_s.tGA:fw19_s.tga",
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "original_name": "right_barge_board",
+      "rationale": "L\u00e1mina vertical de X 0.137 a 0.640 m junto al lateral, material de librea",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.639946,
+          0.815391,
+          -0.045025
+        ],
+        "minimum": [
+          0.137345,
+          -0.314268,
+          -0.488027
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_FRONT_WING_MAIN_ELEMENT_LEFT",
+      "fingerprint": {
+        "position_sha256": "cd68af698657cd4fbe82d71f4942ac21ec30e430501b6ea4d360f952d5050e9d",
+        "topology_sha256": "e69b2b9fd642c333bc12db0e7d4f28d995990b0ed984f50de4e77716f7a23925",
+        "triangle_count": 684,
+        "uv_sha256": "3b75bee0ac71b862afa87fc34f27994c812af28626305f6bc689730a6007251d",
+        "vertex_count": 460
+      },
+      "function": "Mitad izquierda del plano principal del aler\u00f3n delantero",
+      "materials": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "original_name": "left_front_wing",
+      "rationale": "Se extiende de X -0.645 a 0.000 m en el plano del aler\u00f3n delantero",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          1e-06,
+          1.9767,
+          -0.292828
+        ],
+        "minimum": [
+          -0.644839,
+          1.52174,
+          -0.456446
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_FRONT_WING_MAIN_ELEMENT_RIGHT",
+      "fingerprint": {
+        "position_sha256": "4740bf6f1e144562c7492cb94cb8d8865fc99691be39f81aa9a5956e06c19997",
+        "topology_sha256": "d90785a745e4d205eefbd7b671ed57ce1f81ea4c2857bfc2143c11234baa6f7f",
+        "triangle_count": 684,
+        "uv_sha256": "95f3e09592f3dff8a4b6b198890bee72f08743670fa5f48e83d7f2d59b83f79f",
+        "vertex_count": 460
+      },
+      "function": "Mitad derecha del plano principal del aler\u00f3n delantero",
+      "materials": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "original_name": "right_front_wing",
+      "rationale": "Se extiende de X 0.000 a 0.645 m en el plano del aler\u00f3n delantero",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.644841,
+          1.9767,
+          -0.292827
+        ],
+        "minimum": [
+          1e-06,
+          1.521739,
+          -0.456446
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_FRONT_WING_ENDPLATE_LEFT",
+      "fingerprint": {
+        "position_sha256": "839940c1fefb62a049542fe2f1c39a9c58ee5e99386eec0f726f6751ed9f6d77",
+        "topology_sha256": "843405908e1e5cc7d5b6e172d964e8a511db7e963d08cb10d31e3db2c100f008",
+        "triangle_count": 1244,
+        "uv_sha256": "5ec482c13d0728d0fe329ffd4d821239c5e49ba244e835852d8e495b686d3948",
+        "vertex_count": 904
+      },
+      "function": "Placa vertical exterior del aler\u00f3n delantero izquierdo",
+      "materials": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "original_name": "left_front_fin",
+      "rationale": "Placa de 3 cm de grosor en X -0.671 a -0.640 m, borde exterior del aler\u00f3n",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          -0.640139,
+          1.992133,
+          -0.288939
+        ],
+        "minimum": [
+          -0.671263,
+          1.51328,
+          -0.494693
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_FRONT_WING_ENDPLATE_RIGHT",
+      "fingerprint": {
+        "position_sha256": "bba1b709bbfb29bb71cd4020956b1bdacbbd54619b45854a2cbd1956a3264b8a",
+        "topology_sha256": "f677cd2dead99baa6cefa0c35f7db10f7222568d841254676328e6965e7f8e0c",
+        "triangle_count": 1254,
+        "uv_sha256": "d4e7aca52efa808e48d1693657ea153b0e18d3e1dce4b9f5cd93a01165a93ba7",
+        "vertex_count": 904
+      },
+      "function": "Placa vertical exterior del aler\u00f3n delantero derecho",
+      "materials": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "original_name": "right_front_fin",
+      "rationale": "Placa de 3 cm de grosor en X 0.640 a 0.671 m, borde exterior del aler\u00f3n",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.671265,
+          1.992132,
+          -0.288939
+        ],
+        "minimum": [
+          0.640141,
+          1.513279,
+          -0.494692
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_REAR_WING_UPPER_ELEMENT",
+      "fingerprint": {
+        "position_sha256": "9f62ab9cd53e0744030698e83d0f0e3d0e6f8a0c551917ee3c5fd53a86b6b5d9",
+        "topology_sha256": "f8e93a95a577bb3a2c599eb79c0291892b9b0599b16f7c0ee3a14d57076a0ddc",
+        "triangle_count": 252,
+        "uv_sha256": "8f3d9c88de31646f58be78cdef7a0f01e0ada6cd806f9039656b4b074b701c2a",
+        "vertex_count": 281
+      },
+      "function": "Elemento superior del aler\u00f3n trasero",
+      "materials": [
+        "fw19_cf.tGA:fw19_cf.tga",
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "original_name": "upper_rear_wing",
+      "rationale": "Plano de 0.98 m de ancho en Z 0.224-0.284 m sobre la caja del embudo trasero",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.491436,
+          -2.040943,
+          0.284197
+        ],
+        "minimum": [
+          -0.491437,
+          -2.302192,
+          0.223618
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_REAR_WING_LOWER_BEAM_ELEMENT",
+      "fingerprint": {
+        "position_sha256": "76cc1d96ac5cd2b00053e95565edfe92b9dc6efda098d1b7a6f54db656a0f90f",
+        "topology_sha256": "eeb53938dcec857b2ccaff90786c66b577549f1c93ad11f3880f8014b03fde6f",
+        "triangle_count": 576,
+        "uv_sha256": "5ee958b55f34995b107bce4210d62ed153f21948e5dd7c6b26f702426c1cacf1",
+        "vertex_count": 410
+      },
+      "function": "Elemento de viga inferior del aler\u00f3n trasero",
+      "materials": [
+        "fw19_cf.tGA:fw19_cf.tga",
+        "fw19_r.tGA:fw19_r.tga"
+      ],
+      "original_name": "lower_rear_wing",
+      "rationale": "Plano de 0.98 m de ancho en Z -0.139 a -0.030 m bajo el elemento superior",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.491322,
+          -2.120148,
+          -0.029869
+        ],
+        "minimum": [
+          -0.491325,
+          -2.302133,
+          -0.139112
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_REAR_WING_ENDPLATE_LEFT",
+      "fingerprint": {
+        "position_sha256": "a42ca9442ffabf68b9d28c04ace603b5338835397399a0fcc6263f3a5be216a4",
+        "topology_sha256": "839b34d13714b792ef9b1fa61ea43bdc9ff681ef891d9dd5188e548d59b1f0f8",
+        "triangle_count": 1329,
+        "uv_sha256": "a57c29275e31144e8d0e1118a611dc5bb39d81979805be99b761150e9949cbf0",
+        "vertex_count": 1586
+      },
+      "function": "Placa lateral izquierda del aler\u00f3n trasero",
+      "materials": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "original_name": "left_rear_fin",
+      "rationale": "Placa de 5 mm de grosor en X -0.495 a -0.490 m, unida al aler\u00f3n trasero",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          -0.489514,
+          -1.951821,
+          0.286938
+        ],
+        "minimum": [
+          -0.495371,
+          -2.304482,
+          -0.196106
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_REAR_WING_ENDPLATE_RIGHT",
+      "fingerprint": {
+        "position_sha256": "c14cbfb106f514022822c3a58b459a278134b0b107478c97db76f3dd9a36bd8a",
+        "topology_sha256": "c35cf4188d93fcb8b84d8ece4752201f0054b603e3819a5bcee7f0d68f0ae8af",
+        "triangle_count": 1319,
+        "uv_sha256": "316df5667d6e388352b662eb83d2a5ce1e816429bab8335d69ed53d446c10176",
+        "vertex_count": 1579
+      },
+      "function": "Placa lateral derecha del aler\u00f3n trasero",
+      "materials": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "original_name": "right_rear_fin",
+      "rationale": "Placa de 5 mm de grosor en X 0.490 a 0.495 m, unida al aler\u00f3n trasero",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.495368,
+          -1.951821,
+          0.286938
+        ],
+        "minimum": [
+          0.489511,
+          -2.304482,
+          -0.196106
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_SUSPENSION_FRONT_LINK_ASSEMBLY_LEFT",
+      "fingerprint": {
+        "position_sha256": "85a7809bca13de82f9e20b80e30588e87af5d84cc0a38a7a72d43b9fc418103a",
+        "topology_sha256": "16df9b136184d21a3d918d87839c4f3a0359853b0b816207a0fd986decddfcbf",
+        "triangle_count": 1830,
+        "uv_sha256": "082b836cb088afd5e7fb6bc655363e6122f3108a4b7479cc848ed1860ed16179",
+        "vertex_count": 1143
+      },
+      "function": "Conjunto de suspensi\u00f3n delantera izquierda",
+      "materials": [
+        "cockpit_damage.tGA:cockpit_damage.tga",
+        "fw19_s.tGA:fw19_s.tga",
+        "fw19_cf.tGA:fw19_cf.tga"
+      ],
+      "original_name": "left_front_suspension",
+      "rationale": "Desde X -0.901 m hasta el centro, entre Y 0.493 y 1.336 m, en la esquina delantera izquierda",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          -0.001271,
+          1.335652,
+          0.03744
+        ],
+        "minimum": [
+          -0.900519,
+          0.493488,
+          -0.395135
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_SUSPENSION_FRONT_LINK_ASSEMBLY_RIGHT",
+      "fingerprint": {
+        "position_sha256": "7fb90bdfb59cc6f6afbb180e88491d8418a4c37e106dff15457513830beb01f7",
+        "topology_sha256": "74627b8574a22a60aa203ee3e23ffa9c932e52c7173e0b0bd6c2c3e1a852af86",
+        "triangle_count": 1830,
+        "uv_sha256": "c6a48ce8a10ccacdac9f7e586b3ab758049d9b242e36941e6719caa5495a3f57",
+        "vertex_count": 1143
+      },
+      "function": "Conjunto de suspensi\u00f3n delantera derecha",
+      "materials": [
+        "cockpit_damage.tGA:cockpit_damage.tga",
+        "fw19_s.tGA:fw19_s.tga",
+        "fw19_cf.tGA:fw19_cf.tga"
+      ],
+      "original_name": "right_front_suspension",
+      "rationale": "Desde X 0.901 m hasta el centro, entre Y 0.493 y 1.336 m, en la esquina delantera derecha",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.900519,
+          1.335652,
+          0.03744
+        ],
+        "minimum": [
+          0.001271,
+          0.493488,
+          -0.395135
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_SUSPENSION_REAR_LINK_ASSEMBLY_LEFT",
+      "fingerprint": {
+        "position_sha256": "04ef3a2e6d8b6c3c09bbc9ae0a3a41422deb623000ffc51d6fdff6ec0a00957c",
+        "topology_sha256": "82117d3c1d6e89b300cdadb4df18385bd2dc21c24bb51a091cd4bf29bace320c",
+        "triangle_count": 3703,
+        "uv_sha256": "b23ce3c645b04eb3e1fe7e62c51f5996f21498c780d729486c797652800110fa",
+        "vertex_count": 2431
+      },
+      "function": "Conjunto de suspensi\u00f3n trasera izquierda",
+      "materials": [
+        "cockpit_damage.tGA:cockpit_damage.tga",
+        "fw19_cf.tGA:fw19_cf.tga",
+        "fw19_b.tGA:fw19_b.tga",
+        "fw19_g.tGA:fw19_g.tga"
+      ],
+      "original_name": "left_rear_suspension",
+      "rationale": "Desde X -0.789 m hasta el centro, entre Y -1.927 y -1.363 m, en la esquina trasera izquierda",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          -0.051275,
+          -1.363244,
+          -0.057963
+        ],
+        "minimum": [
+          -0.788673,
+          -1.926822,
+          -0.392021
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_SUSPENSION_REAR_LINK_ASSEMBLY_RIGHT",
+      "fingerprint": {
+        "position_sha256": "c7c42af8284eb0669fb858d7b17ef9ae3b95817ef10474cd39d7c0f1f52fa385",
+        "topology_sha256": "a4b88bc25dea9cde3384b34a0e851d992853285fd39ebe67e5d4e6343451d9aa",
+        "triangle_count": 3703,
+        "uv_sha256": "e19eeee7fe23e84e80cdaafc2c15237849bc5d765d8f4000b1682fe493c416cf",
+        "vertex_count": 2431
+      },
+      "function": "Conjunto de suspensi\u00f3n trasera derecha",
+      "materials": [
+        "cockpit_damage.tGA:cockpit_damage.tga",
+        "fw19_cf.tGA:fw19_cf.tga",
+        "fw19_b.tGA:fw19_b.tga",
+        "fw19_g.tGA:fw19_g.tga"
+      ],
+      "original_name": "right_rear_suspension",
+      "rationale": "Desde X 0.789 m hasta el centro, entre Y -1.927 y -1.363 m, en la esquina trasera derecha",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.788673,
+          -1.363244,
+          -0.057963
+        ],
+        "minimum": [
+          0.051275,
+          -1.926822,
+          -0.392021
+        ]
+      }
+    },
+    {
+      "confidence": "confirmed_by_user_20261017",
+      "export_group": "chassis",
+      "final_name": "GEO_BODYWORK_SIDEPOD_SURFACE_PANEL_LEFT",
+      "fingerprint": {
+        "position_sha256": "d18a5593ab31270688d41664aa8fd9ad7c6a11c575f7fa34b445aa31d7aae098",
+        "topology_sha256": "7e932280248b782d4b87f825e256fcea6bc19eee2d569a78aadd3d0efbd9c852",
+        "triangle_count": 56,
+        "uv_sha256": "1d39fd6f90ddf42de0a77bd6afeb49116a2d6199e1edb90aa318c6184b4573b8",
+        "vertex_count": 45
+      },
+      "function": "Panel elevado sobre la superficie del lateral izquierdo; posible labio de entrada de aire",
+      "materials": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "original_name": "left_sidepod",
+      "rationale": "45 v\u00e9rtices y 56 tri\u00e1ngulos, 8.5 x 13.0 x 8.6 cm, 8 mm por encima de la carrocer\u00eda con normales alineadas con ella; el volumen del lateral pertenece a la carrocer\u00eda principal",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          -0.218301,
+          -0.408244,
+          0.079227
+        ],
+        "minimum": [
+          -0.303114,
+          -0.538567,
+          -0.007135
+        ]
+      }
+    },
+    {
+      "confidence": "confirmed_by_user_20261017",
+      "export_group": "chassis",
+      "final_name": "GEO_BODYWORK_SIDEPOD_SURFACE_PANEL_RIGHT",
+      "fingerprint": {
+        "position_sha256": "cb9200b6a8cf35caf82637337e33dc033a20a5ec84d3cc7e11f71a4fcd37dbea",
+        "topology_sha256": "bd97448bfac301b319a7e9eb7b165ab78e2b244b957015235596fc139074e395",
+        "triangle_count": 56,
+        "uv_sha256": "290738852ed942a4935fd871d62708fbddffadbae935edc1d67fb1738d00f304",
+        "vertex_count": 45
+      },
+      "function": "Panel elevado sobre la superficie del lateral derecho; posible labio de entrada de aire",
+      "materials": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "original_name": "right_sidepod",
+      "rationale": "45 v\u00e9rtices y 56 tri\u00e1ngulos, 8.5 x 13.0 x 8.6 cm, 8 mm por encima de la carrocer\u00eda con normales alineadas con ella; el volumen del lateral pertenece a la carrocer\u00eda principal",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.303114,
+          -0.408244,
+          0.079227
+        ],
+        "minimum": [
+          0.218301,
+          -0.538567,
+          -0.007135
+        ]
+      }
+    },
+    {
+      "confidence": "confirmed_by_user_20261017",
+      "export_group": "chassis",
+      "final_name": "GEO_COCKPIT_INSERT_RIGHT",
+      "fingerprint": {
+        "position_sha256": "5cc96ecb31d707f94363fa1958cc8efafc04e4fb50ce8cffcd0204526004f94a",
+        "topology_sha256": "1c790c4c8817b1e527fbe6062f3017187146554453d00d80014d417a40064ae1",
+        "triangle_count": 588,
+        "uv_sha256": "6015357d19728c2610b12dbd03817bc6c96ef786ceac3a60f5602f75fbfe692d",
+        "vertex_count": 350
+      },
+      "function": "Peque\u00f1o panel interior a la derecha, detr\u00e1s de la posici\u00f3n de conducci\u00f3n",
+      "materials": [
+        "fw19_s.tGA:fw19_s.tga"
+      ],
+      "original_name": "z_cockpit_insert",
+      "rationale": "Panel de 3.3 x 2.4 x 0.45 cm en X 0.121-0.154 m y Y -0.614 a -0.590 m, solo en el lado derecho, con normales mixtas y 7 mm de separaci\u00f3n media de la carrocer\u00eda",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.153759,
+          -0.590435,
+          0.131702
+        ],
+        "minimum": [
+          0.120865,
+          -0.614354,
+          0.127223
+        ]
+      }
+    },
+    {
+      "confidence": "confirmed_by_user_20261017",
+      "export_group": "chassis",
+      "final_name": "GEO_COCKPIT_VISOR",
+      "fingerprint": {
+        "position_sha256": "879182f5bab014109ec0104a1c59269104e44acf1b52c41f038e1210d84c2a63",
+        "topology_sha256": "485773b418ae84b55daf40934070a058131dc56d5b13705614ec7f3550061bb6",
+        "triangle_count": 130,
+        "uv_sha256": "cdc400cb0079efa6aec69f1b08ebdc80e4416912a17cb7af248029623a23325d",
+        "vertex_count": 130
+      },
+      "function": "Pantalla curva sobre el tablero delante del puesto de conducci\u00f3n",
+      "materials": [
+        "fw19_m.tGA:fw19_m.tga"
+      ],
+      "original_name": "z_cockpit_visor",
+      "rationale": "Superficie curva de 36.0 x 13.8 x 8.2 cm en Y 0.268-0.406 m, justo delante del volante, 1.1 cm sobre la carrocer\u00eda",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.180123,
+          0.406477,
+          0.109922
+        ],
+        "minimum": [
+          -0.180123,
+          0.268377,
+          0.028084
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_COCKPIT_MIRROR_LEFT",
+      "fingerprint": {
+        "position_sha256": "8260792955ecb3be4678c9524cd172151abe4eeeac81ab090f86bb3d8e6e01f9",
+        "topology_sha256": "21334e4fa8ede69757b4aaaa48aeacdd0ddfa70616b06a8f00e2fe2e1a16ce4e",
+        "triangle_count": 24,
+        "uv_sha256": "bb0f458fcddf8a7e55189f37ed3936fab2a72bbc8fe94d96a1692baa06762d6b",
+        "vertex_count": 21
+      },
+      "function": "Superficie reflectante del espejo izquierdo",
+      "materials": [
+        "fw19_m.tGA:fw19_m.tga"
+      ],
+      "original_name": "z_cockpit_left_mirror",
+      "rationale": "Plano de 21 v\u00e9rtices en X -0.382 a -0.286 m con material de espejo; la carcasa y el soporte pertenecen a la carrocer\u00eda principal",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          -0.28562,
+          0.165667,
+          0.111672
+        ],
+        "minimum": [
+          -0.38229,
+          0.138169,
+          0.063458
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_COCKPIT_MIRROR_RIGHT",
+      "fingerprint": {
+        "position_sha256": "f910cafc2c2876bf3a877c093465788538c014b73b817c74ac426980d2569521",
+        "topology_sha256": "85d553044423407878a403ba1fbef1d2462db56f98e81655b519f13cb9137087",
+        "triangle_count": 24,
+        "uv_sha256": "bd7f54cdca1099459ead20f6db36acd24d33ca9b5e650bfd71027fec540304a4",
+        "vertex_count": 21
+      },
+      "function": "Superficie reflectante del espejo derecho",
+      "materials": [
+        "fw19_m.tGA:fw19_m.tga"
+      ],
+      "original_name": "z_cockpit_right_mirror",
+      "rationale": "Plano de 21 v\u00e9rtices en X 0.286 a 0.382 m con material de espejo; la carcasa y el soporte pertenecen a la carrocer\u00eda principal",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.38229,
+          0.165666,
+          0.111672
+        ],
+        "minimum": [
+          0.28562,
+          0.138169,
+          0.063458
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_REAR_SAFETY_LIGHT",
+      "fingerprint": {
+        "position_sha256": "3b2ca6193977c3f17594632560b18f36a3336801b60903c19eea63ff439abe14",
+        "topology_sha256": "4fe692ccbf8954d5e6a280d843b76c56f9383857547315f6f5d7f09c052c842f",
+        "triangle_count": 12,
+        "uv_sha256": "383fffa166fffae31519c58897f1b29622ae6c1120745a09b0bd9994275f804d",
+        "vertex_count": 14
+      },
+      "function": "Luz de seguridad trasera",
+      "materials": [
+        "cockpit_damage.tGA:cockpit_damage.tga"
+      ],
+      "original_name": "rear_light_on",
+      "rationale": "Panel de 11 x 1 x 10 cm en la cara trasera del veh\u00edculo, Y -2.283 m",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.055927,
+          -2.283188,
+          -0.038369
+        ],
+        "minimum": [
+          -0.05593,
+          -2.283338,
+          -0.137498
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_STEERING_COLUMN_SHAFT",
+      "fingerprint": {
+        "position_sha256": "22c075b50da3275a850107a04be367d02c980f62652388e5ff577b304bc4b660",
+        "topology_sha256": "5cf3c1879a577ad4e0aeff7e2e45caffc9188f6027b628010cf704999b0fb0e4",
+        "triangle_count": 124,
+        "uv_sha256": "34991fa7a9ecb9910382a819e147f83c46600003869e0eee4d5ea50f06524274",
+        "vertex_count": 64
+      },
+      "function": "Columna visible de direcci\u00f3n",
+      "materials": [
+        "Williams steering column charcoal metal"
+      ],
+      "original_name": "Williams visible steering column",
+      "rationale": "Cilindro de 64 v\u00e9rtices entre Y 0.335 y 0.462 m en el eje del volante, material met\u00e1lico propio",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.013,
+          0.462032,
+          -0.002
+        ],
+        "minimum": [
+          -0.013,
+          0.334593,
+          -0.028
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_left",
+      "final_name": "GEO_WHEEL_FRONT_LEFT_TIRE",
+      "fingerprint": {
+        "position_sha256": "75c4c7636dcf96e2fdcc1452db5471054295fb680284f01c3c0f443308bb9c47",
+        "topology_sha256": "c09e1811687e67405f93db76e72bf836f3b0e79f59173c754a0059ea40973c23",
+        "triangle_count": 1152,
+        "uv_sha256": "9baddf0d3512e937689a498faf82af6be401e519b9ea068c6ba0642db0ed0a68",
+        "vertex_count": 650
+      },
+      "function": "Banda de rodadura del neum\u00e1tico de la rueda front_left",
+      "materials": [
+        "michelin_tread_0_right_0.tGA:michelin_tread_0_right_0.tga"
+      ],
+      "original_name": "wheel_front_left_F_wheel_R_Tread",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          -0.785525,
+          1.458941,
+          0.085249
+        ],
+        "minimum": [
+          -1.024138,
+          0.835043,
+          -0.53865
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_left",
+      "final_name": "GEO_WHEEL_FRONT_LEFT_TIRE_SIDEWALL_INBOARD",
+      "fingerprint": {
+        "position_sha256": "69b2403bbd1eeecdc6aafc57d6b0ea014e860a84653b18aecbefd5b1b7720e7f",
+        "topology_sha256": "048cb37bc3f5734bbfa7a9d2e9920222d8eeb2aac0d70678b24ce1ca8498c770",
+        "triangle_count": 800,
+        "uv_sha256": "260581c514f38648a248ed020239866d04c93f9ec8ac9a36e8c22932612323c6",
+        "vertex_count": 448
+      },
+      "function": "Costado interior del neum\u00e1tico de la rueda front_left",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_front_left_F_wheel_R_TyreI",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          -0.751048,
+          1.443142,
+          0.06945
+        ],
+        "minimum": [
+          -0.785525,
+          0.850842,
+          -0.522851
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_left",
+      "final_name": "GEO_WHEEL_FRONT_LEFT_TIRE_SIDEWALL_OUTBOARD",
+      "fingerprint": {
+        "position_sha256": "bb2e44fc56c9917a6c248dfa20669e9515330a66b89cb911246f23dfa8c9468f",
+        "topology_sha256": "11cd778dfc5ec0c5bed97ded1ae96b29b37294e022b2230cd49bd2473bed6eda",
+        "triangle_count": 2216,
+        "uv_sha256": "7e020b661144b1687fa2bda01d12b37470a06bcea483e46285db4f0987245255",
+        "vertex_count": 1296
+      },
+      "function": "Costado exterior del neum\u00e1tico; su segundo material aporta el centro de rueda de la rueda front_left",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga",
+        "nut_center.tGA:nut_center.tga"
+      ],
+      "original_name": "wheel_front_left_F_wheel_R_TyreO",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          -0.979979,
+          1.443142,
+          0.06945
+        ],
+        "minimum": [
+          -1.058589,
+          0.850842,
+          -0.522851
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_left",
+      "final_name": "GEO_WHEEL_FRONT_LEFT_RIM_AND_SPOKES",
+      "fingerprint": {
+        "position_sha256": "8e0d10938a1f36138d5db1d39de19ba9424130b4fb84453f7cdc8366efc29b8f",
+        "topology_sha256": "cff4f879f305636df3e1f180537410fea4b81571932395b72d93f926c222f13f",
+        "triangle_count": 1456,
+        "uv_sha256": "ac3875f8c42a063edf54dba128b7352d817faa576047c0acedfc6db663d10993",
+        "vertex_count": 805
+      },
+      "function": "Llanta con radios de la rueda front_left",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_front_left_F_wheel_R_Spoke",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          -0.955987,
+          1.28635,
+          -0.087342
+        ],
+        "minimum": [
+          -1.003157,
+          1.007633,
+          -0.366059
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_left",
+      "final_name": "GEO_WHEEL_FRONT_LEFT_RIM_BARREL",
+      "fingerprint": {
+        "position_sha256": "f77ce1b2981f9035c4074c0bf7868374a64f40f32700e526f48f6f8f8d25ee40",
+        "topology_sha256": "7e015388a4190277feb06ab66d69293f53ca24a3e49a269211af6de782fe0738",
+        "triangle_count": 640,
+        "uv_sha256": "752eaaacd7611c744f0b03196ec4ac59ea932d6bf58cb66cbb1bc9b536879c8b",
+        "vertex_count": 384
+      },
+      "function": "Barrel de llanta de la rueda front_left",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_front_left_F_wheel_R_SideRim",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          -0.752348,
+          1.323836,
+          -0.049856
+        ],
+        "minimum": [
+          -1.05729,
+          0.970148,
+          -0.403545
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_left",
+      "final_name": "GEO_WHEEL_FRONT_LEFT_RIM_BARREL_INBOARD",
+      "fingerprint": {
+        "position_sha256": "ca0380072f2b5eb4935e7601cba21cf46dee60c7add8aacd1e915319dbacae78",
+        "topology_sha256": "bbc92ad321b2064aa54b2383337a04a05d20cce627cbbd8761afe8686fad146c",
+        "triangle_count": 256,
+        "uv_sha256": "1c5e4ef81fd7f9fa90cb0d24eccd96dbdd838a27c9a675aa62136f1f7b4a7c7b",
+        "vertex_count": 160
+      },
+      "function": "Barrel interior de llanta de la rueda front_left",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_front_left_F_wheel_R_InnerRim",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          -0.754871,
+          1.306636,
+          -0.067057
+        ],
+        "minimum": [
+          -0.970603,
+          0.987348,
+          -0.386345
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_left",
+      "final_name": "GEO_WHEEL_FRONT_LEFT_RIM_BARREL_OUTBOARD",
+      "fingerprint": {
+        "position_sha256": "32f1497133dc6586bbf53a057451d4603e05d08160411a85ee898147ad64ef24",
+        "topology_sha256": "e4087ed825cc68c3cb0d99db40abd0dfef1ba8c7994d5c843c87346d17952f02",
+        "triangle_count": 320,
+        "uv_sha256": "84f548e72a25c7c0b7729a32a48ec625e8dc77a00e581593da47648e5eef8c9f",
+        "vertex_count": 256
+      },
+      "function": "Barrel exterior de llanta de la rueda front_left",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_front_left_F_wheel_R_OuterRim",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          -0.970603,
+          1.306636,
+          -0.067057
+        ],
+        "minimum": [
+          -1.054767,
+          0.987348,
+          -0.386345
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_right",
+      "final_name": "GEO_WHEEL_FRONT_RIGHT_TIRE",
+      "fingerprint": {
+        "position_sha256": "75c4c7636dcf96e2fdcc1452db5471054295fb680284f01c3c0f443308bb9c47",
+        "topology_sha256": "c09e1811687e67405f93db76e72bf836f3b0e79f59173c754a0059ea40973c23",
+        "triangle_count": 1152,
+        "uv_sha256": "9baddf0d3512e937689a498faf82af6be401e519b9ea068c6ba0642db0ed0a68",
+        "vertex_count": 650
+      },
+      "function": "Banda de rodadura del neum\u00e1tico de la rueda front_right",
+      "materials": [
+        "michelin_tread_0_right_0.tGA:michelin_tread_0_right_0.tga"
+      ],
+      "original_name": "wheel_front_right_F_wheel_R_Tread",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          1.024138,
+          1.458941,
+          0.085249
+        ],
+        "minimum": [
+          0.785525,
+          0.835043,
+          -0.53865
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_right",
+      "final_name": "GEO_WHEEL_FRONT_RIGHT_TIRE_SIDEWALL_INBOARD",
+      "fingerprint": {
+        "position_sha256": "69b2403bbd1eeecdc6aafc57d6b0ea014e860a84653b18aecbefd5b1b7720e7f",
+        "topology_sha256": "048cb37bc3f5734bbfa7a9d2e9920222d8eeb2aac0d70678b24ce1ca8498c770",
+        "triangle_count": 800,
+        "uv_sha256": "260581c514f38648a248ed020239866d04c93f9ec8ac9a36e8c22932612323c6",
+        "vertex_count": 448
+      },
+      "function": "Costado interior del neum\u00e1tico de la rueda front_right",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_front_right_F_wheel_R_TyreI",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          0.785525,
+          1.443142,
+          0.06945
+        ],
+        "minimum": [
+          0.751048,
+          0.850842,
+          -0.522851
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_right",
+      "final_name": "GEO_WHEEL_FRONT_RIGHT_TIRE_SIDEWALL_OUTBOARD",
+      "fingerprint": {
+        "position_sha256": "bb2e44fc56c9917a6c248dfa20669e9515330a66b89cb911246f23dfa8c9468f",
+        "topology_sha256": "11cd778dfc5ec0c5bed97ded1ae96b29b37294e022b2230cd49bd2473bed6eda",
+        "triangle_count": 2216,
+        "uv_sha256": "7e020b661144b1687fa2bda01d12b37470a06bcea483e46285db4f0987245255",
+        "vertex_count": 1296
+      },
+      "function": "Costado exterior del neum\u00e1tico; su segundo material aporta el centro de rueda de la rueda front_right",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga",
+        "nut_center.tGA:nut_center.tga"
+      ],
+      "original_name": "wheel_front_right_F_wheel_R_TyreO",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          1.058589,
+          1.443142,
+          0.06945
+        ],
+        "minimum": [
+          0.979979,
+          0.850842,
+          -0.522851
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_right",
+      "final_name": "GEO_WHEEL_FRONT_RIGHT_RIM_AND_SPOKES",
+      "fingerprint": {
+        "position_sha256": "8e0d10938a1f36138d5db1d39de19ba9424130b4fb84453f7cdc8366efc29b8f",
+        "topology_sha256": "cff4f879f305636df3e1f180537410fea4b81571932395b72d93f926c222f13f",
+        "triangle_count": 1456,
+        "uv_sha256": "ac3875f8c42a063edf54dba128b7352d817faa576047c0acedfc6db663d10993",
+        "vertex_count": 805
+      },
+      "function": "Llanta con radios de la rueda front_right",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_front_right_F_wheel_R_Spoke",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          1.003157,
+          1.28635,
+          -0.087342
+        ],
+        "minimum": [
+          0.955987,
+          1.007633,
+          -0.366059
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_right",
+      "final_name": "GEO_WHEEL_FRONT_RIGHT_RIM_BARREL",
+      "fingerprint": {
+        "position_sha256": "f77ce1b2981f9035c4074c0bf7868374a64f40f32700e526f48f6f8f8d25ee40",
+        "topology_sha256": "7e015388a4190277feb06ab66d69293f53ca24a3e49a269211af6de782fe0738",
+        "triangle_count": 640,
+        "uv_sha256": "752eaaacd7611c744f0b03196ec4ac59ea932d6bf58cb66cbb1bc9b536879c8b",
+        "vertex_count": 384
+      },
+      "function": "Barrel de llanta de la rueda front_right",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_front_right_F_wheel_R_SideRim",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          1.05729,
+          1.323836,
+          -0.049856
+        ],
+        "minimum": [
+          0.752348,
+          0.970148,
+          -0.403545
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_right",
+      "final_name": "GEO_WHEEL_FRONT_RIGHT_RIM_BARREL_INBOARD",
+      "fingerprint": {
+        "position_sha256": "ca0380072f2b5eb4935e7601cba21cf46dee60c7add8aacd1e915319dbacae78",
+        "topology_sha256": "bbc92ad321b2064aa54b2383337a04a05d20cce627cbbd8761afe8686fad146c",
+        "triangle_count": 256,
+        "uv_sha256": "1c5e4ef81fd7f9fa90cb0d24eccd96dbdd838a27c9a675aa62136f1f7b4a7c7b",
+        "vertex_count": 160
+      },
+      "function": "Barrel interior de llanta de la rueda front_right",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_front_right_F_wheel_R_InnerRim",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          0.970603,
+          1.306636,
+          -0.067057
+        ],
+        "minimum": [
+          0.754871,
+          0.987348,
+          -0.386345
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_right",
+      "final_name": "GEO_WHEEL_FRONT_RIGHT_RIM_BARREL_OUTBOARD",
+      "fingerprint": {
+        "position_sha256": "32f1497133dc6586bbf53a057451d4603e05d08160411a85ee898147ad64ef24",
+        "topology_sha256": "e4087ed825cc68c3cb0d99db40abd0dfef1ba8c7994d5c843c87346d17952f02",
+        "triangle_count": 320,
+        "uv_sha256": "84f548e72a25c7c0b7729a32a48ec625e8dc77a00e581593da47648e5eef8c9f",
+        "vertex_count": 256
+      },
+      "function": "Barrel exterior de llanta de la rueda front_right",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_front_right_F_wheel_R_OuterRim",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          1.054767,
+          1.306636,
+          -0.067057
+        ],
+        "minimum": [
+          0.970603,
+          0.987348,
+          -0.386345
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_left",
+      "final_name": "GEO_WHEEL_REAR_LEFT_TIRE",
+      "fingerprint": {
+        "position_sha256": "5bf11e6c8cd81a8c70fcf4ac777f0f672cafb6a907ebf2da0055fcdb176221e8",
+        "topology_sha256": "061971b1a2eb75ef1e9018d2b42e07744198e5677c539692836f8871cc403483",
+        "triangle_count": 1152,
+        "uv_sha256": "e33134749a3c2ef82fd3ac17cde4eceb021e74d6f50aaceb3745a211934248d7",
+        "vertex_count": 651
+      },
+      "function": "Banda de rodadura del neum\u00e1tico de la rueda rear_left",
+      "materials": [
+        "michelin_tread_0_right_0.tGA:michelin_tread_0_right_0.tga"
+      ],
+      "original_name": "wheel_rear_left_R_wheel_R_Tread",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          -0.622026,
+          -1.412454,
+          0.098429
+        ],
+        "minimum": [
+          -0.96012,
+          -2.056487,
+          -0.545603
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_left",
+      "final_name": "GEO_WHEEL_REAR_LEFT_TIRE_SIDEWALL_INBOARD",
+      "fingerprint": {
+        "position_sha256": "b4fb5ce4257d8e516cc65271fc5e7b33fd8e98fa5272034f83f89623375ef613",
+        "topology_sha256": "e11a7b1c71ce60294c50ccfcf76b8b6193bd8c344cd750009649eb6005454b47",
+        "triangle_count": 800,
+        "uv_sha256": "3d85fd8a859a9b40cdeca298ea2a4fc795f89c53598523679e164521e46af675",
+        "vertex_count": 480
+      },
+      "function": "Costado interior del neum\u00e1tico de la rueda rear_left",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_rear_left_R_wheel_R_TyreI",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          -0.59652,
+          -1.427794,
+          0.08309
+        ],
+        "minimum": [
+          -0.622026,
+          -2.041148,
+          -0.530264
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_left",
+      "final_name": "GEO_WHEEL_REAR_LEFT_TIRE_SIDEWALL_OUTBOARD",
+      "fingerprint": {
+        "position_sha256": "d8201d82104314f9c696aa8c805c8876b871bcecd1ce2f2dd702dfc400d5d990",
+        "topology_sha256": "6dd435f27f21947cdd555587a9ebae284c8778d0875adba654b14bd67fe7d5ea",
+        "triangle_count": 2216,
+        "uv_sha256": "c88e647821fdb2aeb3eee5389c39fc7dedd86629082774462f3d2f9f188f4742",
+        "vertex_count": 1328
+      },
+      "function": "Costado exterior del neum\u00e1tico; su segundo material aporta el centro de rueda de la rueda rear_left",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga",
+        "nut_center.tGA:nut_center.tga"
+      ],
+      "original_name": "wheel_rear_left_R_wheel_R_TyreO",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          -0.834905,
+          -1.427794,
+          0.08309
+        ],
+        "minimum": [
+          -0.985625,
+          -2.041148,
+          -0.530264
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_left",
+      "final_name": "GEO_WHEEL_REAR_LEFT_RIM_AND_SPOKES",
+      "fingerprint": {
+        "position_sha256": "2a5ce1357dc68d09f9d9cd49e3be470d9779dfebdd75bde8a043dc803726388e",
+        "topology_sha256": "7d3fcffe775494d80d956a8c8fc298a04696942390c56ce327db32e82df9bad5",
+        "triangle_count": 1520,
+        "uv_sha256": "64432738af39e2cd3d2418834c0598cc40eca1b5586f30b4244bec5911032424",
+        "vertex_count": 869
+      },
+      "function": "Llanta con radios de la rueda rear_left",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_rear_left_R_wheel_R_Spoke",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          -0.810841,
+          -1.596113,
+          -0.085229
+        ],
+        "minimum": [
+          -0.860774,
+          -1.87483,
+          -0.363946
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_left",
+      "final_name": "GEO_WHEEL_REAR_LEFT_RIM_BARREL",
+      "fingerprint": {
+        "position_sha256": "c55cd6dd468c0b24ddb3814b573ae72595494dedba5891c1d58acacd88110aa1",
+        "topology_sha256": "000e57d309b62fc37c6aa71c8a42340a524058e2c6b3051266ef2ad5cb1b255f",
+        "triangle_count": 640,
+        "uv_sha256": "5f8bb027fe1a9906de84cccac2c418dbfdc7c3312f2f4fa133dcc73af1812a5d",
+        "vertex_count": 384
+      },
+      "function": "Barrel de llanta de la rueda rear_left",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_rear_left_R_wheel_R_SideRim",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          -0.600011,
+          -1.557614,
+          -0.04673
+        ],
+        "minimum": [
+          -0.982109,
+          -1.911327,
+          -0.400443
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_left",
+      "final_name": "GEO_WHEEL_REAR_LEFT_RIM_BARREL_INBOARD",
+      "fingerprint": {
+        "position_sha256": "ca82a373ee48a182b2e26ef2a101268b40e310f959a2348ce8f72a5e8592d7ee",
+        "topology_sha256": "8b91241d1c7b6b1ed3b90c53338ec5819ecc898237317e91a6fe83a40295e184",
+        "triangle_count": 256,
+        "uv_sha256": "52e67ecea1a65d1e37f98d0e9ed2e771eded115e2803aa176724b1cdb418f5d0",
+        "vertex_count": 160
+      },
+      "function": "Barrel interior de llanta de la rueda rear_left",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_rear_left_R_wheel_R_InnerRim",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          -0.602457,
+          -1.574839,
+          -0.063955
+        ],
+        "minimum": [
+          -0.827281,
+          -1.894103,
+          -0.383219
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_left",
+      "final_name": "GEO_WHEEL_REAR_LEFT_RIM_BARREL_OUTBOARD",
+      "fingerprint": {
+        "position_sha256": "49e036cc8d6e05b8e25b1159c4973c06287ee02e38adfb7017f2dea95688042d",
+        "topology_sha256": "22843ef5d1930733bfd30f87a6ab245ebcf736bda745c0cd92206d1c15eb9565",
+        "triangle_count": 320,
+        "uv_sha256": "6c57bf4ef2c2826b748245dbcd2e8a2e788a6b00da71a978d78c9dd6ae5ab756",
+        "vertex_count": 256
+      },
+      "function": "Barrel exterior de llanta de la rueda rear_left",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_rear_left_R_wheel_R_OuterRim",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          -0.827281,
+          -1.574839,
+          -0.063955
+        ],
+        "minimum": [
+          -0.979689,
+          -1.894103,
+          -0.383219
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_right",
+      "final_name": "GEO_WHEEL_REAR_RIGHT_TIRE",
+      "fingerprint": {
+        "position_sha256": "5bf11e6c8cd81a8c70fcf4ac777f0f672cafb6a907ebf2da0055fcdb176221e8",
+        "topology_sha256": "061971b1a2eb75ef1e9018d2b42e07744198e5677c539692836f8871cc403483",
+        "triangle_count": 1152,
+        "uv_sha256": "e33134749a3c2ef82fd3ac17cde4eceb021e74d6f50aaceb3745a211934248d7",
+        "vertex_count": 651
+      },
+      "function": "Banda de rodadura del neum\u00e1tico de la rueda rear_right",
+      "materials": [
+        "michelin_tread_0_right_0.tGA:michelin_tread_0_right_0.tga"
+      ],
+      "original_name": "wheel_rear_right_R_wheel_R_Tread",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          0.96012,
+          -1.412455,
+          0.098429
+        ],
+        "minimum": [
+          0.622026,
+          -2.056487,
+          -0.545603
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_right",
+      "final_name": "GEO_WHEEL_REAR_RIGHT_TIRE_SIDEWALL_INBOARD",
+      "fingerprint": {
+        "position_sha256": "b4fb5ce4257d8e516cc65271fc5e7b33fd8e98fa5272034f83f89623375ef613",
+        "topology_sha256": "e11a7b1c71ce60294c50ccfcf76b8b6193bd8c344cd750009649eb6005454b47",
+        "triangle_count": 800,
+        "uv_sha256": "3d85fd8a859a9b40cdeca298ea2a4fc795f89c53598523679e164521e46af675",
+        "vertex_count": 480
+      },
+      "function": "Costado interior del neum\u00e1tico de la rueda rear_right",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_rear_right_R_wheel_R_TyreI",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          0.622026,
+          -1.427794,
+          0.08309
+        ],
+        "minimum": [
+          0.59652,
+          -2.041148,
+          -0.530264
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_right",
+      "final_name": "GEO_WHEEL_REAR_RIGHT_TIRE_SIDEWALL_OUTBOARD",
+      "fingerprint": {
+        "position_sha256": "d8201d82104314f9c696aa8c805c8876b871bcecd1ce2f2dd702dfc400d5d990",
+        "topology_sha256": "6dd435f27f21947cdd555587a9ebae284c8778d0875adba654b14bd67fe7d5ea",
+        "triangle_count": 2216,
+        "uv_sha256": "c88e647821fdb2aeb3eee5389c39fc7dedd86629082774462f3d2f9f188f4742",
+        "vertex_count": 1328
+      },
+      "function": "Costado exterior del neum\u00e1tico; su segundo material aporta el centro de rueda de la rueda rear_right",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga",
+        "nut_center.tGA:nut_center.tga"
+      ],
+      "original_name": "wheel_rear_right_R_wheel_R_TyreO",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          0.985625,
+          -1.427794,
+          0.08309
+        ],
+        "minimum": [
+          0.834905,
+          -2.041148,
+          -0.530264
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_right",
+      "final_name": "GEO_WHEEL_REAR_RIGHT_RIM_AND_SPOKES",
+      "fingerprint": {
+        "position_sha256": "2a5ce1357dc68d09f9d9cd49e3be470d9779dfebdd75bde8a043dc803726388e",
+        "topology_sha256": "7d3fcffe775494d80d956a8c8fc298a04696942390c56ce327db32e82df9bad5",
+        "triangle_count": 1520,
+        "uv_sha256": "64432738af39e2cd3d2418834c0598cc40eca1b5586f30b4244bec5911032424",
+        "vertex_count": 869
+      },
+      "function": "Llanta con radios de la rueda rear_right",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_rear_right_R_wheel_R_Spoke",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          0.860774,
+          -1.596113,
+          -0.085229
+        ],
+        "minimum": [
+          0.810841,
+          -1.87483,
+          -0.363946
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_right",
+      "final_name": "GEO_WHEEL_REAR_RIGHT_RIM_BARREL",
+      "fingerprint": {
+        "position_sha256": "c55cd6dd468c0b24ddb3814b573ae72595494dedba5891c1d58acacd88110aa1",
+        "topology_sha256": "000e57d309b62fc37c6aa71c8a42340a524058e2c6b3051266ef2ad5cb1b255f",
+        "triangle_count": 640,
+        "uv_sha256": "5f8bb027fe1a9906de84cccac2c418dbfdc7c3312f2f4fa133dcc73af1812a5d",
+        "vertex_count": 384
+      },
+      "function": "Barrel de llanta de la rueda rear_right",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_rear_right_R_wheel_R_SideRim",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          0.982109,
+          -1.557614,
+          -0.04673
+        ],
+        "minimum": [
+          0.600011,
+          -1.911327,
+          -0.400443
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_right",
+      "final_name": "GEO_WHEEL_REAR_RIGHT_RIM_BARREL_INBOARD",
+      "fingerprint": {
+        "position_sha256": "ca82a373ee48a182b2e26ef2a101268b40e310f959a2348ce8f72a5e8592d7ee",
+        "topology_sha256": "8b91241d1c7b6b1ed3b90c53338ec5819ecc898237317e91a6fe83a40295e184",
+        "triangle_count": 256,
+        "uv_sha256": "52e67ecea1a65d1e37f98d0e9ed2e771eded115e2803aa176724b1cdb418f5d0",
+        "vertex_count": 160
+      },
+      "function": "Barrel interior de llanta de la rueda rear_right",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_rear_right_R_wheel_R_InnerRim",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          0.827281,
+          -1.574839,
+          -0.063955
+        ],
+        "minimum": [
+          0.602457,
+          -1.894103,
+          -0.383219
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_right",
+      "final_name": "GEO_WHEEL_REAR_RIGHT_RIM_BARREL_OUTBOARD",
+      "fingerprint": {
+        "position_sha256": "49e036cc8d6e05b8e25b1159c4973c06287ee02e38adfb7017f2dea95688042d",
+        "topology_sha256": "22843ef5d1930733bfd30f87a6ab245ebcf736bda745c0cd92206d1c15eb9565",
+        "triangle_count": 320,
+        "uv_sha256": "6c57bf4ef2c2826b748245dbcd2e8a2e788a6b00da71a978d78c9dd6ae5ab756",
+        "vertex_count": 256
+      },
+      "function": "Barrel exterior de llanta de la rueda rear_right",
+      "materials": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "original_name": "wheel_rear_right_R_wheel_R_OuterRim",
+      "rationale": "Esquina confirmada por posici\u00f3n: X negativo es el lado izquierdo del coche y los centros de rueda miden 1.147 m delante y -1.735 m detr\u00e1s",
+      "runtime_group": "spin_visual",
+      "world_bounds": {
+        "maximum": [
+          0.979689,
+          -1.574839,
+          -0.063955
+        ],
+        "minimum": [
+          0.827281,
+          -1.894103,
+          -0.383219
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_left",
+      "final_name": "GEO_BRAKE_FRONT_LEFT_GLOW_PANEL",
+      "fingerprint": {
+        "position_sha256": "83d2f0c6d586f9d33b94af849e3f8afc50de779d9983912f9dae55f1cb3dc971",
+        "topology_sha256": "e629943333acba3e3c2968e17e178c8c64d5ddc58c66c0c4fe7740e442c96883",
+        "triangle_count": 2,
+        "uv_sha256": "690026ef0230d7cdeac82a282afdfc844e1b14f7e5c362a6b998a7b0e782f481",
+        "vertex_count": 4
+      },
+      "function": "Plano de brillo de freno frontal izquierda",
+      "materials": [
+        "cockpit_damage.tGA:cockpit_damage.tga"
+      ],
+      "original_name": "f_l_brakeglow",
+      "rationale": "Cu\u00e1druple de 2 tri\u00e1ngulos dentro del volumen de la rueda, no gira con ella",
+      "runtime_group": "brake_static",
+      "world_bounds": {
+        "maximum": [
+          -0.904819,
+          1.273592,
+          -0.099201
+        ],
+        "minimum": [
+          -0.904819,
+          1.020392,
+          -0.354201
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_front_right",
+      "final_name": "GEO_BRAKE_FRONT_RIGHT_GLOW_PANEL",
+      "fingerprint": {
+        "position_sha256": "2bf21c1c00bf2727e20e603b455653991713917db8a6d5d4674b303b16dc9d51",
+        "topology_sha256": "e629943333acba3e3c2968e17e178c8c64d5ddc58c66c0c4fe7740e442c96883",
+        "triangle_count": 2,
+        "uv_sha256": "e0c54f08713d862d87e1063d628525b206701c70f143b3bbf131e44ef703468a",
+        "vertex_count": 4
+      },
+      "function": "Plano de brillo de freno frontal derecha",
+      "materials": [
+        "cockpit_damage.tGA:cockpit_damage.tga"
+      ],
+      "original_name": "f_r_brakeglow",
+      "rationale": "Cu\u00e1druple de 2 tri\u00e1ngulos dentro del volumen de la rueda, no gira con ella",
+      "runtime_group": "brake_static",
+      "world_bounds": {
+        "maximum": [
+          0.904819,
+          1.273592,
+          -0.099201
+        ],
+        "minimum": [
+          0.904819,
+          1.020392,
+          -0.354201
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_left",
+      "final_name": "GEO_BRAKE_REAR_LEFT_GLOW_PANEL",
+      "fingerprint": {
+        "position_sha256": "06655c1987eb81f8e286bf7059a4d6e7da9a4f2c7a8430016c7814b55e41f6c9",
+        "topology_sha256": "e629943333acba3e3c2968e17e178c8c64d5ddc58c66c0c4fe7740e442c96883",
+        "triangle_count": 2,
+        "uv_sha256": "57f7ce8a2628f7a4207ac3fcf507fecd4f8d724df99b884e5637a7cb03cc0400",
+        "vertex_count": 4
+      },
+      "function": "Plano de brillo de freno trasera izquierda",
+      "materials": [
+        "cockpit_damage.tGA:cockpit_damage.tga"
+      ],
+      "original_name": "r_l_brakeglow",
+      "rationale": "Cu\u00e1druple de 2 tri\u00e1ngulos dentro del volumen de la rueda, no gira con ella",
+      "runtime_group": "brake_static",
+      "world_bounds": {
+        "maximum": [
+          -0.791073,
+          -1.607871,
+          -0.096087
+        ],
+        "minimum": [
+          -0.791073,
+          -1.861071,
+          -0.351087
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "wheel_rear_right",
+      "final_name": "GEO_BRAKE_REAR_RIGHT_GLOW_PANEL",
+      "fingerprint": {
+        "position_sha256": "e9368fea943363f70c289477c9af3e53cdd14fa6ad5f7a4b3d1c87c5ae84a8e2",
+        "topology_sha256": "e629943333acba3e3c2968e17e178c8c64d5ddc58c66c0c4fe7740e442c96883",
+        "triangle_count": 2,
+        "uv_sha256": "87b228485ff6fd72eb5cdb43c36ced5849923c8181212bd16495064ec6c82844",
+        "vertex_count": 4
+      },
+      "function": "Plano de brillo de freno trasera derecha",
+      "materials": [
+        "cockpit_damage.tGA:cockpit_damage.tga"
+      ],
+      "original_name": "r_r_brakeglow",
+      "rationale": "Cu\u00e1druple de 2 tri\u00e1ngulos dentro del volumen de la rueda, no gira con ella",
+      "runtime_group": "brake_static",
+      "world_bounds": {
+        "maximum": [
+          0.791073,
+          -1.607871,
+          -0.096087
+        ],
+        "minimum": [
+          0.791073,
+          -1.861071,
+          -0.351087
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_STEERING_WHEEL_BODY",
+      "fingerprint": {
+        "position_sha256": "029e580980fb9e928b3542e3ba0253d4a99096d35316bca22e5cd9513ddc3470",
+        "topology_sha256": "e6d8c3a31dec497e01de1dc0b87a1c554c147d34829a909439bdc579714ff0ce",
+        "triangle_count": 1752,
+        "uv_sha256": "46f8750bd5bf27baf2c0ba79eb3f3b3701eb6b4c43d3244754ebadbca62deb80",
+        "vertex_count": 980
+      },
+      "function": "Pieza contractual del volante heredada del donante F1 2030",
+      "materials": [
+        "UniformBlenderKitCarbonFiber.006"
+      ],
+      "original_name": "GEO_STEERING_WHEEL_BODY",
+      "rationale": "El nombre ya cumple el contrato; la posici\u00f3n confirma el lado de cada leva",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.116547,
+          0.337025,
+          0.048468
+        ],
+        "minimum": [
+          -0.116547,
+          0.308219,
+          -0.0783
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_STEERING_WHEEL_CENTER_FASTENER",
+      "fingerprint": {
+        "position_sha256": "5e95f199886397ecdfba451222b7c5fbe7c56ac871c8e9ce67399c02d5c024ba",
+        "topology_sha256": "9038fd38373aaa7de6b95d3b8ce8d596bf0fab78eada27e96c3a541a6208c3b1",
+        "triangle_count": 252,
+        "uv_sha256": "03487890554f442672619ebd0a9c33b23fdfd77c8ef350a9b0561a34fe6f7f87",
+        "vertex_count": 196
+      },
+      "function": "Pieza contractual del volante heredada del donante F1 2030",
+      "materials": [
+        "UniformBlenderKitCarbonFiber.004"
+      ],
+      "original_name": "GEO_STEERING_WHEEL_CENTER_FASTENER",
+      "rationale": "El nombre ya cumple el contrato; la posici\u00f3n confirma el lado de cada leva",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.007495,
+          0.311105,
+          -0.013005
+        ],
+        "minimum": [
+          -0.007495,
+          0.302063,
+          -0.027995
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_STEERING_WHEEL_DISPLAY",
+      "fingerprint": {
+        "position_sha256": "c8a35205c593a452325d4b4084c29915e0f4d041eac4b8e37a8168dab6aabc87",
+        "topology_sha256": "50b411ad35c9f0f09b60f625123be4032e269a72ab497b594239a17a5a2a8399",
+        "triangle_count": 24,
+        "uv_sha256": "1c323b400fdbdfc6c5c8b6eac90b652f332bd50332935efddfcf520195ef4566",
+        "vertex_count": 32
+      },
+      "function": "Pieza contractual del volante heredada del donante F1 2030",
+      "materials": [
+        "Screen"
+      ],
+      "original_name": "GEO_STEERING_WHEEL_DISPLAY",
+      "rationale": "El nombre ya cumple el contrato; la posici\u00f3n confirma el lado de cada leva",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.044364,
+          0.309353,
+          0.041473
+        ],
+        "minimum": [
+          -0.044364,
+          0.30906,
+          0.001495
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_STEERING_WHEEL_PADDLE_LEFT",
+      "fingerprint": {
+        "position_sha256": "3ee35ab76a8c453c20824056ae7ab4a05155d80883fb12a44e34dff8dcc86a4e",
+        "topology_sha256": "b9f9c0d4ab90373c9600974f18434bca8bb10335d196d0330743226e6a9fc37f",
+        "triangle_count": 88,
+        "uv_sha256": "2edf07ace357ba2d155de090f751c5f18e129dd6e0d2ce638ada7405164dc340",
+        "vertex_count": 152
+      },
+      "function": "Pieza contractual del volante heredada del donante F1 2030",
+      "materials": [
+        "UniformBlenderKitCarbonFiber.006"
+      ],
+      "original_name": "GEO_STEERING_WHEEL_PADDLE_LEFT",
+      "rationale": "El nombre ya cumple el contrato; la posici\u00f3n confirma el lado de cada leva",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          -0.007805,
+          0.348814,
+          0.01983
+        ],
+        "minimum": [
+          -0.078549,
+          0.334787,
+          -0.05642
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis",
+      "final_name": "GEO_STEERING_WHEEL_PADDLE_RIGHT",
+      "fingerprint": {
+        "position_sha256": "c2084625d66516607e44ea215109ce5b7475b076d1a49c18879d32d3f2bb61ee",
+        "topology_sha256": "b9f9c0d4ab90373c9600974f18434bca8bb10335d196d0330743226e6a9fc37f",
+        "triangle_count": 88,
+        "uv_sha256": "b556ffee6ac353ebfa0f40131295c11644b10c6f07aa64d3c89cb1fcf466d023",
+        "vertex_count": 152
+      },
+      "function": "Pieza contractual del volante heredada del donante F1 2030",
+      "materials": [
+        "UniformBlenderKitCarbonFiber.006"
+      ],
+      "original_name": "GEO_STEERING_WHEEL_PADDLE_RIGHT",
+      "rationale": "El nombre ya cumple el contrato; la posici\u00f3n confirma el lado de cada leva",
+      "runtime_group": null,
+      "world_bounds": {
+        "maximum": [
+          0.078549,
+          0.348814,
+          0.01983
+        ],
+        "minimum": [
+          0.007805,
+          0.334787,
+          -0.05642
+        ]
+      }
+    },
+    {
+      "confidence": "high",
+      "export_group": "chassis_control",
+      "final_name": "STEERING_WHEEL_MOUNT_CONTROL",
+      "fingerprint": null,
+      "function": "Control de montaje del conjunto del volante",
+      "materials": [],
+      "original_name": "Williams donor steering wheel adjustment",
+      "rationale": "Vac\u00edo en (0, 0.322593, -0.015) m con giro Z de 180 grados; padre de las cinco piezas del volante",
+      "runtime_group": null,
+      "world_bounds": null
+    },
+    {
+      "confidence": "high",
+      "export_group": "excluded",
+      "final_name": "UNUSED_GENERIC_COCKPIT_STEERING_WHEEL_MOUNT",
+      "fingerprint": null,
+      "function": "Montaje gen\u00e9rico heredado del cockpit GP4, sin hijos ni uso",
+      "materials": [],
+      "original_name": "Generic cockpit steering wheel mount",
+      "rationale": "Vac\u00edo sin hijos en (0, 0.107, -0.031) m; no participa en la jerarqu\u00eda del volante actual",
+      "runtime_group": null,
+      "world_bounds": null
+    }
+  ],
+  "renamed_count": 59,
+  "source_blend": "game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/car/source/williams_fw19_hockenheim_1997_car.blend",
+  "source_content_identical_to_inventory": true,
+  "source_drift_note": "The tracked source blend was re-saved outside this workspace at 2026-10-17 12:48:09, before this turn started. Every object, mesh fingerprint, material, image, parent, transform and scene setting is identical; only the container bytes differ. See source_drift_check.json and source_after_user_save_20261017_124809.blend.",
+  "source_sha256_at_inventory": "b3e1bc8a2bdf45beacb4573345cdeb6e78f57ed02840d0d6266662954845a433",
+  "source_sha256_current_file": "16cf8edba1a7432b125675e143da3fdbe38f7fca5516b18571c6a8e8359d6d64",
+  "source_size_bytes_current_file": 23730351,
+  "unchanged_count": 5,
+  "visual_review": {
+    "confirmed_at": "2026-10-17",
+    "confirmed_pieces": [
+      "GEO_BODYWORK_SIDEPOD_SURFACE_PANEL_LEFT",
+      "GEO_BODYWORK_SIDEPOD_SURFACE_PANEL_RIGHT",
+      "GEO_COCKPIT_INSERT_RIGHT",
+      "GEO_COCKPIT_VISOR"
+    ],
+    "evidence": "renders/"
+  }
+}

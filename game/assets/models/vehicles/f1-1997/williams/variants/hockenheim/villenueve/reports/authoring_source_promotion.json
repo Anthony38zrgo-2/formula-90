@@ -2,19 +2,50 @@
   "branch": "main-clean",
   "head": "4f478b72977493656c2f2873e7fcee7ca21a1d62",
   "operation": "User-authorized local promotion of two current authoring sources; original depot preserved",
+  "publication_update": {
+    "date": "2026-10-17",
+    "reason": "Correct track widths, wheelbase and ground plane before building the physical profile",
+    "source_sha256_after": "cd4a0d62943b01abdef52d914002936bc4ccb6906b8da6ae5d295022f5746b3d",
+    "source_sha256_before": "0d305d8db9207e677fc11e4f222d570b676ff5cf03eebd006e55faea078b22b9"
+  },
+  "record_update": "The car source was saved again outside the repository at 2026-10-17 12:48:09 local time. The user authorized keeping the saved file and recording the new hash. Every object, mesh fingerprint, material, image, parent, transform and scene setting is identical to the promoted snapshot; only the container bytes changed. Evidence: scratch/williams_step_two_object_names_20261017/source_drift_check.json",
+  "record_updated_at": "2026-10-17",
+  "record_updated_at_head": "fbdae5d1f31beb8751e01a0c36bac3474506ff49",
   "runtime_exports": "Not produced",
   "sources": [
     {
-      "source": "D:\\Formula90s\\game\\assets\\season\\1997\\williams_completed\\williams_fw19_textured.blend",
       "destination": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-1997\\williams\\variants\\hockenheim\\villenueve\\car\\source\\williams_fw19_hockenheim_1997_car.blend",
-      "sha256": "b3e1bc8a2bdf45beacb4573345cdeb6e78f57ed02840d0d6266662954845a433",
-      "size_bytes": 23737004
+      "dimension_correction": {
+        "applied": true,
+        "evidence": "scratch/williams_step_seven_physics_20261017/dimension_correction_report.json",
+        "front_track_m": 1.669974,
+        "note": "Front and rear tracks, wheelbase and common ground plane corrected to the 1997 references",
+        "rear_track_m": 1.6,
+        "wheelbase_m": 2.89
+      },
+      "name_normalization": {
+        "applied": true,
+        "evidence": "reports/object_name_mapping.json",
+        "geometry_and_images_preserved": true,
+        "note": "The Step 2 normalized blend replaced the source in Step 6; every mesh fingerprint, material and packed image is unchanged"
+      },
+      "preserved_copy": "scratch/williams_step_two_object_names_20261017/source_after_user_save_20261017_124809.blend",
+      "resave_content_identical": true,
+      "resave_evidence": "scratch/williams_step_two_object_names_20261017/source_drift_check.json",
+      "resaved_at_local": "2026-10-17T12:48:09-05:00",
+      "sha256": "cd4a0d62943b01abdef52d914002936bc4ccb6906b8da6ae5d295022f5746b3d",
+      "sha256_at_promotion": "b3e1bc8a2bdf45beacb4573345cdeb6e78f57ed02840d0d6266662954845a433",
+      "sha256_before_dimension_correction": "0d305d8db9207e677fc11e4f222d570b676ff5cf03eebd006e55faea078b22b9",
+      "sha256_before_name_normalization": "16cf8edba1a7432b125675e143da3fdbe38f7fca5516b18571c6a8e8359d6d64",
+      "size_bytes": 23675036,
+      "size_bytes_at_promotion": 23737004,
+      "source": "D:\\Formula90s\\game\\assets\\season\\1997\\williams_completed\\williams_fw19_textured.blend"
     },
     {
-      "source": "D:\\Formula90s\\game\\assets\\season\\1997\\williams_completed\\jacques_villeneuve_williams_fw19_1997_driver.blend",
       "destination": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-1997\\williams\\variants\\hockenheim\\villenueve\\driver\\source\\jacques_villeneuve_williams_fw19_1997_driver.blend",
       "sha256": "cc67bb66be9700ecf15d5c5b56680579970d485470e61e7b63ffd8f3d01ca2d0",
-      "size_bytes": 14496537
+      "size_bytes": 14496537,
+      "source": "D:\\Formula90s\\game\\assets\\season\\1997\\williams_completed\\jacques_villeneuve_williams_fw19_1997_driver.blend"
     }
   ]
 }

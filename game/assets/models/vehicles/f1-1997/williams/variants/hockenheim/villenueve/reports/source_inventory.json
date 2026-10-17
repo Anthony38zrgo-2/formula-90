@@ -1,0 +1,2980 @@
+{
+  "acceptance": {
+    "backup_blend_not_used_as_source": true,
+    "both_current_blends_hashed": true,
+    "exactly_two_current_blends_recorded": true,
+    "external_checkout_preserved": true,
+    "generated_atlases_packed_inside_driver_blend": true,
+    "historical_glb_not_used_as_source": true,
+    "original_depot_preserved": true,
+    "sources_match_promotion_record": true
+  },
+  "credits": [
+    {
+      "credit": "VRC, MSchumi24 and Hega; updates by SkaningeN",
+      "distribution": "Local game publication only; credits do not grant redistribution rights",
+      "origin": "GP4 F1 1997 Season Mod v2.0 carset",
+      "piece": "Williams FW19 bodywork, wheels and Hockenheim livery",
+      "reference": "THIRD_PARTY.md"
+    },
+    {
+      "credit": "Hull by jvinu2000; Williams helmet textures by jvinu2000",
+      "distribution": "Local game publication only",
+      "origin": "GP4 carset, helmet shape car_helmet_00.gp4 with VILLENEUVe paint",
+      "piece": "Arai helmet shell and visor",
+      "reference": "THIRD_PARTY.md"
+    },
+    {
+      "credit": "Enzojz; textures by MSchumi24",
+      "distribution": "Local game publication only",
+      "origin": "GP4 carset",
+      "piece": "Cockpit interior and cockpit textures",
+      "reference": "THIRD_PARTY.md"
+    },
+    {
+      "credit": "Ulf (Alesi_fan) and Turbo Lover",
+      "distribution": "Local game publication only",
+      "origin": "GP4 carset gy-oz-blck-yllw wheel set",
+      "piece": "Tires and rims",
+      "reference": "THIRD_PARTY.md"
+    },
+    {
+      "credit": "Formula 90s F1 2030 program authors",
+      "distribution": "Authorized donor for this variant only; donor source stays unmodified",
+      "origin": "Donor geometry from the Formula 90s F1 2030 program",
+      "piece": "Steering wheel body, display, fastener and paddles",
+      "reference": "game/assets/models/vehicles/f1-1997/williams/AGENTS.md"
+    },
+    {
+      "credit": "Formula 90s driver program authors",
+      "distribution": "Authorized donor; canonical driver source unchanged",
+      "origin": "Donor geometry from game/assets/models/drivers/source/prepared_driver.blend",
+      "piece": "Arms and gloves",
+      "reference": "game/assets/models/vehicles/f1-1997/williams/AGENTS.md"
+    },
+    {
+      "credit": "Generated from the donor UV atlases using the torso fabric as color reference",
+      "distribution": "Generated local asset; no third-party logos retained",
+      "origin": "Generated with the built-in image_gen imagegen edit mode",
+      "piece": "Sleeve and glove base-color atlases",
+      "reference": "scratch/williams_sleeve_image_generation/generation_report.json"
+    },
+    {
+      "credit": "Authored for this variant",
+      "distribution": "Local asset",
+      "origin": "Newly authored cylinder in the car source",
+      "piece": "Visible steering column",
+      "reference": "COMPONENTES_PILOTO.md"
+    },
+    {
+      "credit": "BlenderKit library asset; original author not recorded in the source",
+      "distribution": "License must be verified before any distribution outside this machine",
+      "origin": "BlenderKit material library (Carbon_Fiber_diffuse, Carbon_Fiber_normal, Carbon_Fiber_roughness)",
+      "piece": "Carbon fiber material maps",
+      "reference": "BlenderKit is a third-party asset source, not covered by THIRD_PARTY.md"
+    },
+    {
+      "credit": "Formula 90s driver program authors",
+      "distribution": "Authorized donor",
+      "origin": "Donor texture from game/assets/models/drivers/source/textures",
+      "piece": "hans.dds",
+      "reference": "game/assets/models/drivers/AGENTS.md"
+    }
+  ],
+  "current_sources": [
+    {
+      "action_count": 0,
+      "armature": null,
+      "blend_format": {
+        "authoring_version": "5.2.44",
+        "compression": "zstandard",
+        "modified_by_inventory": true,
+        "opened_with": "5.2.0 LTS"
+      },
+      "external_library_count": 0,
+      "image_count": 17,
+      "label": "car",
+      "material_count": 18,
+      "mesh_bounds_meters": {
+        "center": [
+          0.0,
+          -0.08245,
+          0.047505
+        ],
+        "maximum": [
+          1.058589,
+          2.139685,
+          0.640612
+        ],
+        "minimum": [
+          -1.058589,
+          -2.304584,
+          -0.545603
+        ],
+        "size": [
+          2.117178,
+          4.444269,
+          1.186215
+        ]
+      },
+      "mesh_count": 62,
+      "object_count": 64,
+      "object_names": [
+        "GEO_STEERING_WHEEL_BODY",
+        "GEO_STEERING_WHEEL_CENTER_FASTENER",
+        "GEO_STEERING_WHEEL_DISPLAY",
+        "GEO_STEERING_WHEEL_PADDLE_LEFT",
+        "GEO_STEERING_WHEEL_PADDLE_RIGHT",
+        "Generic cockpit steering wheel mount",
+        "Williams donor steering wheel adjustment",
+        "Williams visible steering column",
+        "cockpit",
+        "engine",
+        "f_l_brakeglow",
+        "f_r_brakeglow",
+        "left_barge_board",
+        "left_front_fin",
+        "left_front_suspension",
+        "left_front_wing",
+        "left_rear_fin",
+        "left_rear_suspension",
+        "left_sidepod",
+        "lower_rear_wing",
+        "nose_cone",
+        "r_l_brakeglow",
+        "r_r_brakeglow",
+        "rear_light_on",
+        "right_barge_board",
+        "right_front_fin",
+        "right_front_suspension",
+        "right_front_wing",
+        "right_rear_fin",
+        "right_rear_suspension",
+        "right_sidepod",
+        "upper_rear_wing",
+        "wheel_front_left_F_wheel_R_InnerRim",
+        "wheel_front_left_F_wheel_R_OuterRim",
+        "wheel_front_left_F_wheel_R_SideRim",
+        "wheel_front_left_F_wheel_R_Spoke",
+        "wheel_front_left_F_wheel_R_Tread",
+        "wheel_front_left_F_wheel_R_TyreI",
+        "wheel_front_left_F_wheel_R_TyreO",
+        "wheel_front_right_F_wheel_R_InnerRim",
+        "wheel_front_right_F_wheel_R_OuterRim",
+        "wheel_front_right_F_wheel_R_SideRim",
+        "wheel_front_right_F_wheel_R_Spoke",
+        "wheel_front_right_F_wheel_R_Tread",
+        "wheel_front_right_F_wheel_R_TyreI",
+        "wheel_front_right_F_wheel_R_TyreO",
+        "wheel_rear_left_R_wheel_R_InnerRim",
+        "wheel_rear_left_R_wheel_R_OuterRim",
+        "wheel_rear_left_R_wheel_R_SideRim",
+        "wheel_rear_left_R_wheel_R_Spoke",
+        "wheel_rear_left_R_wheel_R_Tread",
+        "wheel_rear_left_R_wheel_R_TyreI",
+        "wheel_rear_left_R_wheel_R_TyreO",
+        "wheel_rear_right_R_wheel_R_InnerRim",
+        "wheel_rear_right_R_wheel_R_OuterRim",
+        "wheel_rear_right_R_wheel_R_SideRim",
+        "wheel_rear_right_R_wheel_R_Spoke",
+        "wheel_rear_right_R_wheel_R_Tread",
+        "wheel_rear_right_R_wheel_R_TyreI",
+        "wheel_rear_right_R_wheel_R_TyreO",
+        "z_cockpit_insert",
+        "z_cockpit_left_mirror",
+        "z_cockpit_right_mirror",
+        "z_cockpit_visor"
+      ],
+      "path": "game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/car/source/williams_fw19_hockenheim_1997_car.blend",
+      "role": "car",
+      "sha256": "b3e1bc8a2bdf45beacb4573345cdeb6e78f57ed02840d0d6266662954845a433",
+      "size_bytes": 23737004
+    },
+    {
+      "action_count": 0,
+      "armature": {
+        "bone_count": 55,
+        "bone_names": [
+          "mixamorig:Hips",
+          "mixamorig:Spine",
+          "mixamorig:Spine1",
+          "mixamorig:Spine2",
+          "mixamorig:Neck",
+          "mixamorig:Head",
+          "mixamorig:HeadTop_End",
+          "mixamorig:LeftShoulder",
+          "mixamorig:LeftArm",
+          "mixamorig:LeftForeArm",
+          "mixamorig:LeftHand",
+          "DriverLeftIndexProximal",
+          "DriverLeftIndexMiddle",
+          "DriverLeftIndexDistal",
+          "DriverLeftMiddleProximal",
+          "DriverLeftMiddleMiddle",
+          "DriverLeftMiddleDistal",
+          "DriverLeftRingProximal",
+          "DriverLeftRingMiddle",
+          "DriverLeftRingDistal",
+          "DriverLeftLittleProximal",
+          "DriverLeftLittleMiddle",
+          "DriverLeftLittleDistal",
+          "DriverLeftThumbMetacarpal",
+          "DriverLeftThumbProximal",
+          "DriverLeftThumbDistal",
+          "mixamorig:RightShoulder",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:RightHand",
+          "DriverRightIndexProximal",
+          "DriverRightIndexMiddle",
+          "DriverRightIndexDistal",
+          "DriverRightMiddleProximal",
+          "DriverRightMiddleMiddle",
+          "DriverRightMiddleDistal",
+          "DriverRightRingProximal",
+          "DriverRightRingMiddle",
+          "DriverRightRingDistal",
+          "DriverRightLittleProximal",
+          "DriverRightLittleMiddle",
+          "DriverRightLittleDistal",
+          "DriverRightThumbMetacarpal",
+          "DriverRightThumbProximal",
+          "DriverRightThumbDistal",
+          "mixamorig:LeftUpLeg",
+          "mixamorig:LeftLeg",
+          "mixamorig:LeftFoot",
+          "mixamorig:LeftToeBase",
+          "mixamorig:LeftToe_End",
+          "mixamorig:RightUpLeg",
+          "mixamorig:RightLeg",
+          "mixamorig:RightFoot",
+          "mixamorig:RightToeBase",
+          "mixamorig:RightToe_End"
+        ],
+        "name": "Jacques Villeneuve arm and hand skeleton"
+      },
+      "blend_format": {
+        "authoring_version": "5.2.44",
+        "compression": "zstandard",
+        "modified_by_inventory": true,
+        "opened_with": "5.2.0 LTS"
+      },
+      "external_library_count": 0,
+      "image_count": 10,
+      "label": "driver",
+      "material_count": 9,
+      "mesh_bounds_meters": {
+        "center": [
+          0.0,
+          0.350651,
+          -0.074143
+        ],
+        "maximum": [
+          0.221637,
+          1.019817,
+          0.273829
+        ],
+        "minimum": [
+          -0.221637,
+          -0.318515,
+          -0.422114
+        ],
+        "size": [
+          0.443274,
+          1.338332,
+          0.695943
+        ]
+      },
+      "mesh_count": 5,
+      "object_count": 8,
+      "object_names": [
+        "Jacques Villeneuve 1997 helmet shell",
+        "Jacques Villeneuve 1997 helmet visor",
+        "Jacques Villeneuve Williams racing gloves",
+        "Jacques Villeneuve Williams suit sleeves",
+        "Jacques Villeneuve Williams torso legs boots and safety harness",
+        "Jacques Villeneuve arm and hand skeleton",
+        "Jacques Villeneuve driver assembly",
+        "Jacques Villeneuve helmet mounting control"
+      ],
+      "path": "game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/driver/source/jacques_villeneuve_williams_fw19_1997_driver.blend",
+      "role": "driver",
+      "sha256": "cc67bb66be9700ecf15d5c5b56680579970d485470e61e7b63ffd8f3d01ca2d0",
+      "size_bytes": 14496537
+    }
+  ],
+  "deferred_until_promotion": [
+    "source_inventory_raw.json stays in scratch as regeneration detail",
+    "No GLB, manifest or per-piece texture folder exists yet"
+  ],
+  "detail_file": "source_inventory_raw.json",
+  "driver_pose": {
+    "armature_object": "Jacques Villeneuve arm and hand skeleton",
+    "bone_count": 55,
+    "deform_bone_count": 55,
+    "posed_bones": [
+      {
+        "bone": "mixamorig:Hips",
+        "maximum_matrix_deviation": 0.984401
+      },
+      {
+        "bone": "mixamorig:Spine",
+        "maximum_matrix_deviation": 0.984401
+      },
+      {
+        "bone": "mixamorig:Spine1",
+        "maximum_matrix_deviation": 0.984401
+      },
+      {
+        "bone": "mixamorig:Spine2",
+        "maximum_matrix_deviation": 0.984401
+      },
+      {
+        "bone": "mixamorig:Neck",
+        "maximum_matrix_deviation": 0.523241
+      },
+      {
+        "bone": "mixamorig:Head",
+        "maximum_matrix_deviation": 0.523241
+      },
+      {
+        "bone": "mixamorig:HeadTop_End",
+        "maximum_matrix_deviation": 0.523241
+      },
+      {
+        "bone": "mixamorig:LeftShoulder",
+        "maximum_matrix_deviation": 0.984401
+      },
+      {
+        "bone": "mixamorig:LeftArm",
+        "maximum_matrix_deviation": 1.324456
+      },
+      {
+        "bone": "mixamorig:LeftForeArm",
+        "maximum_matrix_deviation": 1.964788
+      },
+      {
+        "bone": "mixamorig:LeftHand",
+        "maximum_matrix_deviation": 1.0
+      },
+      {
+        "bone": "DriverLeftIndexProximal",
+        "maximum_matrix_deviation": 1.0
+      },
+      {
+        "bone": "DriverLeftIndexMiddle",
+        "maximum_matrix_deviation": 1.000003
+      },
+      {
+        "bone": "DriverLeftIndexDistal",
+        "maximum_matrix_deviation": 0.999996
+      },
+      {
+        "bone": "DriverLeftMiddleProximal",
+        "maximum_matrix_deviation": 1.0
+      },
+      {
+        "bone": "DriverLeftMiddleMiddle",
+        "maximum_matrix_deviation": 0.999998
+      },
+      {
+        "bone": "DriverLeftMiddleDistal",
+        "maximum_matrix_deviation": 0.999999
+      },
+      {
+        "bone": "DriverLeftRingProximal",
+        "maximum_matrix_deviation": 1.0
+      },
+      {
+        "bone": "DriverLeftRingMiddle",
+        "maximum_matrix_deviation": 0.999999
+      },
+      {
+        "bone": "DriverLeftRingDistal",
+        "maximum_matrix_deviation": 1.000004
+      },
+      {
+        "bone": "DriverLeftLittleProximal",
+        "maximum_matrix_deviation": 1.0
+      },
+      {
+        "bone": "DriverLeftLittleMiddle",
+        "maximum_matrix_deviation": 0.999999
+      },
+      {
+        "bone": "DriverLeftLittleDistal",
+        "maximum_matrix_deviation": 0.999993
+      },
+      {
+        "bone": "DriverLeftThumbMetacarpal",
+        "maximum_matrix_deviation": 1.146328
+      },
+      {
+        "bone": "DriverLeftThumbProximal",
+        "maximum_matrix_deviation": 1.227881
+      },
+      {
+        "bone": "DriverLeftThumbDistal",
+        "maximum_matrix_deviation": 1.20629
+      },
+      {
+        "bone": "mixamorig:RightShoulder",
+        "maximum_matrix_deviation": 0.984401
+      },
+      {
+        "bone": "mixamorig:RightArm",
+        "maximum_matrix_deviation": 1.324456
+      },
+      {
+        "bone": "mixamorig:RightForeArm",
+        "maximum_matrix_deviation": 1.964788
+      },
+      {
+        "bone": "mixamorig:RightHand",
+        "maximum_matrix_deviation": 1.0
+      },
+      {
+        "bone": "DriverRightIndexProximal",
+        "maximum_matrix_deviation": 1.0
+      },
+      {
+        "bone": "DriverRightIndexMiddle",
+        "maximum_matrix_deviation": 0.999996
+      },
+      {
+        "bone": "DriverRightIndexDistal",
+        "maximum_matrix_deviation": 1.0
+      },
+      {
+        "bone": "DriverRightMiddleProximal",
+        "maximum_matrix_deviation": 1.0
+      },
+      {
+        "bone": "DriverRightMiddleMiddle",
+        "maximum_matrix_deviation": 1.0
+      },
+      {
+        "bone": "DriverRightMiddleDistal",
+        "maximum_matrix_deviation": 0.999995
+      },
+      {
+        "bone": "DriverRightRingProximal",
+        "maximum_matrix_deviation": 1.0
+      },
+      {
+        "bone": "DriverRightRingMiddle",
+        "maximum_matrix_deviation": 0.999999
+      },
+      {
+        "bone": "DriverRightRingDistal",
+        "maximum_matrix_deviation": 0.999997
+      },
+      {
+        "bone": "DriverRightLittleProximal",
+        "maximum_matrix_deviation": 1.0
+      },
+      {
+        "bone": "DriverRightLittleMiddle",
+        "maximum_matrix_deviation": 1.000004
+      },
+      {
+        "bone": "DriverRightLittleDistal",
+        "maximum_matrix_deviation": 0.999998
+      },
+      {
+        "bone": "DriverRightThumbMetacarpal",
+        "maximum_matrix_deviation": 1.146328
+      },
+      {
+        "bone": "DriverRightThumbProximal",
+        "maximum_matrix_deviation": 1.227881
+      },
+      {
+        "bone": "DriverRightThumbDistal",
+        "maximum_matrix_deviation": 1.201134
+      },
+      {
+        "bone": "mixamorig:LeftUpLeg",
+        "maximum_matrix_deviation": 1.216924
+      },
+      {
+        "bone": "mixamorig:LeftLeg",
+        "maximum_matrix_deviation": 0.972806
+      },
+      {
+        "bone": "mixamorig:LeftFoot",
+        "maximum_matrix_deviation": 1.058511
+      },
+      {
+        "bone": "mixamorig:LeftToeBase",
+        "maximum_matrix_deviation": 0.958421
+      },
+      {
+        "bone": "mixamorig:LeftToe_End",
+        "maximum_matrix_deviation": 0.919928
+      },
+      {
+        "bone": "mixamorig:RightUpLeg",
+        "maximum_matrix_deviation": 1.216924
+      },
+      {
+        "bone": "mixamorig:RightLeg",
+        "maximum_matrix_deviation": 0.972806
+      },
+      {
+        "bone": "mixamorig:RightFoot",
+        "maximum_matrix_deviation": 1.058511
+      },
+      {
+        "bone": "mixamorig:RightToeBase",
+        "maximum_matrix_deviation": 0.958421
+      },
+      {
+        "bone": "mixamorig:RightToe_End",
+        "maximum_matrix_deviation": 0.919983
+      }
+    ]
+  },
+  "external_material_sources": [
+    {
+      "asset": "car",
+      "material": "UniformBlenderKitCarbonFiber.004",
+      "used": true
+    },
+    {
+      "asset": "car",
+      "material": "UniformBlenderKitCarbonFiber.006",
+      "used": true
+    }
+  ],
+  "generated_texture_provenance": [
+    {
+      "direct_base_color": true,
+      "file_matches_generation_report": true,
+      "generation_report_sha256": "4bde275f1cb556d6c9dfc6ebf22506b95866f831b4fd6b38c7f6c569d0103757",
+      "generator": "Built-in image_gen imagegen, edit mode, original UV atlases with original torso color reference",
+      "object": "Jacques Villeneuve Williams suit sleeves",
+      "packed_in_blend": true,
+      "packed_matches_file": true,
+      "packed_sha256": "4bde275f1cb556d6c9dfc6ebf22506b95866f831b4fd6b38c7f6c569d0103757",
+      "prompt_files": [
+        "scratch/williams_sleeve_image_generation/generation_prompt.txt",
+        "scratch/williams_sleeve_image_generation/glove_generation_prompt.txt"
+      ],
+      "published_source": {
+        "exists": true,
+        "path": "game/assets/season/1997/williams_completed/textures/jacques_villeneuve_williams_1997_sleeves_base_color.png",
+        "sha256": "4bde275f1cb556d6c9dfc6ebf22506b95866f831b4fd6b38c7f6c569d0103757",
+        "size_bytes": 2078995
+      }
+    },
+    {
+      "direct_base_color": true,
+      "file_matches_generation_report": true,
+      "generation_report_sha256": "60e72aec020f8f6e5f12ebdb5dfff4a91a9545bd23b29f1c28e55d91ced4dd1c",
+      "generator": "Built-in image_gen imagegen, edit mode, original UV atlases with original torso color reference",
+      "object": "Jacques Villeneuve Williams racing gloves",
+      "packed_in_blend": true,
+      "packed_matches_file": true,
+      "packed_sha256": "60e72aec020f8f6e5f12ebdb5dfff4a91a9545bd23b29f1c28e55d91ced4dd1c",
+      "prompt_files": [
+        "scratch/williams_sleeve_image_generation/generation_prompt.txt",
+        "scratch/williams_sleeve_image_generation/glove_generation_prompt.txt"
+      ],
+      "published_source": {
+        "exists": true,
+        "path": "game/assets/season/1997/williams_completed/textures/jacques_villeneuve_williams_1997_gloves_base_color.png",
+        "sha256": "60e72aec020f8f6e5f12ebdb5dfff4a91a9545bd23b29f1c28e55d91ced4dd1c",
+        "size_bytes": 2104464
+      }
+    }
+  ],
+  "historical_artifacts_excluded": [
+    {
+      "exists": true,
+      "path": "game/assets/season/1997/williams_completed/williams_fw19_textured.glb",
+      "reason": "Historical GLB from before the driver separation and the generated atlases; excluded as a source",
+      "sha256": "9ec706630755b04bf3c35d904742dcb93f4e71698d5756f5d65a840d3ef67000",
+      "size_bytes": 25191140
+    },
+    {
+      "exists": true,
+      "path": "game/assets/season/1997/williams_completed/williams_fw19_reimported.blend",
+      "reason": "Historical reimport evidence; not an authoring source",
+      "sha256": "81f120366ee0922a0c4b6a5e7a914a57b49343a35e29927d2bb6b4e6fb70c3c0",
+      "size_bytes": 25491272
+    },
+    {
+      "exists": true,
+      "path": "game/assets/season/1997/williams_completed/williams_fw19_textured.blend1",
+      "reason": "Blender automatic backup; never the active version",
+      "sha256": "55a9df6231766c0fd79b4aab4d1da4e7380c16249fb1acb2e45bb2381d86c681",
+      "size_bytes": 21763653
+    }
+  ],
+  "inventory_id": "williams_fw19_hockenheim_1997_villenueve_source_inventory",
+  "inventory_script": "record_blender_asset_inventory.py",
+  "meshes": [
+    {
+      "asset": "car",
+      "material_slots": [
+        "UniformBlenderKitCarbonFiber.006"
+      ],
+      "mesh": {
+        "edge_count": 2732,
+        "loop_count": 5256,
+        "polygon_count": 1752,
+        "position_sha256": "029e580980fb9e928b3542e3ba0253d4a99096d35316bca22e5cd9513ddc3470",
+        "topology_sha256": "e6d8c3a31dec497e01de1dc0b87a1c554c147d34829a909439bdc579714ff0ce",
+        "triangle_count": 1752,
+        "uv_sha256": "46f8750bd5bf27baf2c0ba79eb3f3b3701eb6b4c43d3244754ebadbca62deb80",
+        "vertex_count": 980
+      },
+      "modifiers": [],
+      "name": "GEO_STEERING_WHEEL_BODY",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.116547,
+          0.337025,
+          0.048468
+        ],
+        "minimum": [
+          -0.116547,
+          0.308219,
+          -0.0783
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "UniformBlenderKitCarbonFiber.004"
+      ],
+      "mesh": {
+        "edge_count": 445,
+        "loop_count": 756,
+        "polygon_count": 252,
+        "position_sha256": "5e95f199886397ecdfba451222b7c5fbe7c56ac871c8e9ce67399c02d5c024ba",
+        "topology_sha256": "9038fd38373aaa7de6b95d3b8ce8d596bf0fab78eada27e96c3a541a6208c3b1",
+        "triangle_count": 252,
+        "uv_sha256": "03487890554f442672619ebd0a9c33b23fdfd77c8ef350a9b0561a34fe6f7f87",
+        "vertex_count": 196
+      },
+      "modifiers": [],
+      "name": "GEO_STEERING_WHEEL_CENTER_FASTENER",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.007495,
+          0.311105,
+          -0.013005
+        ],
+        "minimum": [
+          -0.007495,
+          0.302063,
+          -0.027995
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "Screen"
+      ],
+      "mesh": {
+        "edge_count": 52,
+        "loop_count": 72,
+        "polygon_count": 24,
+        "position_sha256": "c8a35205c593a452325d4b4084c29915e0f4d041eac4b8e37a8168dab6aabc87",
+        "topology_sha256": "50b411ad35c9f0f09b60f625123be4032e269a72ab497b594239a17a5a2a8399",
+        "triangle_count": 24,
+        "uv_sha256": "1c323b400fdbdfc6c5c8b6eac90b652f332bd50332935efddfcf520195ef4566",
+        "vertex_count": 32
+      },
+      "modifiers": [],
+      "name": "GEO_STEERING_WHEEL_DISPLAY",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.044364,
+          0.309353,
+          0.041473
+        ],
+        "minimum": [
+          -0.044364,
+          0.30906,
+          0.001495
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "UniformBlenderKitCarbonFiber.006"
+      ],
+      "mesh": {
+        "edge_count": 208,
+        "loop_count": 264,
+        "polygon_count": 88,
+        "position_sha256": "3ee35ab76a8c453c20824056ae7ab4a05155d80883fb12a44e34dff8dcc86a4e",
+        "topology_sha256": "b9f9c0d4ab90373c9600974f18434bca8bb10335d196d0330743226e6a9fc37f",
+        "triangle_count": 88,
+        "uv_sha256": "2edf07ace357ba2d155de090f751c5f18e129dd6e0d2ce638ada7405164dc340",
+        "vertex_count": 152
+      },
+      "modifiers": [],
+      "name": "GEO_STEERING_WHEEL_PADDLE_LEFT",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.007805,
+          0.348814,
+          0.01983
+        ],
+        "minimum": [
+          -0.078549,
+          0.334787,
+          -0.05642
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "UniformBlenderKitCarbonFiber.006"
+      ],
+      "mesh": {
+        "edge_count": 208,
+        "loop_count": 264,
+        "polygon_count": 88,
+        "position_sha256": "c2084625d66516607e44ea215109ce5b7475b076d1a49c18879d32d3f2bb61ee",
+        "topology_sha256": "b9f9c0d4ab90373c9600974f18434bca8bb10335d196d0330743226e6a9fc37f",
+        "triangle_count": 88,
+        "uv_sha256": "b556ffee6ac353ebfa0f40131295c11644b10c6f07aa64d3c89cb1fcf466d023",
+        "vertex_count": 152
+      },
+      "modifiers": [],
+      "name": "GEO_STEERING_WHEEL_PADDLE_RIGHT",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.078549,
+          0.348814,
+          0.01983
+        ],
+        "minimum": [
+          0.007805,
+          0.334787,
+          -0.05642
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "Williams steering column charcoal metal"
+      ],
+      "mesh": {
+        "edge_count": 96,
+        "loop_count": 192,
+        "polygon_count": 34,
+        "position_sha256": "22c075b50da3275a850107a04be367d02c980f62652388e5ff577b304bc4b660",
+        "topology_sha256": "5cf3c1879a577ad4e0aeff7e2e45caffc9188f6027b628010cf704999b0fb0e4",
+        "triangle_count": 124,
+        "uv_sha256": "34991fa7a9ecb9910382a819e147f83c46600003869e0eee4d5ea50f06524274",
+        "vertex_count": 64
+      },
+      "modifiers": [],
+      "name": "Williams visible steering column",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.013,
+          0.462032,
+          -0.002
+        ],
+        "minimum": [
+          -0.013,
+          0.334593,
+          -0.028
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "cockpit_damage.tGA:cockpit_damage.tga",
+        "fw19_s.tGA:fw19_s.tga",
+        "fw19_cf.tGA:fw19_cf.tga",
+        "fw19_1.tGA:fw19_1.tga",
+        "fw19_b.tGA:fw19_b.tga",
+        "fw19_m.tGA:fw19_m.tga",
+        "fw19_d.tGA:fw19_d.tga",
+        "fw19_int.tGA:fw19_int.tga"
+      ],
+      "mesh": {
+        "edge_count": 60747,
+        "loop_count": 108819,
+        "polygon_count": 36273,
+        "position_sha256": "1effd565675632bb4b60be75c663959533f2dee4851ebb096def6a5cb441aead",
+        "topology_sha256": "1fa8de430a3938b47f2f1d71474e39be2e1592c98531133ba013e713c6309467",
+        "triangle_count": 36273,
+        "uv_sha256": "bc16cb4b6d18d36484415c539316e8ffd45bd64b7e8aab546dbc431af096a455",
+        "vertex_count": 24824
+      },
+      "modifiers": [],
+      "name": "cockpit",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.701089,
+          1.345404,
+          0.640612
+        ],
+        "minimum": [
+          -0.701091,
+          -2.090508,
+          -0.513751
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "cockpit_damage.tGA:cockpit_damage.tga",
+        "fw19_s.tGA:fw19_s.tga",
+        "fw19_cf.tGA:fw19_cf.tga"
+      ],
+      "mesh": {
+        "edge_count": 1420,
+        "loop_count": 2628,
+        "polygon_count": 876,
+        "position_sha256": "60b7be23de51b481a56e9c659217f06d84c5cd77d5bfde744ba03a4658059fe0",
+        "topology_sha256": "1b4c644bf0046e742c6a7248f8276c6d2d909bb0859d664e1207a3c68a57b6ec",
+        "triangle_count": 876,
+        "uv_sha256": "0821bf93938384e028976e47610cc0966e071a9d5d22a4a4343af6edf28ca943",
+        "vertex_count": 557
+      },
+      "modifiers": [],
+      "name": "engine",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.061692,
+          -1.772665,
+          -0.026802
+        ],
+        "minimum": [
+          -0.06169,
+          -2.304584,
+          -0.359416
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "cockpit_damage.tGA:cockpit_damage.tga"
+      ],
+      "mesh": {
+        "edge_count": 5,
+        "loop_count": 6,
+        "polygon_count": 2,
+        "position_sha256": "83d2f0c6d586f9d33b94af849e3f8afc50de779d9983912f9dae55f1cb3dc971",
+        "topology_sha256": "e629943333acba3e3c2968e17e178c8c64d5ddc58c66c0c4fe7740e442c96883",
+        "triangle_count": 2,
+        "uv_sha256": "690026ef0230d7cdeac82a282afdfc844e1b14f7e5c362a6b998a7b0e782f481",
+        "vertex_count": 4
+      },
+      "modifiers": [],
+      "name": "f_l_brakeglow",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.904819,
+          1.273592,
+          -0.099201
+        ],
+        "minimum": [
+          -0.904819,
+          1.020392,
+          -0.354201
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "cockpit_damage.tGA:cockpit_damage.tga"
+      ],
+      "mesh": {
+        "edge_count": 5,
+        "loop_count": 6,
+        "polygon_count": 2,
+        "position_sha256": "2bf21c1c00bf2727e20e603b455653991713917db8a6d5d4674b303b16dc9d51",
+        "topology_sha256": "e629943333acba3e3c2968e17e178c8c64d5ddc58c66c0c4fe7740e442c96883",
+        "triangle_count": 2,
+        "uv_sha256": "e0c54f08713d862d87e1063d628525b206701c70f143b3bbf131e44ef703468a",
+        "vertex_count": 4
+      },
+      "modifiers": [],
+      "name": "f_r_brakeglow",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.904819,
+          1.273592,
+          -0.099201
+        ],
+        "minimum": [
+          0.904819,
+          1.020392,
+          -0.354201
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_s.tGA:fw19_s.tga",
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "mesh": {
+        "edge_count": 3005,
+        "loop_count": 5286,
+        "polygon_count": 1762,
+        "position_sha256": "065f96489ac429dd1e268df52f0203a15af2709078da4a290a5628200d160a9c",
+        "topology_sha256": "a24273e152d5f4cca47e6fcd8bb2fcae960e42a2bc1593ac16e1061eba199861",
+        "triangle_count": 1762,
+        "uv_sha256": "d81de00c5ebf84465dd73744661c4fc7017a26df793f00d6bbd860db5eb33f9c",
+        "vertex_count": 1267
+      },
+      "modifiers": [],
+      "name": "left_barge_board",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.137345,
+          0.815392,
+          -0.045025
+        ],
+        "minimum": [
+          -0.639946,
+          -0.314268,
+          -0.488027
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "mesh": {
+        "edge_count": 2170,
+        "loop_count": 3732,
+        "polygon_count": 1244,
+        "position_sha256": "839940c1fefb62a049542fe2f1c39a9c58ee5e99386eec0f726f6751ed9f6d77",
+        "topology_sha256": "843405908e1e5cc7d5b6e172d964e8a511db7e963d08cb10d31e3db2c100f008",
+        "triangle_count": 1244,
+        "uv_sha256": "5ec482c13d0728d0fe329ffd4d821239c5e49ba244e835852d8e495b686d3948",
+        "vertex_count": 904
+      },
+      "modifiers": [],
+      "name": "left_front_fin",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.640139,
+          1.992133,
+          -0.288939
+        ],
+        "minimum": [
+          -0.671263,
+          1.51328,
+          -0.494693
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "cockpit_damage.tGA:cockpit_damage.tga",
+        "fw19_s.tGA:fw19_s.tga",
+        "fw19_cf.tGA:fw19_cf.tga"
+      ],
+      "mesh": {
+        "edge_count": 2946,
+        "loop_count": 5490,
+        "polygon_count": 1830,
+        "position_sha256": "85a7809bca13de82f9e20b80e30588e87af5d84cc0a38a7a72d43b9fc418103a",
+        "topology_sha256": "16df9b136184d21a3d918d87839c4f3a0359853b0b816207a0fd986decddfcbf",
+        "triangle_count": 1830,
+        "uv_sha256": "082b836cb088afd5e7fb6bc655363e6122f3108a4b7479cc848ed1860ed16179",
+        "vertex_count": 1143
+      },
+      "modifiers": [],
+      "name": "left_front_suspension",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.001271,
+          1.335652,
+          0.03744
+        ],
+        "minimum": [
+          -0.900519,
+          0.493488,
+          -0.395135
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "mesh": {
+        "edge_count": 1136,
+        "loop_count": 2052,
+        "polygon_count": 684,
+        "position_sha256": "cd68af698657cd4fbe82d71f4942ac21ec30e430501b6ea4d360f952d5050e9d",
+        "topology_sha256": "e69b2b9fd642c333bc12db0e7d4f28d995990b0ed984f50de4e77716f7a23925",
+        "triangle_count": 684,
+        "uv_sha256": "3b75bee0ac71b862afa87fc34f27994c812af28626305f6bc689730a6007251d",
+        "vertex_count": 460
+      },
+      "modifiers": [],
+      "name": "left_front_wing",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          1e-06,
+          1.9767,
+          -0.292828
+        ],
+        "minimum": [
+          -0.644839,
+          1.52174,
+          -0.456446
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "mesh": {
+        "edge_count": 2773,
+        "loop_count": 3987,
+        "polygon_count": 1329,
+        "position_sha256": "a42ca9442ffabf68b9d28c04ace603b5338835397399a0fcc6263f3a5be216a4",
+        "topology_sha256": "839b34d13714b792ef9b1fa61ea43bdc9ff681ef891d9dd5188e548d59b1f0f8",
+        "triangle_count": 1329,
+        "uv_sha256": "a57c29275e31144e8d0e1118a611dc5bb39d81979805be99b761150e9949cbf0",
+        "vertex_count": 1586
+      },
+      "modifiers": [],
+      "name": "left_rear_fin",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.489514,
+          -1.951821,
+          0.286938
+        ],
+        "minimum": [
+          -0.495371,
+          -2.304482,
+          -0.196106
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "cockpit_damage.tGA:cockpit_damage.tga",
+        "fw19_cf.tGA:fw19_cf.tga",
+        "fw19_b.tGA:fw19_b.tga",
+        "fw19_g.tGA:fw19_g.tga"
+      ],
+      "mesh": {
+        "edge_count": 6095,
+        "loop_count": 11109,
+        "polygon_count": 3703,
+        "position_sha256": "04ef3a2e6d8b6c3c09bbc9ae0a3a41422deb623000ffc51d6fdff6ec0a00957c",
+        "topology_sha256": "82117d3c1d6e89b300cdadb4df18385bd2dc21c24bb51a091cd4bf29bace320c",
+        "triangle_count": 3703,
+        "uv_sha256": "b23ce3c645b04eb3e1fe7e62c51f5996f21498c780d729486c797652800110fa",
+        "vertex_count": 2431
+      },
+      "modifiers": [],
+      "name": "left_rear_suspension",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.051275,
+          -1.363244,
+          -0.057963
+        ],
+        "minimum": [
+          -0.788673,
+          -1.926822,
+          -0.392021
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "mesh": {
+        "edge_count": 99,
+        "loop_count": 168,
+        "polygon_count": 56,
+        "position_sha256": "d18a5593ab31270688d41664aa8fd9ad7c6a11c575f7fa34b445aa31d7aae098",
+        "topology_sha256": "7e932280248b782d4b87f825e256fcea6bc19eee2d569a78aadd3d0efbd9c852",
+        "triangle_count": 56,
+        "uv_sha256": "1d39fd6f90ddf42de0a77bd6afeb49116a2d6199e1edb90aa318c6184b4573b8",
+        "vertex_count": 45
+      },
+      "modifiers": [],
+      "name": "left_sidepod",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.218301,
+          -0.408244,
+          0.079227
+        ],
+        "minimum": [
+          -0.303114,
+          -0.538567,
+          -0.007135
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_cf.tGA:fw19_cf.tga",
+        "fw19_r.tGA:fw19_r.tga"
+      ],
+      "mesh": {
+        "edge_count": 976,
+        "loop_count": 1728,
+        "polygon_count": 576,
+        "position_sha256": "76cc1d96ac5cd2b00053e95565edfe92b9dc6efda098d1b7a6f54db656a0f90f",
+        "topology_sha256": "eeb53938dcec857b2ccaff90786c66b577549f1c93ad11f3880f8014b03fde6f",
+        "triangle_count": 576,
+        "uv_sha256": "5ee958b55f34995b107bce4210d62ed153f21948e5dd7c6b26f702426c1cacf1",
+        "vertex_count": 410
+      },
+      "modifiers": [],
+      "name": "lower_rear_wing",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.491322,
+          -2.120148,
+          -0.029869
+        ],
+        "minimum": [
+          -0.491325,
+          -2.302133,
+          -0.139112
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "cockpit_damage.tGA:cockpit_damage.tga",
+        "fw19_1.tGA:fw19_1.tga",
+        "fw19_b.tGA:fw19_b.tga"
+      ],
+      "mesh": {
+        "edge_count": 2316,
+        "loop_count": 4080,
+        "polygon_count": 1360,
+        "position_sha256": "87da7367db5fda8a64967bb1d694291963ce1e1604b99979ca20000d163bb1b3",
+        "topology_sha256": "27c55a1fd724835724f9d5b8f013dc3b9d6be9ae657f6257d300e9fd1d44b00f",
+        "triangle_count": 1360,
+        "uv_sha256": "344c5f4079509957def78add0120abb74762652f69372c27171322cc4a44f499",
+        "vertex_count": 982
+      },
+      "modifiers": [],
+      "name": "nose_cone",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.161031,
+          2.139685,
+          0.062342
+        ],
+        "minimum": [
+          -0.16103,
+          1.344771,
+          -0.429435
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "cockpit_damage.tGA:cockpit_damage.tga"
+      ],
+      "mesh": {
+        "edge_count": 5,
+        "loop_count": 6,
+        "polygon_count": 2,
+        "position_sha256": "06655c1987eb81f8e286bf7059a4d6e7da9a4f2c7a8430016c7814b55e41f6c9",
+        "topology_sha256": "e629943333acba3e3c2968e17e178c8c64d5ddc58c66c0c4fe7740e442c96883",
+        "triangle_count": 2,
+        "uv_sha256": "57f7ce8a2628f7a4207ac3fcf507fecd4f8d724df99b884e5637a7cb03cc0400",
+        "vertex_count": 4
+      },
+      "modifiers": [],
+      "name": "r_l_brakeglow",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.791073,
+          -1.607871,
+          -0.096087
+        ],
+        "minimum": [
+          -0.791073,
+          -1.861071,
+          -0.351087
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "cockpit_damage.tGA:cockpit_damage.tga"
+      ],
+      "mesh": {
+        "edge_count": 5,
+        "loop_count": 6,
+        "polygon_count": 2,
+        "position_sha256": "e9368fea943363f70c289477c9af3e53cdd14fa6ad5f7a4b3d1c87c5ae84a8e2",
+        "topology_sha256": "e629943333acba3e3c2968e17e178c8c64d5ddc58c66c0c4fe7740e442c96883",
+        "triangle_count": 2,
+        "uv_sha256": "87b228485ff6fd72eb5cdb43c36ced5849923c8181212bd16495064ec6c82844",
+        "vertex_count": 4
+      },
+      "modifiers": [],
+      "name": "r_r_brakeglow",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.791073,
+          -1.607871,
+          -0.096087
+        ],
+        "minimum": [
+          0.791073,
+          -1.861071,
+          -0.351087
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "cockpit_damage.tGA:cockpit_damage.tga"
+      ],
+      "mesh": {
+        "edge_count": 25,
+        "loop_count": 36,
+        "polygon_count": 12,
+        "position_sha256": "3b2ca6193977c3f17594632560b18f36a3336801b60903c19eea63ff439abe14",
+        "topology_sha256": "4fe692ccbf8954d5e6a280d843b76c56f9383857547315f6f5d7f09c052c842f",
+        "triangle_count": 12,
+        "uv_sha256": "383fffa166fffae31519c58897f1b29622ae6c1120745a09b0bd9994275f804d",
+        "vertex_count": 14
+      },
+      "modifiers": [],
+      "name": "rear_light_on",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.055927,
+          -2.283188,
+          -0.038369
+        ],
+        "minimum": [
+          -0.05593,
+          -2.283338,
+          -0.137498
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_s.tGA:fw19_s.tga",
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "mesh": {
+        "edge_count": 3003,
+        "loop_count": 5286,
+        "polygon_count": 1762,
+        "position_sha256": "30cbcf641eec9fccee8e1c0dfdea6de1144123fdf988cd70a05cff2c3f264d38",
+        "topology_sha256": "a961cdc6bc87eda929a76b27ca21fd44779521db537ba7fbe4f1f9fdd610b6e7",
+        "triangle_count": 1762,
+        "uv_sha256": "95e1ab587610b8e35bf7c586079e073227ace5ad8f05fc72cfdcca497d548085",
+        "vertex_count": 1264
+      },
+      "modifiers": [],
+      "name": "right_barge_board",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.639946,
+          0.815391,
+          -0.045025
+        ],
+        "minimum": [
+          0.137345,
+          -0.314268,
+          -0.488027
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "mesh": {
+        "edge_count": 2182,
+        "loop_count": 3762,
+        "polygon_count": 1254,
+        "position_sha256": "bba1b709bbfb29bb71cd4020956b1bdacbbd54619b45854a2cbd1956a3264b8a",
+        "topology_sha256": "f677cd2dead99baa6cefa0c35f7db10f7222568d841254676328e6965e7f8e0c",
+        "triangle_count": 1254,
+        "uv_sha256": "d4e7aca52efa808e48d1693657ea153b0e18d3e1dce4b9f5cd93a01165a93ba7",
+        "vertex_count": 904
+      },
+      "modifiers": [],
+      "name": "right_front_fin",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.671265,
+          1.992132,
+          -0.288939
+        ],
+        "minimum": [
+          0.640141,
+          1.513279,
+          -0.494692
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "cockpit_damage.tGA:cockpit_damage.tga",
+        "fw19_s.tGA:fw19_s.tga",
+        "fw19_cf.tGA:fw19_cf.tga"
+      ],
+      "mesh": {
+        "edge_count": 2946,
+        "loop_count": 5490,
+        "polygon_count": 1830,
+        "position_sha256": "7fb90bdfb59cc6f6afbb180e88491d8418a4c37e106dff15457513830beb01f7",
+        "topology_sha256": "74627b8574a22a60aa203ee3e23ffa9c932e52c7173e0b0bd6c2c3e1a852af86",
+        "triangle_count": 1830,
+        "uv_sha256": "c6a48ce8a10ccacdac9f7e586b3ab758049d9b242e36941e6719caa5495a3f57",
+        "vertex_count": 1143
+      },
+      "modifiers": [],
+      "name": "right_front_suspension",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.900519,
+          1.335652,
+          0.03744
+        ],
+        "minimum": [
+          0.001271,
+          0.493488,
+          -0.395135
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "mesh": {
+        "edge_count": 1136,
+        "loop_count": 2052,
+        "polygon_count": 684,
+        "position_sha256": "4740bf6f1e144562c7492cb94cb8d8865fc99691be39f81aa9a5956e06c19997",
+        "topology_sha256": "d90785a745e4d205eefbd7b671ed57ce1f81ea4c2857bfc2143c11234baa6f7f",
+        "triangle_count": 684,
+        "uv_sha256": "95f3e09592f3dff8a4b6b198890bee72f08743670fa5f48e83d7f2d59b83f79f",
+        "vertex_count": 460
+      },
+      "modifiers": [],
+      "name": "right_front_wing",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.644841,
+          1.9767,
+          -0.292827
+        ],
+        "minimum": [
+          1e-06,
+          1.521739,
+          -0.456446
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "mesh": {
+        "edge_count": 2756,
+        "loop_count": 3957,
+        "polygon_count": 1319,
+        "position_sha256": "c14cbfb106f514022822c3a58b459a278134b0b107478c97db76f3dd9a36bd8a",
+        "topology_sha256": "c35cf4188d93fcb8b84d8ece4752201f0054b603e3819a5bcee7f0d68f0ae8af",
+        "triangle_count": 1319,
+        "uv_sha256": "316df5667d6e388352b662eb83d2a5ce1e816429bab8335d69ed53d446c10176",
+        "vertex_count": 1579
+      },
+      "modifiers": [],
+      "name": "right_rear_fin",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.495368,
+          -1.951821,
+          0.286938
+        ],
+        "minimum": [
+          0.489511,
+          -2.304482,
+          -0.196106
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "cockpit_damage.tGA:cockpit_damage.tga",
+        "fw19_cf.tGA:fw19_cf.tga",
+        "fw19_b.tGA:fw19_b.tga",
+        "fw19_g.tGA:fw19_g.tga"
+      ],
+      "mesh": {
+        "edge_count": 6095,
+        "loop_count": 11109,
+        "polygon_count": 3703,
+        "position_sha256": "c7c42af8284eb0669fb858d7b17ef9ae3b95817ef10474cd39d7c0f1f52fa385",
+        "topology_sha256": "a4b88bc25dea9cde3384b34a0e851d992853285fd39ebe67e5d4e6343451d9aa",
+        "triangle_count": 3703,
+        "uv_sha256": "e19eeee7fe23e84e80cdaafc2c15237849bc5d765d8f4000b1682fe493c416cf",
+        "vertex_count": 2431
+      },
+      "modifiers": [],
+      "name": "right_rear_suspension",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.788673,
+          -1.363244,
+          -0.057963
+        ],
+        "minimum": [
+          0.051275,
+          -1.926822,
+          -0.392021
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "mesh": {
+        "edge_count": 99,
+        "loop_count": 168,
+        "polygon_count": 56,
+        "position_sha256": "cb9200b6a8cf35caf82637337e33dc033a20a5ec84d3cc7e11f71a4fcd37dbea",
+        "topology_sha256": "bd97448bfac301b319a7e9eb7b165ab78e2b244b957015235596fc139074e395",
+        "triangle_count": 56,
+        "uv_sha256": "290738852ed942a4935fd871d62708fbddffadbae935edc1d67fb1738d00f304",
+        "vertex_count": 45
+      },
+      "modifiers": [],
+      "name": "right_sidepod",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.303114,
+          -0.408244,
+          0.079227
+        ],
+        "minimum": [
+          0.218301,
+          -0.538567,
+          -0.007135
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_cf.tGA:fw19_cf.tga",
+        "fw19_1.tGA:fw19_1.tga"
+      ],
+      "mesh": {
+        "edge_count": 508,
+        "loop_count": 756,
+        "polygon_count": 252,
+        "position_sha256": "9f62ab9cd53e0744030698e83d0f0e3d0e6f8a0c551917ee3c5fd53a86b6b5d9",
+        "topology_sha256": "f8e93a95a577bb3a2c599eb79c0291892b9b0599b16f7c0ee3a14d57076a0ddc",
+        "triangle_count": 252,
+        "uv_sha256": "8f3d9c88de31646f58be78cdef7a0f01e0ada6cd806f9039656b4b074b701c2a",
+        "vertex_count": 281
+      },
+      "modifiers": [],
+      "name": "upper_rear_wing",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.491436,
+          -2.040943,
+          0.284197
+        ],
+        "minimum": [
+          -0.491437,
+          -2.302192,
+          0.223618
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 416,
+        "loop_count": 768,
+        "polygon_count": 256,
+        "position_sha256": "ca0380072f2b5eb4935e7601cba21cf46dee60c7add8aacd1e915319dbacae78",
+        "topology_sha256": "bbc92ad321b2064aa54b2383337a04a05d20cce627cbbd8761afe8686fad146c",
+        "triangle_count": 256,
+        "uv_sha256": "1c5e4ef81fd7f9fa90cb0d24eccd96dbdd838a27c9a675aa62136f1f7b4a7c7b",
+        "vertex_count": 160
+      },
+      "modifiers": [],
+      "name": "wheel_front_left_F_wheel_R_InnerRim",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.754871,
+          1.306636,
+          -0.067057
+        ],
+        "minimum": [
+          -0.970603,
+          0.987348,
+          -0.386345
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 576,
+        "loop_count": 960,
+        "polygon_count": 320,
+        "position_sha256": "32f1497133dc6586bbf53a057451d4603e05d08160411a85ee898147ad64ef24",
+        "topology_sha256": "e4087ed825cc68c3cb0d99db40abd0dfef1ba8c7994d5c843c87346d17952f02",
+        "triangle_count": 320,
+        "uv_sha256": "84f548e72a25c7c0b7729a32a48ec625e8dc77a00e581593da47648e5eef8c9f",
+        "vertex_count": 256
+      },
+      "modifiers": [],
+      "name": "wheel_front_left_F_wheel_R_OuterRim",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.970603,
+          1.306636,
+          -0.067057
+        ],
+        "minimum": [
+          -1.054767,
+          0.987348,
+          -0.386345
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 1024,
+        "loop_count": 1920,
+        "polygon_count": 640,
+        "position_sha256": "f77ce1b2981f9035c4074c0bf7868374a64f40f32700e526f48f6f8f8d25ee40",
+        "topology_sha256": "7e015388a4190277feb06ab66d69293f53ca24a3e49a269211af6de782fe0738",
+        "triangle_count": 640,
+        "uv_sha256": "752eaaacd7611c744f0b03196ec4ac59ea932d6bf58cb66cbb1bc9b536879c8b",
+        "vertex_count": 384
+      },
+      "modifiers": [],
+      "name": "wheel_front_left_F_wheel_R_SideRim",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.752348,
+          1.323836,
+          -0.049856
+        ],
+        "minimum": [
+          -1.05729,
+          0.970148,
+          -0.403545
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 2256,
+        "loop_count": 4368,
+        "polygon_count": 1456,
+        "position_sha256": "8e0d10938a1f36138d5db1d39de19ba9424130b4fb84453f7cdc8366efc29b8f",
+        "topology_sha256": "cff4f879f305636df3e1f180537410fea4b81571932395b72d93f926c222f13f",
+        "triangle_count": 1456,
+        "uv_sha256": "ac3875f8c42a063edf54dba128b7352d817faa576047c0acedfc6db663d10993",
+        "vertex_count": 805
+      },
+      "modifiers": [],
+      "name": "wheel_front_left_F_wheel_R_Spoke",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.955987,
+          1.28635,
+          -0.087342
+        ],
+        "minimum": [
+          -1.003157,
+          1.007633,
+          -0.366059
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "michelin_tread_0_right_0.tGA:michelin_tread_0_right_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 1801,
+        "loop_count": 3456,
+        "polygon_count": 1152,
+        "position_sha256": "75c4c7636dcf96e2fdcc1452db5471054295fb680284f01c3c0f443308bb9c47",
+        "topology_sha256": "c09e1811687e67405f93db76e72bf836f3b0e79f59173c754a0059ea40973c23",
+        "triangle_count": 1152,
+        "uv_sha256": "9baddf0d3512e937689a498faf82af6be401e519b9ea068c6ba0642db0ed0a68",
+        "vertex_count": 650
+      },
+      "modifiers": [],
+      "name": "wheel_front_left_F_wheel_R_Tread",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.785525,
+          1.458941,
+          0.085249
+        ],
+        "minimum": [
+          -1.024138,
+          0.835043,
+          -0.53865
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 1248,
+        "loop_count": 2400,
+        "polygon_count": 800,
+        "position_sha256": "69b2403bbd1eeecdc6aafc57d6b0ea014e860a84653b18aecbefd5b1b7720e7f",
+        "topology_sha256": "048cb37bc3f5734bbfa7a9d2e9920222d8eeb2aac0d70678b24ce1ca8498c770",
+        "triangle_count": 800,
+        "uv_sha256": "260581c514f38648a248ed020239866d04c93f9ec8ac9a36e8c22932612323c6",
+        "vertex_count": 448
+      },
+      "modifiers": [],
+      "name": "wheel_front_left_F_wheel_R_TyreI",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.751048,
+          1.443142,
+          0.06945
+        ],
+        "minimum": [
+          -0.785525,
+          0.850842,
+          -0.522851
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga",
+        "nut_center.tGA:nut_center.tga"
+      ],
+      "mesh": {
+        "edge_count": 3508,
+        "loop_count": 6648,
+        "polygon_count": 2216,
+        "position_sha256": "bb2e44fc56c9917a6c248dfa20669e9515330a66b89cb911246f23dfa8c9468f",
+        "topology_sha256": "11cd778dfc5ec0c5bed97ded1ae96b29b37294e022b2230cd49bd2473bed6eda",
+        "triangle_count": 2216,
+        "uv_sha256": "7e020b661144b1687fa2bda01d12b37470a06bcea483e46285db4f0987245255",
+        "vertex_count": 1296
+      },
+      "modifiers": [],
+      "name": "wheel_front_left_F_wheel_R_TyreO",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.979979,
+          1.443142,
+          0.06945
+        ],
+        "minimum": [
+          -1.058589,
+          0.850842,
+          -0.522851
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 416,
+        "loop_count": 768,
+        "polygon_count": 256,
+        "position_sha256": "ca0380072f2b5eb4935e7601cba21cf46dee60c7add8aacd1e915319dbacae78",
+        "topology_sha256": "bbc92ad321b2064aa54b2383337a04a05d20cce627cbbd8761afe8686fad146c",
+        "triangle_count": 256,
+        "uv_sha256": "1c5e4ef81fd7f9fa90cb0d24eccd96dbdd838a27c9a675aa62136f1f7b4a7c7b",
+        "vertex_count": 160
+      },
+      "modifiers": [],
+      "name": "wheel_front_right_F_wheel_R_InnerRim",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.970603,
+          1.306636,
+          -0.067057
+        ],
+        "minimum": [
+          0.754871,
+          0.987348,
+          -0.386345
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 576,
+        "loop_count": 960,
+        "polygon_count": 320,
+        "position_sha256": "32f1497133dc6586bbf53a057451d4603e05d08160411a85ee898147ad64ef24",
+        "topology_sha256": "e4087ed825cc68c3cb0d99db40abd0dfef1ba8c7994d5c843c87346d17952f02",
+        "triangle_count": 320,
+        "uv_sha256": "84f548e72a25c7c0b7729a32a48ec625e8dc77a00e581593da47648e5eef8c9f",
+        "vertex_count": 256
+      },
+      "modifiers": [],
+      "name": "wheel_front_right_F_wheel_R_OuterRim",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          1.054767,
+          1.306636,
+          -0.067057
+        ],
+        "minimum": [
+          0.970603,
+          0.987348,
+          -0.386345
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 1024,
+        "loop_count": 1920,
+        "polygon_count": 640,
+        "position_sha256": "f77ce1b2981f9035c4074c0bf7868374a64f40f32700e526f48f6f8f8d25ee40",
+        "topology_sha256": "7e015388a4190277feb06ab66d69293f53ca24a3e49a269211af6de782fe0738",
+        "triangle_count": 640,
+        "uv_sha256": "752eaaacd7611c744f0b03196ec4ac59ea932d6bf58cb66cbb1bc9b536879c8b",
+        "vertex_count": 384
+      },
+      "modifiers": [],
+      "name": "wheel_front_right_F_wheel_R_SideRim",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          1.05729,
+          1.323836,
+          -0.049856
+        ],
+        "minimum": [
+          0.752348,
+          0.970148,
+          -0.403545
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 2256,
+        "loop_count": 4368,
+        "polygon_count": 1456,
+        "position_sha256": "8e0d10938a1f36138d5db1d39de19ba9424130b4fb84453f7cdc8366efc29b8f",
+        "topology_sha256": "cff4f879f305636df3e1f180537410fea4b81571932395b72d93f926c222f13f",
+        "triangle_count": 1456,
+        "uv_sha256": "ac3875f8c42a063edf54dba128b7352d817faa576047c0acedfc6db663d10993",
+        "vertex_count": 805
+      },
+      "modifiers": [],
+      "name": "wheel_front_right_F_wheel_R_Spoke",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          1.003157,
+          1.28635,
+          -0.087342
+        ],
+        "minimum": [
+          0.955987,
+          1.007633,
+          -0.366059
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "michelin_tread_0_right_0.tGA:michelin_tread_0_right_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 1801,
+        "loop_count": 3456,
+        "polygon_count": 1152,
+        "position_sha256": "75c4c7636dcf96e2fdcc1452db5471054295fb680284f01c3c0f443308bb9c47",
+        "topology_sha256": "c09e1811687e67405f93db76e72bf836f3b0e79f59173c754a0059ea40973c23",
+        "triangle_count": 1152,
+        "uv_sha256": "9baddf0d3512e937689a498faf82af6be401e519b9ea068c6ba0642db0ed0a68",
+        "vertex_count": 650
+      },
+      "modifiers": [],
+      "name": "wheel_front_right_F_wheel_R_Tread",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          1.024138,
+          1.458941,
+          0.085249
+        ],
+        "minimum": [
+          0.785525,
+          0.835043,
+          -0.53865
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 1248,
+        "loop_count": 2400,
+        "polygon_count": 800,
+        "position_sha256": "69b2403bbd1eeecdc6aafc57d6b0ea014e860a84653b18aecbefd5b1b7720e7f",
+        "topology_sha256": "048cb37bc3f5734bbfa7a9d2e9920222d8eeb2aac0d70678b24ce1ca8498c770",
+        "triangle_count": 800,
+        "uv_sha256": "260581c514f38648a248ed020239866d04c93f9ec8ac9a36e8c22932612323c6",
+        "vertex_count": 448
+      },
+      "modifiers": [],
+      "name": "wheel_front_right_F_wheel_R_TyreI",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.785525,
+          1.443142,
+          0.06945
+        ],
+        "minimum": [
+          0.751048,
+          0.850842,
+          -0.522851
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga",
+        "nut_center.tGA:nut_center.tga"
+      ],
+      "mesh": {
+        "edge_count": 3508,
+        "loop_count": 6648,
+        "polygon_count": 2216,
+        "position_sha256": "bb2e44fc56c9917a6c248dfa20669e9515330a66b89cb911246f23dfa8c9468f",
+        "topology_sha256": "11cd778dfc5ec0c5bed97ded1ae96b29b37294e022b2230cd49bd2473bed6eda",
+        "triangle_count": 2216,
+        "uv_sha256": "7e020b661144b1687fa2bda01d12b37470a06bcea483e46285db4f0987245255",
+        "vertex_count": 1296
+      },
+      "modifiers": [],
+      "name": "wheel_front_right_F_wheel_R_TyreO",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          1.058589,
+          1.443142,
+          0.06945
+        ],
+        "minimum": [
+          0.979979,
+          0.850842,
+          -0.522851
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 416,
+        "loop_count": 768,
+        "polygon_count": 256,
+        "position_sha256": "ca82a373ee48a182b2e26ef2a101268b40e310f959a2348ce8f72a5e8592d7ee",
+        "topology_sha256": "8b91241d1c7b6b1ed3b90c53338ec5819ecc898237317e91a6fe83a40295e184",
+        "triangle_count": 256,
+        "uv_sha256": "52e67ecea1a65d1e37f98d0e9ed2e771eded115e2803aa176724b1cdb418f5d0",
+        "vertex_count": 160
+      },
+      "modifiers": [],
+      "name": "wheel_rear_left_R_wheel_R_InnerRim",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.602457,
+          -1.574839,
+          -0.063955
+        ],
+        "minimum": [
+          -0.827281,
+          -1.894103,
+          -0.383219
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 576,
+        "loop_count": 960,
+        "polygon_count": 320,
+        "position_sha256": "49e036cc8d6e05b8e25b1159c4973c06287ee02e38adfb7017f2dea95688042d",
+        "topology_sha256": "22843ef5d1930733bfd30f87a6ab245ebcf736bda745c0cd92206d1c15eb9565",
+        "triangle_count": 320,
+        "uv_sha256": "6c57bf4ef2c2826b748245dbcd2e8a2e788a6b00da71a978d78c9dd6ae5ab756",
+        "vertex_count": 256
+      },
+      "modifiers": [],
+      "name": "wheel_rear_left_R_wheel_R_OuterRim",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.827281,
+          -1.574839,
+          -0.063955
+        ],
+        "minimum": [
+          -0.979689,
+          -1.894103,
+          -0.383219
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 1024,
+        "loop_count": 1920,
+        "polygon_count": 640,
+        "position_sha256": "c55cd6dd468c0b24ddb3814b573ae72595494dedba5891c1d58acacd88110aa1",
+        "topology_sha256": "000e57d309b62fc37c6aa71c8a42340a524058e2c6b3051266ef2ad5cb1b255f",
+        "triangle_count": 640,
+        "uv_sha256": "5f8bb027fe1a9906de84cccac2c418dbfdc7c3312f2f4fa133dcc73af1812a5d",
+        "vertex_count": 384
+      },
+      "modifiers": [],
+      "name": "wheel_rear_left_R_wheel_R_SideRim",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.600011,
+          -1.557614,
+          -0.04673
+        ],
+        "minimum": [
+          -0.982109,
+          -1.911327,
+          -0.400443
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 2384,
+        "loop_count": 4560,
+        "polygon_count": 1520,
+        "position_sha256": "2a5ce1357dc68d09f9d9cd49e3be470d9779dfebdd75bde8a043dc803726388e",
+        "topology_sha256": "7d3fcffe775494d80d956a8c8fc298a04696942390c56ce327db32e82df9bad5",
+        "triangle_count": 1520,
+        "uv_sha256": "64432738af39e2cd3d2418834c0598cc40eca1b5586f30b4244bec5911032424",
+        "vertex_count": 869
+      },
+      "modifiers": [],
+      "name": "wheel_rear_left_R_wheel_R_Spoke",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.810841,
+          -1.596113,
+          -0.085229
+        ],
+        "minimum": [
+          -0.860774,
+          -1.87483,
+          -0.363946
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "michelin_tread_0_right_0.tGA:michelin_tread_0_right_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 1802,
+        "loop_count": 3456,
+        "polygon_count": 1152,
+        "position_sha256": "5bf11e6c8cd81a8c70fcf4ac777f0f672cafb6a907ebf2da0055fcdb176221e8",
+        "topology_sha256": "061971b1a2eb75ef1e9018d2b42e07744198e5677c539692836f8871cc403483",
+        "triangle_count": 1152,
+        "uv_sha256": "e33134749a3c2ef82fd3ac17cde4eceb021e74d6f50aaceb3745a211934248d7",
+        "vertex_count": 651
+      },
+      "modifiers": [],
+      "name": "wheel_rear_left_R_wheel_R_Tread",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.622026,
+          -1.412454,
+          0.098429
+        ],
+        "minimum": [
+          -0.96012,
+          -2.056487,
+          -0.545603
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 1280,
+        "loop_count": 2400,
+        "polygon_count": 800,
+        "position_sha256": "b4fb5ce4257d8e516cc65271fc5e7b33fd8e98fa5272034f83f89623375ef613",
+        "topology_sha256": "e11a7b1c71ce60294c50ccfcf76b8b6193bd8c344cd750009649eb6005454b47",
+        "triangle_count": 800,
+        "uv_sha256": "3d85fd8a859a9b40cdeca298ea2a4fc795f89c53598523679e164521e46af675",
+        "vertex_count": 480
+      },
+      "modifiers": [],
+      "name": "wheel_rear_left_R_wheel_R_TyreI",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.59652,
+          -1.427794,
+          0.08309
+        ],
+        "minimum": [
+          -0.622026,
+          -2.041148,
+          -0.530264
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga",
+        "nut_center.tGA:nut_center.tga"
+      ],
+      "mesh": {
+        "edge_count": 3540,
+        "loop_count": 6648,
+        "polygon_count": 2216,
+        "position_sha256": "d8201d82104314f9c696aa8c805c8876b871bcecd1ce2f2dd702dfc400d5d990",
+        "topology_sha256": "6dd435f27f21947cdd555587a9ebae284c8778d0875adba654b14bd67fe7d5ea",
+        "triangle_count": 2216,
+        "uv_sha256": "c88e647821fdb2aeb3eee5389c39fc7dedd86629082774462f3d2f9f188f4742",
+        "vertex_count": 1328
+      },
+      "modifiers": [],
+      "name": "wheel_rear_left_R_wheel_R_TyreO",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.834905,
+          -1.427794,
+          0.08309
+        ],
+        "minimum": [
+          -0.985625,
+          -2.041148,
+          -0.530264
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 416,
+        "loop_count": 768,
+        "polygon_count": 256,
+        "position_sha256": "ca82a373ee48a182b2e26ef2a101268b40e310f959a2348ce8f72a5e8592d7ee",
+        "topology_sha256": "8b91241d1c7b6b1ed3b90c53338ec5819ecc898237317e91a6fe83a40295e184",
+        "triangle_count": 256,
+        "uv_sha256": "52e67ecea1a65d1e37f98d0e9ed2e771eded115e2803aa176724b1cdb418f5d0",
+        "vertex_count": 160
+      },
+      "modifiers": [],
+      "name": "wheel_rear_right_R_wheel_R_InnerRim",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.827281,
+          -1.574839,
+          -0.063955
+        ],
+        "minimum": [
+          0.602457,
+          -1.894103,
+          -0.383219
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 576,
+        "loop_count": 960,
+        "polygon_count": 320,
+        "position_sha256": "49e036cc8d6e05b8e25b1159c4973c06287ee02e38adfb7017f2dea95688042d",
+        "topology_sha256": "22843ef5d1930733bfd30f87a6ab245ebcf736bda745c0cd92206d1c15eb9565",
+        "triangle_count": 320,
+        "uv_sha256": "6c57bf4ef2c2826b748245dbcd2e8a2e788a6b00da71a978d78c9dd6ae5ab756",
+        "vertex_count": 256
+      },
+      "modifiers": [],
+      "name": "wheel_rear_right_R_wheel_R_OuterRim",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.979689,
+          -1.574839,
+          -0.063955
+        ],
+        "minimum": [
+          0.827281,
+          -1.894103,
+          -0.383219
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 1024,
+        "loop_count": 1920,
+        "polygon_count": 640,
+        "position_sha256": "c55cd6dd468c0b24ddb3814b573ae72595494dedba5891c1d58acacd88110aa1",
+        "topology_sha256": "000e57d309b62fc37c6aa71c8a42340a524058e2c6b3051266ef2ad5cb1b255f",
+        "triangle_count": 640,
+        "uv_sha256": "5f8bb027fe1a9906de84cccac2c418dbfdc7c3312f2f4fa133dcc73af1812a5d",
+        "vertex_count": 384
+      },
+      "modifiers": [],
+      "name": "wheel_rear_right_R_wheel_R_SideRim",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.982109,
+          -1.557614,
+          -0.04673
+        ],
+        "minimum": [
+          0.600011,
+          -1.911327,
+          -0.400443
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 2384,
+        "loop_count": 4560,
+        "polygon_count": 1520,
+        "position_sha256": "2a5ce1357dc68d09f9d9cd49e3be470d9779dfebdd75bde8a043dc803726388e",
+        "topology_sha256": "7d3fcffe775494d80d956a8c8fc298a04696942390c56ce327db32e82df9bad5",
+        "triangle_count": 1520,
+        "uv_sha256": "64432738af39e2cd3d2418834c0598cc40eca1b5586f30b4244bec5911032424",
+        "vertex_count": 869
+      },
+      "modifiers": [],
+      "name": "wheel_rear_right_R_wheel_R_Spoke",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.860774,
+          -1.596113,
+          -0.085229
+        ],
+        "minimum": [
+          0.810841,
+          -1.87483,
+          -0.363946
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "michelin_tread_0_right_0.tGA:michelin_tread_0_right_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 1802,
+        "loop_count": 3456,
+        "polygon_count": 1152,
+        "position_sha256": "5bf11e6c8cd81a8c70fcf4ac777f0f672cafb6a907ebf2da0055fcdb176221e8",
+        "topology_sha256": "061971b1a2eb75ef1e9018d2b42e07744198e5677c539692836f8871cc403483",
+        "triangle_count": 1152,
+        "uv_sha256": "e33134749a3c2ef82fd3ac17cde4eceb021e74d6f50aaceb3745a211934248d7",
+        "vertex_count": 651
+      },
+      "modifiers": [],
+      "name": "wheel_rear_right_R_wheel_R_Tread",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.96012,
+          -1.412455,
+          0.098429
+        ],
+        "minimum": [
+          0.622026,
+          -2.056487,
+          -0.545603
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+      ],
+      "mesh": {
+        "edge_count": 1280,
+        "loop_count": 2400,
+        "polygon_count": 800,
+        "position_sha256": "b4fb5ce4257d8e516cc65271fc5e7b33fd8e98fa5272034f83f89623375ef613",
+        "topology_sha256": "e11a7b1c71ce60294c50ccfcf76b8b6193bd8c344cd750009649eb6005454b47",
+        "triangle_count": 800,
+        "uv_sha256": "3d85fd8a859a9b40cdeca298ea2a4fc795f89c53598523679e164521e46af675",
+        "vertex_count": 480
+      },
+      "modifiers": [],
+      "name": "wheel_rear_right_R_wheel_R_TyreI",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.622026,
+          -1.427794,
+          0.08309
+        ],
+        "minimum": [
+          0.59652,
+          -2.041148,
+          -0.530264
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "wheel_michelin_0.tGA:wheel_michelin_0.tga",
+        "nut_center.tGA:nut_center.tga"
+      ],
+      "mesh": {
+        "edge_count": 3540,
+        "loop_count": 6648,
+        "polygon_count": 2216,
+        "position_sha256": "d8201d82104314f9c696aa8c805c8876b871bcecd1ce2f2dd702dfc400d5d990",
+        "topology_sha256": "6dd435f27f21947cdd555587a9ebae284c8778d0875adba654b14bd67fe7d5ea",
+        "triangle_count": 2216,
+        "uv_sha256": "c88e647821fdb2aeb3eee5389c39fc7dedd86629082774462f3d2f9f188f4742",
+        "vertex_count": 1328
+      },
+      "modifiers": [],
+      "name": "wheel_rear_right_R_wheel_R_TyreO",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.985625,
+          -1.427794,
+          0.08309
+        ],
+        "minimum": [
+          0.834905,
+          -2.041148,
+          -0.530264
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_s.tGA:fw19_s.tga"
+      ],
+      "mesh": {
+        "edge_count": 937,
+        "loop_count": 1764,
+        "polygon_count": 588,
+        "position_sha256": "5cc96ecb31d707f94363fa1958cc8efafc04e4fb50ce8cffcd0204526004f94a",
+        "topology_sha256": "1c790c4c8817b1e527fbe6062f3017187146554453d00d80014d417a40064ae1",
+        "triangle_count": 588,
+        "uv_sha256": "6015357d19728c2610b12dbd03817bc6c96ef786ceac3a60f5602f75fbfe692d",
+        "vertex_count": 350
+      },
+      "modifiers": [],
+      "name": "z_cockpit_insert",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.153759,
+          -0.590435,
+          0.131702
+        ],
+        "minimum": [
+          0.120865,
+          -0.614354,
+          0.127223
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_m.tGA:fw19_m.tga"
+      ],
+      "mesh": {
+        "edge_count": 44,
+        "loop_count": 72,
+        "polygon_count": 24,
+        "position_sha256": "8260792955ecb3be4678c9524cd172151abe4eeeac81ab090f86bb3d8e6e01f9",
+        "topology_sha256": "21334e4fa8ede69757b4aaaa48aeacdd0ddfa70616b06a8f00e2fe2e1a16ce4e",
+        "triangle_count": 24,
+        "uv_sha256": "bb0f458fcddf8a7e55189f37ed3936fab2a72bbc8fe94d96a1692baa06762d6b",
+        "vertex_count": 21
+      },
+      "modifiers": [],
+      "name": "z_cockpit_left_mirror",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          -0.28562,
+          0.165667,
+          0.111672
+        ],
+        "minimum": [
+          -0.38229,
+          0.138169,
+          0.063458
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_m.tGA:fw19_m.tga"
+      ],
+      "mesh": {
+        "edge_count": 44,
+        "loop_count": 72,
+        "polygon_count": 24,
+        "position_sha256": "f910cafc2c2876bf3a877c093465788538c014b73b817c74ac426980d2569521",
+        "topology_sha256": "85d553044423407878a403ba1fbef1d2462db56f98e81655b519f13cb9137087",
+        "triangle_count": 24,
+        "uv_sha256": "bd7f54cdca1099459ead20f6db36acd24d33ca9b5e650bfd71027fec540304a4",
+        "vertex_count": 21
+      },
+      "modifiers": [],
+      "name": "z_cockpit_right_mirror",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.38229,
+          0.165666,
+          0.111672
+        ],
+        "minimum": [
+          0.28562,
+          0.138169,
+          0.063458
+        ]
+      }
+    },
+    {
+      "asset": "car",
+      "material_slots": [
+        "fw19_m.tGA:fw19_m.tga"
+      ],
+      "mesh": {
+        "edge_count": 258,
+        "loop_count": 390,
+        "polygon_count": 130,
+        "position_sha256": "879182f5bab014109ec0104a1c59269104e44acf1b52c41f038e1210d84c2a63",
+        "topology_sha256": "485773b418ae84b55daf40934070a058131dc56d5b13705614ec7f3550061bb6",
+        "triangle_count": 130,
+        "uv_sha256": "cdc400cb0079efa6aec69f1b08ebdc80e4416912a17cb7af248029623a23325d",
+        "vertex_count": 130
+      },
+      "modifiers": [],
+      "name": "z_cockpit_visor",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.180123,
+          0.406477,
+          0.109922
+        ],
+        "minimum": [
+          -0.180123,
+          0.268377,
+          0.028084
+        ]
+      }
+    },
+    {
+      "asset": "driver",
+      "material_slots": [
+        "Jacques Villeneuve 1997 helmet livery"
+      ],
+      "mesh": {
+        "edge_count": 7753,
+        "loop_count": 13620,
+        "polygon_count": 4540,
+        "position_sha256": "8f9b897cb686a9205ef247a85921672146e0fd1fc1929bc1e8a83c9115e976a4",
+        "topology_sha256": "24533a7f60d8f21a0549ef024cb755d9eb8c3fbddc50bc2ade3f5bb3e3ece595",
+        "triangle_count": 4540,
+        "uv_sha256": "d3be5b1cf930d659ec65e96a8e9111e19fc8526c5a9d179a776ca6e88576bc9a",
+        "vertex_count": 3266
+      },
+      "modifiers": [],
+      "name": "Jacques Villeneuve 1997 helmet shell",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.1266,
+          0.039923,
+          0.273829
+        ],
+        "minimum": [
+          -0.1266,
+          -0.296816,
+          -0.020115
+        ]
+      }
+    },
+    {
+      "asset": "driver",
+      "material_slots": [
+        "Jacques Villeneuve 1997 dark helmet visor"
+      ],
+      "mesh": {
+        "edge_count": 164,
+        "loop_count": 264,
+        "polygon_count": 88,
+        "position_sha256": "81af3f6dd1687f8ae316de9789f4f8e2e1c58b077d48d075a71ebc4c96440811",
+        "topology_sha256": "ba2ce6f493d0ff2af8df26210f445e41b65d6207a597337320aa43cce62802e1",
+        "triangle_count": 88,
+        "uv_sha256": "0990b6730e47c6c9177f78abed94f51c4d60293f1a77408de1671ff3f5d0a6e2",
+        "vertex_count": 76
+      },
+      "modifiers": [],
+      "name": "Jacques Villeneuve 1997 helmet visor",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.1506,
+          -0.072168,
+          0.147362
+        ],
+        "minimum": [
+          -0.1506,
+          -0.10586,
+          0.098232
+        ]
+      }
+    },
+    {
+      "asset": "driver",
+      "material_slots": [
+        "Jacques Villeneuve Williams generated unbranded blue white black gloves"
+      ],
+      "mesh": {
+        "edge_count": 664,
+        "loop_count": 1152,
+        "polygon_count": 384,
+        "position_sha256": "e545951df2e4925763a3d9532e813394039f7cc91a437b3ecbc5cb5924a18bc1",
+        "topology_sha256": "9a7e5a367e2688a6af0ef69f2dba700844f802030d98396d33cf3c046a96aee5",
+        "triangle_count": 384,
+        "uv_sha256": "8312ee0952843512d878c0ea222fba4ea7e4807a8e80b863439de46c34a802f8",
+        "vertex_count": 284
+      },
+      "modifiers": [
+        {
+          "name": "DriverSkeletalDeformation",
+          "object": "Jacques Villeneuve arm and hand skeleton",
+          "show_render": true,
+          "show_viewport": true,
+          "type": "ARMATURE"
+        }
+      ],
+      "name": "Jacques Villeneuve Williams racing gloves",
+      "vertex_group_count": 16,
+      "world_bounds": {
+        "maximum": [
+          0.155145,
+          0.382079,
+          0.02634
+        ],
+        "minimum": [
+          -0.155145,
+          0.163593,
+          -0.151037
+        ]
+      }
+    },
+    {
+      "asset": "driver",
+      "material_slots": [
+        "RT_HANS",
+        "Jacques Villeneuve Williams generated unbranded blue white sleeve fabric"
+      ],
+      "mesh": {
+        "edge_count": 320,
+        "loop_count": 588,
+        "polygon_count": 196,
+        "position_sha256": "597cd8251afa72bb91b50006237341332d77bc960d1fa2c336d3f024d0ef90f6",
+        "topology_sha256": "b772a86e9954c3d3b1576fedaf8bbd8105dc18a2c63df060807becb70bfa818a",
+        "triangle_count": 196,
+        "uv_sha256": "f1d775cf8308b7192a7f5264d4130894b287c37c8e7261fbf129ccd035344cca",
+        "vertex_count": 130
+      },
+      "modifiers": [
+        {
+          "name": "DriverSkeletalDeformation",
+          "object": "Jacques Villeneuve arm and hand skeleton",
+          "show_render": true,
+          "show_viewport": true,
+          "type": "ARMATURE"
+        }
+      ],
+      "name": "Jacques Villeneuve Williams suit sleeves",
+      "vertex_group_count": 14,
+      "world_bounds": {
+        "maximum": [
+          0.221637,
+          0.25693,
+          -0.025573
+        ],
+        "minimum": [
+          -0.221637,
+          -0.138739,
+          -0.253609
+        ]
+      }
+    },
+    {
+      "asset": "driver",
+      "material_slots": [
+        "Jacques Villeneuve Williams 1997 suit boots and harness"
+      ],
+      "mesh": {
+        "edge_count": 3361,
+        "loop_count": 5100,
+        "polygon_count": 1700,
+        "position_sha256": "2af6739a9159b13d6e379e1fb199f8c73ecaf56183daa5c81d58d604214ccbc2",
+        "topology_sha256": "9906529457f97646394c8249b52158bdb741302b0ac7912d6d17ebcfa1953c9c",
+        "triangle_count": 1700,
+        "uv_sha256": "40e63f101eaa943f8a0c6ace9d47a4afdbaa6a43fe0589cd37fe7bbdc390d5dc",
+        "vertex_count": 1757
+      },
+      "modifiers": [],
+      "name": "Jacques Villeneuve Williams torso legs boots and safety harness",
+      "vertex_group_count": 0,
+      "world_bounds": {
+        "maximum": [
+          0.202904,
+          1.019817,
+          0.015232
+        ],
+        "minimum": [
+          -0.203151,
+          -0.318515,
+          -0.422114
+        ]
+      }
+    }
+  ],
+  "pending_contract_classification": {
+    "car": [
+      "Williams visible steering column",
+      "cockpit",
+      "engine",
+      "f_l_brakeglow",
+      "f_r_brakeglow",
+      "left_barge_board",
+      "left_front_fin",
+      "left_front_suspension",
+      "left_front_wing",
+      "left_rear_fin",
+      "left_rear_suspension",
+      "left_sidepod",
+      "lower_rear_wing",
+      "nose_cone",
+      "r_l_brakeglow",
+      "r_r_brakeglow",
+      "rear_light_on",
+      "right_barge_board",
+      "right_front_fin",
+      "right_front_suspension",
+      "right_front_wing",
+      "right_rear_fin",
+      "right_rear_suspension",
+      "right_sidepod",
+      "upper_rear_wing",
+      "wheel_front_left_F_wheel_R_InnerRim",
+      "wheel_front_left_F_wheel_R_OuterRim",
+      "wheel_front_left_F_wheel_R_SideRim",
+      "wheel_front_left_F_wheel_R_Spoke",
+      "wheel_front_left_F_wheel_R_Tread",
+      "wheel_front_left_F_wheel_R_TyreI",
+      "wheel_front_left_F_wheel_R_TyreO",
+      "wheel_front_right_F_wheel_R_InnerRim",
+      "wheel_front_right_F_wheel_R_OuterRim",
+      "wheel_front_right_F_wheel_R_SideRim",
+      "wheel_front_right_F_wheel_R_Spoke",
+      "wheel_front_right_F_wheel_R_Tread",
+      "wheel_front_right_F_wheel_R_TyreI",
+      "wheel_front_right_F_wheel_R_TyreO",
+      "wheel_rear_left_R_wheel_R_InnerRim",
+      "wheel_rear_left_R_wheel_R_OuterRim",
+      "wheel_rear_left_R_wheel_R_SideRim",
+      "wheel_rear_left_R_wheel_R_Spoke",
+      "wheel_rear_left_R_wheel_R_Tread",
+      "wheel_rear_left_R_wheel_R_TyreI",
+      "wheel_rear_left_R_wheel_R_TyreO",
+      "wheel_rear_right_R_wheel_R_InnerRim",
+      "wheel_rear_right_R_wheel_R_OuterRim",
+      "wheel_rear_right_R_wheel_R_SideRim",
+      "wheel_rear_right_R_wheel_R_Spoke",
+      "wheel_rear_right_R_wheel_R_Tread",
+      "wheel_rear_right_R_wheel_R_TyreI",
+      "wheel_rear_right_R_wheel_R_TyreO",
+      "z_cockpit_insert",
+      "z_cockpit_left_mirror",
+      "z_cockpit_right_mirror",
+      "z_cockpit_visor"
+    ],
+    "driver": [
+      "Jacques Villeneuve 1997 helmet shell",
+      "Jacques Villeneuve 1997 helmet visor",
+      "Jacques Villeneuve Williams racing gloves",
+      "Jacques Villeneuve Williams suit sleeves",
+      "Jacques Villeneuve Williams torso legs boots and safety harness"
+    ]
+  },
+  "promotion": {
+    "commands": [
+      "\"C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe\" --background --factory-startup --python-exit-code 1 --python \"D:\\Formula90s\\scratch\\williams_step_one_source_inventory_20261017\\record_blender_asset_inventory.py\" -- \"D:\\Formula90s\\scratch\\williams_step_one_source_inventory_20261017\" \"car=D:\\Formula90s\\game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve\\car/source/williams_fw19_hockenheim_1997_car.blend\" \"driver=D:\\Formula90s\\game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve\\driver/source/jacques_villeneuve_williams_fw19_1997_driver.blend\"",
+      "python \"D:\\Formula90s\\scratch\\williams_step_one_source_inventory_20261017\\record_repository_provenance.py\"",
+      "python \"D:\\Formula90s\\scratch\\williams_step_one_source_inventory_20261017\\assemble_source_inventory.py\""
+    ],
+    "detail_file_stays_in_scratch": {
+      "path": "D:\\Formula90s\\scratch\\williams_step_one_source_inventory_20261017\\source_inventory_raw.json",
+      "reason": "Large per-vertex dump; kept in scratch and referenced for regeneration",
+      "sha256": "67117051675fd3f200a016a0424ff89da7fbb058cedcea3e39c09c55952487d7",
+      "size_bytes": 610914
+    },
+    "promoted_by": "assistant",
+    "recorded_at_utc": "2026-10-17T18:24:22.488349+00:00",
+    "repository": {
+      "branch": "main-clean",
+      "build_head_parity": false,
+      "build_source": "304101829536cb63fb0c712fe4ae1020c4a130c0",
+      "head": "fbdae5d1f31beb8751e01a0c36bac3474506ff49",
+      "modified_paths": [
+        ".gitignore",
+        "game/BUILD_SOURCE",
+        "game/addons/formula90s/bin/formula90_core.dll",
+        "game/addons/formula90s/bin/formula90_core.windows.template_debug.x86_64.dll",
+        "game/addons/formula90s/bin/game_sim.dll",
+        "game/addons/formula90s/bin/game_sim.windows.template_debug.x86_64.dll",
+        "game/addons/formula90s/bin/libformula90s.windows.template_debug.x86_64.dll",
+        "game/addons/formula90s/bin/psx_art_plugin.dll",
+        "game/addons/formula90s/bin/psx_art_plugin.windows.template_debug.x86_64.dll",
+        "game/addons/formula90s/bin/vehicle_audio_engine.dll",
+        "game/addons/formula90s/bin/vehicle_audio_engine.windows.template_debug.x86_64.dll",
+        "game/addons/formula90s/bin/vehicle_physics_engine.windows.template_debug.x86_64.dll",
+        "game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/car/source/williams_fw19_hockenheim_1997_car.blend",
+        "game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/reports/authoring_source_promotion.json"
+      ],
+      "root": "D:\\Formula90s",
+      "status_entry_count": 433,
+      "untracked_entry_count": 419
+    },
+    "tools": [
+      {
+        "path": "scratch/williams_step_one_source_inventory_20261017/record_blender_asset_inventory.py",
+        "sha256": "fdc03c01c37a16760a91ef2d1c91cb46fbec3bfa20289f9b10f918144abea263"
+      },
+      {
+        "path": "scratch/williams_step_one_source_inventory_20261017/record_repository_provenance.py",
+        "sha256": "c9179fc6b81216445df63bd3947a6cc84a68dc0e30f225984a2b07348b458444"
+      },
+      {
+        "path": "scratch/williams_step_one_source_inventory_20261017/assemble_source_inventory.py",
+        "sha256": "bdad21a7a6e773b8b377c71b803716162e5a77ab0b2369315ba38e769d87d966"
+      }
+    ],
+    "user_request": "Allow the three reports to be versioned and promote the Step 1 and Step 2 evidence"
+  },
+  "recorded_at_utc": "2026-10-17T17:41:19.008577+00:00",
+  "repository": {
+    "blender": {
+      "binary": "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe",
+      "version": "Blender 5.2.0 LTS"
+    },
+    "branch": "main-clean",
+    "build_source": "304101829536cb63fb0c712fe4ae1020c4a130c0",
+    "external_checkout": {
+      "branch": "codex/grand-prix-four-content-audit",
+      "head": "4f478b72977493656c2f2873e7fcee7ca21a1d62",
+      "path": "D:\\Formula90s\\scratch\\grand_prix_four_checkout"
+    },
+    "head": "fbdae5d1f31beb8751e01a0c36bac3474506ff49",
+    "modified_paths": [
+      "game/BUILD_SOURCE",
+      "game/addons/formula90s/bin/formula90_core.dll",
+      "game/addons/formula90s/bin/formula90_core.windows.template_debug.x86_64.dll",
+      "game/addons/formula90s/bin/game_sim.dll",
+      "game/addons/formula90s/bin/game_sim.windows.template_debug.x86_64.dll",
+      "game/addons/formula90s/bin/libformula90s.windows.template_debug.x86_64.dll",
+      "game/addons/formula90s/bin/psx_art_plugin.dll",
+      "game/addons/formula90s/bin/psx_art_plugin.windows.template_debug.x86_64.dll",
+      "game/addons/formula90s/bin/vehicle_audio_engine.dll",
+      "game/addons/formula90s/bin/vehicle_audio_engine.windows.template_debug.x86_64.dll",
+      "game/addons/formula90s/bin/vehicle_physics_engine.windows.template_debug.x86_64.dll"
+    ],
+    "root": "D:\\Formula90s",
+    "status_entry_count": 429,
+    "untracked_entry_count": 418
+  },
+  "scope": "Step 1 source inventory for the Williams FW19 Hockenheim 1997 Villeneuve variant",
+  "sprint_item": "Visual publication of the Williams variant, followed by integration and Fuji testing; no other program is modified",
+  "unused_images": {
+    "car": [
+      "Williams Villeneuve external steering wheel and sleeve texture reference"
+    ],
+    "driver": [
+      "Williams Villeneuve external steering wheel and sleeve texture reference",
+      "fw19_cf.tga"
+    ]
+  },
+  "unused_materials": {
+    "car": [
+      "Williams carbon original before charcoal preview"
+    ],
+    "driver": [
+      "Jacques Villeneuve Williams blue white black gloves",
+      "Jacques Villeneuve Williams blue white black sleeves",
+      "Williams carbon original before charcoal preview"
+    ]
+  },
+  "used_images": {
+    "car": [
+      "Carbon_Fiber_diffuse.jpg",
+      "Carbon_Fiber_normal.jpg",
+      "Carbon_Fiber_roughness.jpg",
+      "cockpit_damage.tga",
+      "fw19_1.tga",
+      "fw19_b.tga",
+      "fw19_cf.tga",
+      "fw19_d.tga",
+      "fw19_g.tga",
+      "fw19_int.tga",
+      "fw19_m.tga",
+      "fw19_r.tga",
+      "fw19_s.tga",
+      "goodyear_tread_0_right_0.tga",
+      "nut_center.tga",
+      "wheel_gy-oz-blck-yllw_0.tga"
+    ],
+    "driver": [
+      "Jacques Villeneuve Williams 1997 generated glove base color",
+      "Jacques Villeneuve Williams 1997 generated sleeve base color",
+      "LewisHamiltonInspiredGloves.png",
+      "LewisHamiltonInspiredSuit.png",
+      "driver1_1.tga",
+      "driver1_2.tga",
+      "fw19_d.tga",
+      "hans.dds"
+    ]
+  },
+  "used_materials": {
+    "car": [
+      "Screen",
+      "UniformBlenderKitCarbonFiber.004",
+      "UniformBlenderKitCarbonFiber.006",
+      "Williams steering column charcoal metal",
+      "cockpit_damage.tGA:cockpit_damage.tga",
+      "fw19_1.tGA:fw19_1.tga",
+      "fw19_b.tGA:fw19_b.tga",
+      "fw19_cf.tGA:fw19_cf.tga",
+      "fw19_d.tGA:fw19_d.tga",
+      "fw19_g.tGA:fw19_g.tga",
+      "fw19_int.tGA:fw19_int.tga",
+      "fw19_m.tGA:fw19_m.tga",
+      "fw19_r.tGA:fw19_r.tga",
+      "fw19_s.tGA:fw19_s.tga",
+      "michelin_tread_0_right_0.tGA:michelin_tread_0_right_0.tga",
+      "nut_center.tGA:nut_center.tga",
+      "wheel_michelin_0.tGA:wheel_michelin_0.tga"
+    ],
+    "driver": [
+      "Jacques Villeneuve 1997 dark helmet visor",
+      "Jacques Villeneuve 1997 helmet livery",
+      "Jacques Villeneuve Williams 1997 suit boots and harness",
+      "Jacques Villeneuve Williams generated unbranded blue white black gloves",
+      "Jacques Villeneuve Williams generated unbranded blue white sleeve fabric",
+      "RT_HANS"
+    ]
+  },
+  "user_decisions": {
+    "authorized_work": "Step 1 inventory only",
+    "driver_contract": "Static in the first visual integration"
+  }
+}

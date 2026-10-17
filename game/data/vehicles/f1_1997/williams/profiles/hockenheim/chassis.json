@@ -1,0 +1,1215 @@
+{
+  "chassis": {
+    "center_of_gravity_height_offset": -0.24365,
+    "front_weight_distribution": 0.445,
+    "inertia_multipliers": {
+      "x": 1.0,
+      "y": 1.0,
+      "z": 1.0
+    },
+    "vehicle_mass": 547.0,
+    "vehicle_mass_excludes_wheel_assemblies": true,
+    "vehicle_name": "Williams FW19 Renault 1997 (Hockenheim, Villeneuve)"
+  },
+  "geometry": {
+    "front_track": 1.669974,
+    "rear_track": 1.6,
+    "wheelbase": 2.89
+  },
+  "physical_mass_inventory": {
+    "base_budget_kilograms": 547.0,
+    "components": [
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "body panels",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                50.7,
+                0,
+                0
+              ],
+              [
+                0,
+                49.275,
+                0
+              ],
+              [
+                0,
+                0,
+                13.575
+              ]
+            ]
+          },
+          "mass_kilograms": 90.0,
+          "name": "body_panels",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 81.0,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 99.0
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "aerodynamics and bodywork",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": -0.05,
+            "z": 0.0
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                40.1475,
+                0,
+                0
+              ],
+              [
+                0,
+                54.06,
+                0
+              ],
+              [
+                0,
+                0,
+                14.7075
+              ]
+            ]
+          },
+          "mass_kilograms": 53.0,
+          "name": "aerodynamics_and_bodywork",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 47.7,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 58.3
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "engine rs9 and ancillaries",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": -0.05,
+            "z": 0.55
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                7.461667,
+                0,
+                0
+              ],
+              [
+                0,
+                8.570833,
+                0
+              ],
+              [
+                0,
+                0,
+                6.150833
+              ]
+            ]
+          },
+          "mass_kilograms": 121.0,
+          "name": "engine_rs9_and_ancillaries",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 108.9,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 133.1
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "gearbox and differential",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": -0.05,
+            "z": 0.85
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                1.605833,
+                0,
+                0
+              ],
+              [
+                0,
+                1.605833,
+                0
+              ],
+              [
+                0,
+                0,
+                1.253333
+              ]
+            ]
+          },
+          "mass_kilograms": 47.0,
+          "name": "gearbox_and_differential",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 42.3,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 51.7
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "front suspension and steering",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": -0.1,
+            "z": -1.2
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.615,
+                0,
+                0
+              ],
+              [
+                0,
+                4.215,
+                0
+              ],
+              [
+                0,
+                0,
+                4.08
+              ]
+            ]
+          },
+          "mass_kilograms": 18.0,
+          "name": "front_suspension_and_steering",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 16.2,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 19.8
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "rear suspension",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": -0.1,
+            "z": 1.3
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.7175,
+                0,
+                0
+              ],
+              [
+                0,
+                4.375,
+                0
+              ],
+              [
+                0,
+                0,
+                4.2175
+              ]
+            ]
+          },
+          "mass_kilograms": 21.0,
+          "name": "rear_suspension",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 18.9,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 23.1
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "clutch axles and hydraulics",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.6
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                1.785,
+                0,
+                0
+              ],
+              [
+                0,
+                1.785,
+                0
+              ],
+              [
+                0,
+                0,
+                0.21
+              ]
+            ]
+          },
+          "mass_kilograms": 14.0,
+          "name": "clutch_axles_and_hydraulics",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 12.6,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 15.4
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "brakes and calipers",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": -0.1,
+            "z": 0.1
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                4.416667,
+                0,
+                0
+              ],
+              [
+                0,
+                7.533333,
+                0
+              ],
+              [
+                0,
+                0,
+                3.416667
+              ]
+            ]
+          },
+          "mass_kilograms": 20.0,
+          "name": "brakes_and_calipers",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 18.0,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 22.0
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "radiators and ducts",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": 0.05,
+            "z": 0.2
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                1.533333,
+                0,
+                0
+              ],
+              [
+                0,
+                3.986667,
+                0
+              ],
+              [
+                0,
+                0,
+                3.066667
+              ]
+            ]
+          },
+          "mass_kilograms": 23.0,
+          "name": "radiators_and_ducts",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 20.7,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 25.3
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "oil and coolant",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.4
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.4875,
+                0,
+                0
+              ],
+              [
+                0,
+                0.563333,
+                0
+              ],
+              [
+                0,
+                0,
+                0.270833
+              ]
+            ]
+          },
+          "mass_kilograms": 13.0,
+          "name": "oil_and_coolant",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 11.7,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 14.3
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "electrical and ecu",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": 0.1,
+            "z": 0.3
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.726667,
+                0,
+                0
+              ],
+              [
+                0,
+                0.833333,
+                0
+              ],
+              [
+                0,
+                0,
+                0.226667
+              ]
+            ]
+          },
+          "mass_kilograms": 8.0,
+          "name": "electrical_and_ecu",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 7.2,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 8.8
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "fuel tank empty",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": -0.05,
+            "z": 0.6
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.41,
+                0,
+                0
+              ],
+              [
+                0,
+                0.5,
+                0
+              ],
+              [
+                0,
+                0,
+                0.41
+              ]
+            ]
+          },
+          "mass_kilograms": 12.0,
+          "name": "fuel_tank_empty",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 10.8,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 13.2
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "seat and harness",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.1
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.205,
+                0,
+                0
+              ],
+              [
+                0,
+                0.25,
+                0
+              ],
+              [
+                0,
+                0,
+                0.205
+              ]
+            ]
+          },
+          "mass_kilograms": 6.0,
+          "name": "seat_and_harness",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 5.4,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 6.6
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "driver",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": 0.1,
+            "z": -0.2
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                5.3125,
+                0,
+                0
+              ],
+              [
+                0,
+                4.625,
+                0
+              ],
+              [
+                0,
+                0,
+                3.8125
+              ]
+            ]
+          },
+          "mass_kilograms": 75.0,
+          "name": "driver",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 67.5,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 82.5
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "camera",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": 0.35,
+            "z": -0.1
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.0125,
+                0,
+                0
+              ],
+              [
+                0,
+                0.02,
+                0
+              ],
+              [
+                0,
+                0,
+                0.0125
+              ]
+            ]
+          },
+          "mass_kilograms": 3.0,
+          "name": "camera",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 2.7,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 3.3
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "ballast",
+        "properties": {
+          "attachment": {
+            "kind": "body"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": -0.2,
+            "z": -0.9
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.5,
+                0,
+                0
+              ],
+              [
+                0,
+                0.5625,
+                0
+              ],
+              [
+                0,
+                0,
+                0.1625
+              ]
+            ]
+          },
+          "mass_kilograms": 15.0,
+          "name": "ballast",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 13.5,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 16.5
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "front left upright",
+        "properties": {
+          "attachment": {
+            "kind": "upright",
+            "wheel": "FrontLeft"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.020833,
+                0,
+                0
+              ],
+              [
+                0,
+                0.012817,
+                0
+              ],
+              [
+                0,
+                0,
+                0.012817
+              ]
+            ]
+          },
+          "mass_kilograms": 2.0,
+          "name": "front_left_upright",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 1.8,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 2.2
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "front right upright",
+        "properties": {
+          "attachment": {
+            "kind": "upright",
+            "wheel": "FrontRight"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.020833,
+                0,
+                0
+              ],
+              [
+                0,
+                0.012817,
+                0
+              ],
+              [
+                0,
+                0,
+                0.012817
+              ]
+            ]
+          },
+          "mass_kilograms": 2.0,
+          "name": "front_right_upright",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 1.8,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 2.2
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "rear left upright",
+        "properties": {
+          "attachment": {
+            "kind": "upright",
+            "wheel": "RearLeft"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.020833,
+                0,
+                0
+              ],
+              [
+                0,
+                0.012817,
+                0
+              ],
+              [
+                0,
+                0,
+                0.012817
+              ]
+            ]
+          },
+          "mass_kilograms": 2.0,
+          "name": "rear_left_upright",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 1.8,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 2.2
+        }
+      },
+      {
+        "budget": "vehicle_and_driver",
+        "component_perimeter": "rear right upright",
+        "properties": {
+          "attachment": {
+            "kind": "upright",
+            "wheel": "RearRight"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.020833,
+                0,
+                0
+              ],
+              [
+                0,
+                0.012817,
+                0
+              ],
+              [
+                0,
+                0,
+                0.012817
+              ]
+            ]
+          },
+          "mass_kilograms": 2.0,
+          "name": "rear_right_upright",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": null,
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 1.8,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 2.2
+        }
+      },
+      {
+        "budget": "rim_and_tire",
+        "component_perimeter": "wheel frontleft",
+        "properties": {
+          "attachment": {
+            "kind": "wheel_rotor",
+            "wheel": "FrontLeft"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": -0.226701,
+            "z": -1.146992
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.632529,
+                0,
+                0
+              ],
+              [
+                0,
+                0.418728,
+                0
+              ],
+              [
+                0,
+                0,
+                0.418728
+              ]
+            ]
+          },
+          "mass_kilograms": 13.0,
+          "name": "wheel_frontleft",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": "FrontLeft",
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 11.7,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 14.3
+        }
+      },
+      {
+        "budget": "rim_and_tire",
+        "component_perimeter": "wheel frontright",
+        "properties": {
+          "attachment": {
+            "kind": "wheel_rotor",
+            "wheel": "FrontRight"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": -0.226701,
+            "z": -1.146992
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.632529,
+                0,
+                0
+              ],
+              [
+                0,
+                0.418728,
+                0
+              ],
+              [
+                0,
+                0,
+                0.418728
+              ]
+            ]
+          },
+          "mass_kilograms": 13.0,
+          "name": "wheel_frontright",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": "FrontRight",
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 11.7,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 14.3
+        }
+      },
+      {
+        "budget": "rim_and_tire",
+        "component_perimeter": "wheel rearleft",
+        "properties": {
+          "attachment": {
+            "kind": "wheel_rotor",
+            "wheel": "RearLeft"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": -0.216634,
+            "z": 1.743008
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.829554,
+                0,
+                0
+              ],
+              [
+                0,
+                0.616647,
+                0
+              ],
+              [
+                0,
+                0,
+                0.616647
+              ]
+            ]
+          },
+          "mass_kilograms": 16.0,
+          "name": "wheel_rearleft",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": "RearLeft",
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 14.4,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 17.6
+        }
+      },
+      {
+        "budget": "rim_and_tire",
+        "component_perimeter": "wheel rearright",
+        "properties": {
+          "attachment": {
+            "kind": "wheel_rotor",
+            "wheel": "RearRight"
+          },
+          "center_of_mass_in_attachment_metres": {
+            "x": 0.0,
+            "y": -0.216634,
+            "z": 1.743008
+          },
+          "inertia_about_center_of_mass": {
+            "entries_kilogram_square_metres": [
+              [
+                0.829554,
+                0,
+                0
+              ],
+              [
+                0,
+                0.616647,
+                0
+              ],
+              [
+                0,
+                0,
+                0.616647
+              ]
+            ]
+          },
+          "mass_kilograms": 16.0,
+          "name": "wheel_rearright",
+          "provenance": {
+            "center_of_mass_origin": "estimated",
+            "inertia_origin": "estimated",
+            "mass_origin": "estimated",
+            "source": "Q9 component mass budget; uniform-solid inertia estimate"
+          }
+        },
+        "rotating_wheel": "RearRight",
+        "uncertainty": {
+          "center_uncertainty_metres": 0.05,
+          "inertia_relative_uncertainty": 0.3,
+          "lower_mass_kilograms": 14.4,
+          "rationale": "Ten percent mass bounds and thirty percent inertia bounds around the declared allocation",
+          "upper_mass_kilograms": 17.6
+        }
+      }
+    ],
+    "rim_and_tire_mass_kilograms": [
+      13.0,
+      13.0,
+      16.0,
+      16.0
+    ],
+    "schema_version": 2
+  }
+}

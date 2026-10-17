@@ -1,0 +1,15 @@
+{
+  "fuel": {
+    "brake_specific_consumption_kg_per_kwh": 0.315,
+    "capacity_kg": 105.0,
+    "estimated_lap_consumption_kg": 3.65,
+    "idle_consumption_kg_per_hour": 5.0,
+    "initial_kg": 7.6,
+    "reference_lap_time_s": 107.0,
+    "tank_position_local_m": {
+      "x": 0.0,
+      "y": -0.1,
+      "z": 0.6
+    }
+  }
+}

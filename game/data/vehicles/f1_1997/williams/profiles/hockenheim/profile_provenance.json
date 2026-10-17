@@ -1,0 +1,676 @@
+{
+  "base_profile": "D:\\Formula90s\\game\\data\\vehicles\\f1_2030\\profiles\\geometric",
+  "inherited_calibrations": [
+    {
+      "classification": "inherited",
+      "domain": "aerodynamics.json",
+      "fields": "aero.model wing polars, limits and induced drag",
+      "source": "Q75: simulation model coefficients, not FW19 measurements"
+    },
+    {
+      "classification": "inherited",
+      "domain": "tires.json",
+      "fields": "force_model, thermal, wear and surface multipliers",
+      "source": "Q59-Q61 and Q82-Q84"
+    },
+    {
+      "classification": "inherited",
+      "domain": "suspension.json",
+      "fields": "arb_ratio, resting_ratio, spring_length, toe_gain, camber_gain, damper knee and fast factor",
+      "source": "Tuning parameters of the base model; Q43 gives roll stiffness in N*m/rad, which the schema does not expose directly"
+    },
+    {
+      "classification": "inherited",
+      "domain": "brakes.json",
+      "fields": "thermal model coefficients and cooling ducts",
+      "source": "Implementation coefficients without published FW19 data"
+    },
+    {
+      "classification": "inherited",
+      "domain": "coupled_world.json",
+      "fields": "whole file",
+      "source": "Q86"
+    },
+    {
+      "classification": "inherited",
+      "domain": "audio.json",
+      "fields": "whole file",
+      "source": "Q80-Q81: no Renault RS9 recording available"
+    }
+  ],
+  "overrides": [
+    {
+      "classification": "derived",
+      "domain": "chassis.json",
+      "path": "physical_mass_inventory",
+      "source": "Component masses rescaled to close the 547 kg dry budget and 13/16 kg wheel assemblies (Q4, Q5, Q9)"
+    },
+    {
+      "classification": "published",
+      "domain": "chassis.json",
+      "path": "chassis.vehicle_name",
+      "source": "Q1"
+    },
+    {
+      "classification": "estimated",
+      "domain": "chassis.json",
+      "path": "chassis.vehicle_mass",
+      "source": "Q4"
+    },
+    {
+      "classification": "estimated",
+      "domain": "chassis.json",
+      "path": "chassis.front_weight_distribution",
+      "source": "Q6"
+    },
+    {
+      "classification": "estimated",
+      "domain": "chassis.json",
+      "path": "chassis.center_of_gravity_height_offset",
+      "source": "Q7 minus ground plane 0.53865"
+    },
+    {
+      "classification": "inherited",
+      "domain": "chassis.json",
+      "path": "chassis.inertia_multipliers.x",
+      "source": "Q8"
+    },
+    {
+      "classification": "inherited",
+      "domain": "chassis.json",
+      "path": "chassis.inertia_multipliers.y",
+      "source": "Q8"
+    },
+    {
+      "classification": "inherited",
+      "domain": "chassis.json",
+      "path": "chassis.inertia_multipliers.z",
+      "source": "Q8"
+    },
+    {
+      "classification": "estimated",
+      "domain": "chassis.json",
+      "path": "physical_mass_inventory.base_budget_kilograms",
+      "source": "Q4 mass excluding wheel assemblies"
+    },
+    {
+      "classification": "measured",
+      "domain": "chassis.json",
+      "path": "geometry.front_track",
+      "source": "corrected mesh"
+    },
+    {
+      "classification": "measured",
+      "domain": "chassis.json",
+      "path": "geometry.rear_track",
+      "source": "corrected mesh"
+    },
+    {
+      "classification": "measured",
+      "domain": "chassis.json",
+      "path": "geometry.wheelbase",
+      "source": "corrected mesh"
+    },
+    {
+      "classification": "estimated",
+      "domain": "powertrain.json",
+      "path": "powertrain.idle_rpm",
+      "source": "Q11"
+    },
+    {
+      "classification": "estimated",
+      "domain": "powertrain.json",
+      "path": "powertrain.max_rpm",
+      "source": "Q12"
+    },
+    {
+      "classification": "estimated",
+      "domain": "powertrain.json",
+      "path": "powertrain.max_torque",
+      "source": "Q13"
+    },
+    {
+      "classification": "estimated",
+      "domain": "powertrain.json",
+      "path": "powertrain.torque_curve",
+      "source": "Q17 normalized to max_rpm and max_torque"
+    },
+    {
+      "classification": "estimated",
+      "domain": "powertrain.json",
+      "path": "powertrain.gear_ratios",
+      "source": "Q18"
+    },
+    {
+      "classification": "estimated",
+      "domain": "powertrain.json",
+      "path": "powertrain.final_drive",
+      "source": "Q19"
+    },
+    {
+      "classification": "estimated",
+      "domain": "powertrain.json",
+      "path": "powertrain.reverse_ratio",
+      "source": "Q20"
+    },
+    {
+      "classification": "estimated",
+      "domain": "powertrain.json",
+      "path": "powertrain.shift_time",
+      "source": "Q21"
+    },
+    {
+      "classification": "estimated",
+      "domain": "powertrain.json",
+      "path": "powertrain.differential.preload_nm",
+      "source": "Q24"
+    },
+    {
+      "classification": "published",
+      "domain": "powertrain.json",
+      "path": "powertrain.front_torque_split",
+      "source": "Q25"
+    },
+    {
+      "classification": "estimated",
+      "domain": "fuel.json",
+      "path": "fuel.capacity_kg",
+      "source": "Q28"
+    },
+    {
+      "classification": "estimated",
+      "domain": "fuel.json",
+      "path": "fuel.brake_specific_consumption_kg_per_kwh",
+      "source": "Q29"
+    },
+    {
+      "classification": "estimated",
+      "domain": "fuel.json",
+      "path": "fuel.estimated_lap_consumption_kg",
+      "source": "Q30"
+    },
+    {
+      "classification": "estimated",
+      "domain": "fuel.json",
+      "path": "fuel.idle_consumption_kg_per_hour",
+      "source": "Q31"
+    },
+    {
+      "classification": "published",
+      "domain": "fuel.json",
+      "path": "fuel.reference_lap_time_s",
+      "source": "Q30"
+    },
+    {
+      "classification": "estimated",
+      "domain": "fuel.json",
+      "path": "fuel.tank_position_local_m.x",
+      "source": "Q32"
+    },
+    {
+      "classification": "estimated",
+      "domain": "fuel.json",
+      "path": "fuel.tank_position_local_m.y",
+      "source": "Q32"
+    },
+    {
+      "classification": "estimated",
+      "domain": "fuel.json",
+      "path": "fuel.tank_position_local_m.z",
+      "source": "Q32"
+    },
+    {
+      "classification": "estimated",
+      "domain": "steering.json",
+      "path": "steering.max_steering_angle",
+      "source": "Q33"
+    },
+    {
+      "classification": "estimated",
+      "domain": "steering.json",
+      "path": "steering.front_steering_ratio",
+      "source": "Q34"
+    },
+    {
+      "classification": "estimated",
+      "domain": "steering.json",
+      "path": "steering.ackermann",
+      "source": "Q35"
+    },
+    {
+      "classification": "estimated",
+      "domain": "steering.json",
+      "path": "steering.steering_exponent",
+      "source": "Q35"
+    },
+    {
+      "classification": "estimated",
+      "domain": "steering.json",
+      "path": "steering.steering_speed",
+      "source": "Q36"
+    },
+    {
+      "classification": "estimated",
+      "domain": "steering.json",
+      "path": "steering.steering_speed_decay",
+      "source": "Q36"
+    },
+    {
+      "classification": "published",
+      "domain": "steering.json",
+      "path": "steering.rear_steering_ratio",
+      "source": "Q37"
+    },
+    {
+      "classification": "estimated",
+      "domain": "steering.json",
+      "path": "steering.countersteer_assist",
+      "source": "Q79"
+    },
+    {
+      "classification": "estimated",
+      "domain": "steering.json",
+      "path": "steering.steering_slip_assist",
+      "source": "Q79"
+    },
+    {
+      "classification": "derived",
+      "domain": "suspension.json",
+      "path": "suspension.geometry_physical.corners.FL/RL",
+      "source": "Base linkage transformed to the measured hubs after the 1.670/1.600 m track correction"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.front.camber",
+      "source": "Q44"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.rear.camber",
+      "source": "Q44"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.front.toe",
+      "source": "Q45 half of total toe-out"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.rear.toe",
+      "source": "Q45 half of total toe-in"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.geometry_physical.front.spring_rate_N_per_m",
+      "source": "Q39 actuator rate"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.geometry_physical.rear.spring_rate_N_per_m",
+      "source": "Q39 actuator rate"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.geometry_physical.front.damper_bump_Ns_per_m",
+      "source": "Q41"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.geometry_physical.front.damper_rebound_Ns_per_m",
+      "source": "Q41"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.geometry_physical.rear.damper_bump_Ns_per_m",
+      "source": "Q41"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.geometry_physical.rear.damper_rebound_Ns_per_m",
+      "source": "Q41"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.geometry_physical.front.wheel_bump_m",
+      "source": "Q42"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.geometry_physical.front.wheel_droop_m",
+      "source": "Q42"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.geometry_physical.rear.wheel_bump_m",
+      "source": "Q42"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.geometry_physical.rear.wheel_droop_m",
+      "source": "Q42"
+    },
+    {
+      "classification": "derived",
+      "domain": "tires.json",
+      "path": "tires.front.wheel_mass / tires.rear.wheel_mass",
+      "source": "Rim and tire share of the 13 kg and 16 kg wheel assemblies (Q5) after mass inventory closure"
+    },
+    {
+      "classification": "measured",
+      "domain": "tires.json",
+      "path": "tires.front.radius",
+      "source": "corrected mesh"
+    },
+    {
+      "classification": "measured",
+      "domain": "tires.json",
+      "path": "tires.front.width",
+      "source": "corrected mesh"
+    },
+    {
+      "classification": "estimated",
+      "domain": "tires.json",
+      "path": "tires.front.wheel_mass",
+      "source": "Q55"
+    },
+    {
+      "classification": "measured",
+      "domain": "tires.json",
+      "path": "tires.rear.radius",
+      "source": "corrected mesh"
+    },
+    {
+      "classification": "measured",
+      "domain": "tires.json",
+      "path": "tires.rear.width",
+      "source": "corrected mesh"
+    },
+    {
+      "classification": "estimated",
+      "domain": "tires.json",
+      "path": "tires.rear.wheel_mass",
+      "source": "Q55"
+    },
+    {
+      "classification": "estimated",
+      "domain": "tires.json",
+      "path": "tires.pressure.cold_kpa_gauge.FL",
+      "source": "Q50"
+    },
+    {
+      "classification": "estimated",
+      "domain": "tires.json",
+      "path": "tires.pressure.cold_kpa_gauge.FR",
+      "source": "Q50"
+    },
+    {
+      "classification": "estimated",
+      "domain": "tires.json",
+      "path": "tires.pressure.cold_kpa_gauge.RL",
+      "source": "Q50"
+    },
+    {
+      "classification": "estimated",
+      "domain": "tires.json",
+      "path": "tires.pressure.cold_kpa_gauge.RR",
+      "source": "Q50"
+    },
+    {
+      "classification": "estimated",
+      "domain": "tires.json",
+      "path": "tires.pressure.reference_hot_kpa_gauge.FL",
+      "source": "Q51"
+    },
+    {
+      "classification": "estimated",
+      "domain": "tires.json",
+      "path": "tires.pressure.reference_hot_kpa_gauge.FR",
+      "source": "Q51"
+    },
+    {
+      "classification": "estimated",
+      "domain": "tires.json",
+      "path": "tires.pressure.reference_hot_kpa_gauge.RL",
+      "source": "Q51"
+    },
+    {
+      "classification": "estimated",
+      "domain": "tires.json",
+      "path": "tires.pressure.reference_hot_kpa_gauge.RR",
+      "source": "Q51"
+    },
+    {
+      "classification": "estimated",
+      "domain": "brakes.json",
+      "path": "brakes.front_brake_bias",
+      "source": "Q66"
+    },
+    {
+      "classification": "estimated",
+      "domain": "brakes.json",
+      "path": "brakes.max_brake_torque",
+      "source": "Q65 front axle"
+    },
+    {
+      "classification": "published",
+      "domain": "brakes.json",
+      "path": "brakes.enable_abs",
+      "source": "Q78"
+    },
+    {
+      "classification": "estimated",
+      "domain": "brakes.json",
+      "path": "brakes.thermal.front.rotor_outer_diameter_m",
+      "source": "Q62"
+    },
+    {
+      "classification": "estimated",
+      "domain": "brakes.json",
+      "path": "brakes.thermal.rear.rotor_outer_diameter_m",
+      "source": "Q62"
+    },
+    {
+      "classification": "estimated",
+      "domain": "brakes.json",
+      "path": "brakes.thermal.front.rotor_inner_diameter_m",
+      "source": "Q62 disc face"
+    },
+    {
+      "classification": "estimated",
+      "domain": "brakes.json",
+      "path": "brakes.thermal.rear.rotor_inner_diameter_m",
+      "source": "Q62 disc face"
+    },
+    {
+      "classification": "estimated",
+      "domain": "brakes.json",
+      "path": "brakes.thermal.front.rotor_mass_kg",
+      "source": "Q62 diameter, thickness 0.032 and vented carbon density"
+    },
+    {
+      "classification": "estimated",
+      "domain": "brakes.json",
+      "path": "brakes.thermal.rear.rotor_mass_kg",
+      "source": "Q62 diameter, thickness 0.032 and vented carbon density"
+    },
+    {
+      "classification": "estimated",
+      "domain": "underfloor_contact.json",
+      "path": "underfloor_contact.activation_clearance_m",
+      "source": "Q76"
+    },
+    {
+      "classification": "estimated",
+      "domain": "underfloor_contact.json",
+      "path": "underfloor_contact.approach_clearance_m",
+      "source": "Q76"
+    },
+    {
+      "classification": "estimated",
+      "domain": "underfloor_contact.json",
+      "path": "underfloor_contact.linear_rate_n_m",
+      "source": "Q76"
+    },
+    {
+      "classification": "estimated",
+      "domain": "underfloor_contact.json",
+      "path": "underfloor_contact.damping_n_s_m",
+      "source": "Q76"
+    },
+    {
+      "classification": "estimated",
+      "domain": "aerodynamics.json",
+      "path": "aero.frontal_area",
+      "source": "Q69"
+    },
+    {
+      "classification": "estimated",
+      "domain": "aerodynamics.json",
+      "path": "aero.drag_coefficient",
+      "source": "Q70"
+    },
+    {
+      "classification": "published",
+      "domain": "driving_assistance.json",
+      "path": "aids.abs_available",
+      "source": "Q78"
+    },
+    {
+      "classification": "published",
+      "domain": "driving_assistance.json",
+      "path": "aids.abs_default_enabled",
+      "source": "Q78"
+    },
+    {
+      "classification": "published",
+      "domain": "driving_assistance.json",
+      "path": "aids.abs_player_selectable",
+      "source": "Q78"
+    },
+    {
+      "classification": "published",
+      "domain": "driving_assistance.json",
+      "path": "aids.stability_available",
+      "source": "Q78"
+    },
+    {
+      "classification": "published",
+      "domain": "driving_assistance.json",
+      "path": "aids.stability_default_enabled",
+      "source": "Q78"
+    },
+    {
+      "classification": "published",
+      "domain": "driving_assistance.json",
+      "path": "aids.stability_player_selectable",
+      "source": "Q78"
+    },
+    {
+      "classification": "published",
+      "domain": "driving_assistance.json",
+      "path": "aids.traction_control_available",
+      "source": "Q78"
+    },
+    {
+      "classification": "published",
+      "domain": "driving_assistance.json",
+      "path": "aids.traction_control_default_enabled",
+      "source": "Q78"
+    },
+    {
+      "classification": "published",
+      "domain": "driving_assistance.json",
+      "path": "aids.traction_control_player_selectable",
+      "source": "Q78"
+    },
+    {
+      "classification": "published",
+      "domain": "driving_assistance.json",
+      "path": "aids.traction_control_gear_authority",
+      "source": "Q78 no traction control"
+    },
+    {
+      "classification": "published",
+      "domain": "driving_assistance.json",
+      "path": "aids.traction_control_gear_max_cut",
+      "source": "Q78 no traction control"
+    },
+    {
+      "classification": "published",
+      "domain": "driving_assistance.json",
+      "path": "aids.traction_control_gear_slip_target",
+      "source": "Q78 no traction control"
+    },
+    {
+      "classification": "estimated",
+      "domain": "driving_assistance.json",
+      "path": "aids.steering_assist_player_selectable",
+      "source": "Q79 no steering aids"
+    },
+    {
+      "classification": "estimated",
+      "domain": "driving_assistance.json",
+      "path": "aids.steering_slip_assist_default_enabled",
+      "source": "Q79"
+    },
+    {
+      "classification": "estimated",
+      "domain": "driving_assistance.json",
+      "path": "aids.countersteer_default_enabled",
+      "source": "Q79"
+    },
+    {
+      "classification": "inherited",
+      "domain": "coupled_world.json",
+      "path": "*",
+      "source": "Q27, Q59-Q61, Q75, Q80-Q86: model coefficients inherited from the project base profile"
+    },
+    {
+      "classification": "inherited",
+      "domain": "audio.json",
+      "path": "*",
+      "source": "Q27, Q59-Q61, Q75, Q80-Q86: model coefficients inherited from the project base profile"
+    },
+    {
+      "classification": "inherited",
+      "domain": "suspension_presentation.json",
+      "path": "*",
+      "source": "Q27, Q59-Q61, Q75, Q80-Q86: model coefficients inherited from the project base profile"
+    }
+  ],
+  "questionnaire": "docs/f1_1997_williams_physical_profile_questionnaire.md",
+  "resolution": {
+    "domain_digests": {
+      "aerodynamics": "b8c2b16b08d89ab357afb65c936b9bc758fb156f3974ff9813d15092b96bdb14",
+      "brakes": "42fc0593846d009dc8bf1f03f703b6ebebea5c3e5a0572060e4521eed5e8e100",
+      "chassis": "4e720eca8fdced65b408dc41ae575690d231d928956e8fd037fa563a2ac66274",
+      "coupled_world": "079546b5cc16578ea90615ce6fd3a5a560739331c1ee0e9cd7cf30aed236f175",
+      "driving_assistance": "fbf2e5298355e4e6da4727a29ee75d6bf4317c9c57401e0213bf1be7f5e394a1",
+      "fuel": "788169efbcafcfd722283e6c21da608a5dc1c27a2ede6caccb88a70feaa8acad",
+      "powertrain": "1d9a276f29c74c2da009c74db2b115f1598e6b4f5a97123a0b941ac610e6be49",
+      "steering": "ef9ad5bf55cc63320f011f8e529129a46fecd9e552dcf9b4cb6773b485ea4b97",
+      "suspension": "698ef118bcd8eb692f0e84a7a0c68150a05a660ac4526f5ad0d02ae5ad4c542e",
+      "tires": "34a6ea49aecb60201d8c7150fad89a69699d1c20593fc2824628f6bfc00cf3e9",
+      "underfloor_contact": "6b6f9c4bb82f0e1067e3213f82def931e648bdcd5350ddeab3b204c697c5b557"
+    },
+    "global_digest_sha256": "c33b248101fc433df0a389a28eb22020541e09d74b80602cc0e370b0af85d044",
+    "manifest_digest_sha256": "33af96f7e95c02ef2d95a13f3288d00eb7772ae87e77b1cd6c311395a019638f",
+    "resolved_domains": 18
+  },
+  "unresolved": [],
+  "vehicle": "f1_1997_williams_hockenheim_villenueve"
+}

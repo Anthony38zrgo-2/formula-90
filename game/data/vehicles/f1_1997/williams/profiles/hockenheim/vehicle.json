@@ -1,0 +1,26 @@
+{
+  "coordinate_contract": {
+    "forward": "-Z",
+    "right": "+X",
+    "up": "+Y"
+  },
+  "domains": {
+    "aerodynamics": "aerodynamics.json",
+    "audio": "audio.json",
+    "brakes": "brakes.json",
+    "chassis": "chassis.json",
+    "coupled_world": "coupled_world.json",
+    "driving_assistance": "driving_assistance.json",
+    "fuel": "fuel.json",
+    "powertrain": "powertrain.json",
+    "steering": "steering.json",
+    "suspension": "suspension.json",
+    "suspension_presentation": "suspension_presentation.json",
+    "tires": "tires.json",
+    "underfloor_contact": "underfloor_contact.json"
+  },
+  "profile_name": "Williams FW19 Renault 1997 Hockenheim (interpreted)",
+  "schema_version": 1,
+  "units": "SI",
+  "vehicle_identifier": "f1_1997_williams_hockenheim_villenueve"
+}

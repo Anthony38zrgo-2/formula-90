@@ -1,0 +1,282 @@
+{
+  "suspension": {
+    "front": {
+      "arb_ratio": 0.15,
+      "bump_damp_multiplier": 1.0,
+      "bump_stop_multiplier": 2.6,
+      "camber": -0.05236,
+      "camber_gain_rad_per_m": -0.02,
+      "damping_ratio": 0.74,
+      "rebound_damp_multiplier": 1.12,
+      "resting_ratio": 0.15,
+      "spring_length": 0.3,
+      "toe": -0.000875,
+      "toe_gain_rad_per_m": 0.0
+    },
+    "geometry_physical": {
+      "corners": {
+        "FL": {
+          "damper": {
+            "chassis": [
+              -0.110888,
+              -0.296701,
+              -0.911992
+            ]
+          },
+          "hub_center": [
+            -0.834987,
+            -0.226701,
+            -1.146992
+          ],
+          "lower_wishbone": {
+            "inner_front": [
+              -0.183228,
+              -0.258956,
+              -1.192723
+            ],
+            "inner_rear": [
+              -0.212018,
+              -0.257959,
+              -0.735051
+            ],
+            "outer": [
+              -0.649617,
+              -0.258401,
+              -1.15089
+            ]
+          },
+          "provenance": {
+            "note": "Base linkage transformed to the measured hub: lateral scale 1.108880, longitudinal 0.328008 m, vertical -0.226701 m",
+            "origin": "reconstructed"
+          },
+          "rocker": {
+            "axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "damper_arm": [
+              -0.110888,
+              -0.096266,
+              -0.971992
+            ],
+            "pivot": [
+              -0.110888,
+              -0.096266,
+              -1.1182
+            ],
+            "pushrod_arm": [
+              -0.110888,
+              -0.096266,
+              -1.2782
+            ]
+          },
+          "rod": {
+            "attachment": "lower",
+            "outer": [
+              -0.609595,
+              -0.245975,
+              -1.110921
+            ],
+            "type": "pushrod"
+          },
+          "trackrod": {
+            "inner": [
+              -0.181461,
+              -0.259653,
+              -1.278319
+            ],
+            "outer": [
+              -0.645358,
+              -0.260107,
+              -1.25807
+            ]
+          },
+          "upper_wishbone": {
+            "inner_front": [
+              -0.183228,
+              -0.090605,
+              -1.192723
+            ],
+            "inner_rear": [
+              -0.212018,
+              -0.089608,
+              -0.868624
+            ],
+            "outer": [
+              -0.649617,
+              -0.090051,
+              -1.15089
+            ]
+          }
+        },
+        "FR": {
+          "mirror_of": "FL"
+        },
+        "RL": {
+          "damper": {
+            "chassis": [
+              -0.111732,
+              -0.116634,
+              1.608008
+            ]
+          },
+          "driveshaft": {
+            "inner": [
+              -0.093426,
+              -0.220012,
+              1.75581
+            ],
+            "outer": [
+              -0.8,
+              -0.216634,
+              1.743008
+            ]
+          },
+          "hub_center": [
+            -0.8,
+            -0.216634,
+            1.743008
+          ],
+          "lower_wishbone": {
+            "inner_front": [
+              -0.12047,
+              -0.296011,
+              1.416276
+            ],
+            "inner_rear": [
+              -0.082295,
+              -0.33699,
+              1.89212
+            ],
+            "outer": [
+              -0.564461,
+              -0.276237,
+              1.742081
+            ]
+          },
+          "provenance": {
+            "note": "Base linkage transformed to the measured hub: lateral scale 1.117318, longitudinal 0.268008 m, vertical -0.216634 m",
+            "origin": "reconstructed"
+          },
+          "rocker": {
+            "axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "damper_arm": [
+              -0.223464,
+              -0.361634,
+              1.582208
+            ],
+            "pivot": [
+              -0.223464,
+              -0.361634,
+              1.658008
+            ],
+            "pushrod_arm": [
+              -0.223464,
+              -0.361634,
+              1.518008
+            ]
+          },
+          "rod": {
+            "attachment": "upper",
+            "outer": [
+              -0.536313,
+              -0.106634,
+              1.698008
+            ],
+            "type": "pullrod"
+          },
+          "trackrod": {
+            "inner": [
+              -0.094972,
+              -0.284223,
+              1.878008
+            ],
+            "outer": [
+              -0.564461,
+              -0.231634,
+              1.818008
+            ]
+          },
+          "upper_wishbone": {
+            "inner_front": [
+              -0.110098,
+              -0.16134,
+              1.414041
+            ],
+            "inner_rear": [
+              -0.082295,
+              -0.165389,
+              1.89212
+            ],
+            "outer": [
+              -0.564461,
+              -0.100587,
+              1.742081
+            ]
+          }
+        },
+        "RR": {
+          "mirror_of": "RL"
+        }
+      },
+      "front": {
+        "bump_stop_mult": 2.6,
+        "damper_bump_Ns_per_m": 8200.0,
+        "damper_fast_factor": 0.5,
+        "damper_knee_m_per_s": 0.127,
+        "damper_max_m": 0.4,
+        "damper_min_m": 0.15,
+        "damper_rebound_Ns_per_m": 13500.0,
+        "spring_free_length_m": 0.3157343347865796,
+        "spring_installed_length_m": 0.26,
+        "spring_rate_N_per_m": 158000.0,
+        "wheel_bump_m": 0.025,
+        "wheel_droop_m": 0.035
+      },
+      "front_arb": {
+        "mode": "legacy_ratio",
+        "ratio": 0.15
+      },
+      "rear": {
+        "bump_stop_mult": 2.8,
+        "damper_bump_Ns_per_m": 8700.0,
+        "damper_fast_factor": 0.5,
+        "damper_knee_m_per_s": 0.127,
+        "damper_max_m": 0.4,
+        "damper_min_m": 0.15,
+        "damper_rebound_Ns_per_m": 13300.0,
+        "spring_free_length_m": 0.27624004559606274,
+        "spring_installed_length_m": 0.25,
+        "spring_rate_N_per_m": 168000.0,
+        "wheel_bump_m": 0.03,
+        "wheel_droop_m": 0.04
+      },
+      "rear_arb": {
+        "mode": "legacy_ratio",
+        "ratio": 0.09
+      },
+      "version": 1
+    },
+    "model": "geometric",
+    "model_version": 1,
+    "rear": {
+      "arb_ratio": 0.09,
+      "bump_damp_multiplier": 0.9,
+      "bump_stop_multiplier": 2.8,
+      "camber": -0.03491,
+      "camber_gain_rad_per_m": -0.02,
+      "damping_ratio": 0.71,
+      "rebound_damp_multiplier": 1.35,
+      "resting_ratio": 0.22,
+      "spring_length": 0.27,
+      "toe": 0.001745,
+      "toe_gain_rad_per_m": 0.025
+    },
+    "tri_ray_spacing_ratio": 0.4
+  }
+}

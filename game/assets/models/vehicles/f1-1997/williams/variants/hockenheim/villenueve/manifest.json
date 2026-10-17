@@ -1,0 +1,684 @@
+{
+  "asset": "F1_1997_WILLIAMS_HOCKENHEIM_VILLENUEVE",
+  "authored_alignment": {
+    "dimensions_m": {
+      "body_width_without_wheels_m": 1.661375,
+      "height_m": 1.179262,
+      "length_m": 4.444269,
+      "width_with_wheels_m": 1.989105
+    },
+    "driver_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "floor_height_from_ground_m": 0.024899,
+    "front_track_m": 1.669974,
+    "ground_plane_offset_m": 0.53865,
+    "rear_track_m": 1.6,
+    "wheel_offsets": {
+      "front_left": {
+        "centre_authoring_m": [
+          -0.834987,
+          1.146992,
+          -0.226701
+        ],
+        "centre_runtime_m": [
+          -0.834987,
+          -0.226701,
+          -1.146992
+        ],
+        "radius_m": 0.311949,
+        "tyre_width_m": 0.307541
+      },
+      "front_right": {
+        "centre_authoring_m": [
+          0.834987,
+          1.146992,
+          -0.226701
+        ],
+        "centre_runtime_m": [
+          0.834987,
+          -0.226701,
+          -1.146992
+        ],
+        "radius_m": 0.311949,
+        "tyre_width_m": 0.307541
+      },
+      "rear_left": {
+        "centre_authoring_m": [
+          -0.8,
+          -1.743008,
+          -0.216634
+        ],
+        "centre_runtime_m": [
+          -0.8,
+          -0.216634,
+          1.743008
+        ],
+        "radius_m": 0.322016,
+        "tyre_width_m": 0.389105
+      },
+      "rear_right": {
+        "centre_authoring_m": [
+          0.8,
+          -1.743008,
+          -0.216634
+        ],
+        "centre_runtime_m": [
+          0.8,
+          -0.216634,
+          1.743008
+        ],
+        "radius_m": 0.322016,
+        "tyre_width_m": 0.389105
+      }
+    },
+    "wheelbase_m": 2.89
+  },
+  "coordinate_contract": {
+    "authoring_axes": "+X lateral, +Y forward, +Z up, metres",
+    "conversion_rule": "(x, y, z) -> (x, z, -y)",
+    "determinant": 1.0,
+    "double_conversion_warning": "La exportaci\u00f3n glTF con export_yup=True aplica exactamente esta misma matriz. Verificado con axis_conversion_probe.json: (0,2,0) sale (0,0,-2), (-1,0,0) sale (-1,0,0) y (0,0,3) sale (0,3,0). Por tanto NO debe aplicarse la matriz a mano antes de exportar con export_yup=True; ser\u00eda una doble rotaci\u00f3n. O se deja convertir al exportador, o se aplica la matriz y se exporta con export_yup=False, pero nunca ambas.",
+    "driver_forward_authoring": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "driver_forward_runtime": [
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "forward_matrix": [
+      [
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ],
+      [
+        0.0,
+        -1.0,
+        0.0
+      ]
+    ],
+    "handedness_preserved": true,
+    "inverse_matrix": [
+      [
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0
+      ]
+    ],
+    "points": [
+      {
+        "authoring": [
+          0.0,
+          2.14,
+          -0.3
+        ],
+        "expectation": "runtime Z negative (forward)",
+        "name": "nose_tip",
+        "runtime": [
+          0.0,
+          -0.3,
+          -2.14
+        ]
+      },
+      {
+        "authoring": [
+          -0.334,
+          0.152,
+          0.087
+        ],
+        "expectation": "runtime X negative (left side)",
+        "name": "left_mirror_centre",
+        "runtime": [
+          -0.334,
+          0.087,
+          -0.152
+        ]
+      },
+      {
+        "authoring": [
+          0.0,
+          -0.128,
+          0.127
+        ],
+        "expectation": "runtime Y positive (up)",
+        "name": "helmet_centre",
+        "runtime": [
+          0.0,
+          0.127,
+          0.128
+        ]
+      },
+      {
+        "authoring": [
+          0.0,
+          -0.6,
+          0.641
+        ],
+        "expectation": "runtime Y positive and Z positive (above and behind origin)",
+        "name": "airbox_top",
+        "runtime": [
+          0.0,
+          0.641,
+          0.6
+        ]
+      }
+    ],
+    "rotation_degrees_about_x": -90.0,
+    "runtime_axes": "+X right, +Y up, -Z forward, metres",
+    "scale": 1.0,
+    "units": "metres"
+  },
+  "credits": [
+    {
+      "credit": "VRC, MSchumi24 and Hega; updates by SkaningeN",
+      "distribution": "Local game publication only; credits do not grant redistribution rights",
+      "origin": "GP4 F1 1997 Season Mod v2.0 carset",
+      "piece": "Williams FW19 bodywork, wheels and Hockenheim livery",
+      "reference": "THIRD_PARTY.md"
+    },
+    {
+      "credit": "Hull by jvinu2000; Williams helmet textures by jvinu2000",
+      "distribution": "Local game publication only",
+      "origin": "GP4 carset, helmet shape car_helmet_00.gp4 with VILLENEUVe paint",
+      "piece": "Arai helmet shell and visor",
+      "reference": "THIRD_PARTY.md"
+    },
+    {
+      "credit": "Enzojz; textures by MSchumi24",
+      "distribution": "Local game publication only",
+      "origin": "GP4 carset",
+      "piece": "Cockpit interior and cockpit textures",
+      "reference": "THIRD_PARTY.md"
+    },
+    {
+      "credit": "Ulf (Alesi_fan) and Turbo Lover",
+      "distribution": "Local game publication only",
+      "origin": "GP4 carset gy-oz-blck-yllw wheel set",
+      "piece": "Tires and rims",
+      "reference": "THIRD_PARTY.md"
+    },
+    {
+      "credit": "Formula 90s F1 2030 program authors",
+      "distribution": "Authorized donor for this variant only; donor source stays unmodified",
+      "origin": "Donor geometry from the Formula 90s F1 2030 program",
+      "piece": "Steering wheel body, display, fastener and paddles",
+      "reference": "game/assets/models/vehicles/f1-1997/williams/AGENTS.md"
+    },
+    {
+      "credit": "Formula 90s driver program authors",
+      "distribution": "Authorized donor; canonical driver source unchanged",
+      "origin": "Donor geometry from game/assets/models/drivers/source/prepared_driver.blend",
+      "piece": "Arms and gloves",
+      "reference": "game/assets/models/vehicles/f1-1997/williams/AGENTS.md"
+    },
+    {
+      "credit": "Generated from the donor UV atlases using the torso fabric as color reference",
+      "distribution": "Generated local asset; no third-party logos retained",
+      "origin": "Generated with the built-in image_gen imagegen edit mode",
+      "piece": "Sleeve and glove base-color atlases",
+      "reference": "driver/source/textures/jacques_villeneuve_williams_1997_sleeves_base_color.png"
+    },
+    {
+      "credit": "Authored for this variant",
+      "distribution": "Local asset",
+      "origin": "Newly authored cylinder in the car source",
+      "piece": "Visible steering column",
+      "reference": "COMPONENTES_PILOTO.md"
+    },
+    {
+      "credit": "BlenderKit library asset; original author not recorded in the source",
+      "distribution": "License must be verified before any distribution outside this machine",
+      "origin": "BlenderKit material library (Carbon_Fiber_diffuse, Carbon_Fiber_normal, Carbon_Fiber_roughness)",
+      "piece": "Carbon fiber material maps",
+      "reference": "BlenderKit is a third-party asset source, not covered by THIRD_PARTY.md"
+    },
+    {
+      "credit": "Formula 90s driver program authors",
+      "distribution": "Authorized donor",
+      "origin": "Donor texture from game/assets/models/drivers/source/textures",
+      "piece": "hans.dds",
+      "reference": "game/assets/models/drivers/AGENTS.md"
+    }
+  ],
+  "dimension_correction": {
+    "applied": true,
+    "before": {
+      "front_bottom_m": -0.53865,
+      "front_track_m": 1.809663,
+      "rear_bottom_m": -0.545603,
+      "rear_track_m": 1.582146,
+      "wheelbase_m": 2.881463
+    },
+    "front_track_m": 1.669974,
+    "note": "Wheel assemblies moved to the 1997 track widths and wheelbase; the rear axle was raised to share one ground plane",
+    "rear_track_m": 1.6,
+    "targets": {
+      "common_ground_plane_m": -0.53865,
+      "front_track_m": 1.67,
+      "rear_track_m": 1.6,
+      "wheelbase_m": 2.89
+    },
+    "wheelbase_m": 2.89
+  },
+  "driver_contract": {
+    "canonical_contracts_claimed": false,
+    "deformable_meshes_source": [
+      "Jacques Villeneuve Williams racing gloves",
+      "Jacques Villeneuve Williams suit sleeves"
+    ],
+    "glb_has_skin": false,
+    "glb_meshes": 5,
+    "hands_follow_steering": false,
+    "hybrid": true,
+    "rigid_meshes": [
+      "Jacques Villeneuve 1997 helmet shell",
+      "Jacques Villeneuve 1997 helmet visor",
+      "Jacques Villeneuve Williams torso legs boots and safety harness"
+    ],
+    "scope": "static",
+    "visual_approval": "2026-10-17"
+  },
+  "geometry_assets": {
+    "chassis": {
+      "embedded_images": 11,
+      "materials": 13,
+      "nodes": 31,
+      "path": "car/runtime/williams_fw19_hockenheim_1997_chassis.glb",
+      "sha256": "71cb5cf969f5f093551c6a49af3689111c7e0691e07a9e39581081d066fc6238",
+      "size_bytes": 20931680,
+      "skins": 0,
+      "triangles": 63659
+    },
+    "driver": {
+      "embedded_images": 5,
+      "materials": 5,
+      "nodes": 5,
+      "path": "driver/runtime/jacques_villeneuve_williams_fw19_1997_driver.glb",
+      "sha256": "ab3e38fcd3c81d811737e7394db6b85d681396f6896cb44204b603eb0abf54d4",
+      "size_bytes": 9232144,
+      "skins": 0,
+      "triangles": 6908
+    },
+    "wheel_front_left": {
+      "embedded_images": 4,
+      "materials": 4,
+      "nodes": 10,
+      "path": "car/runtime/williams_fw19_hockenheim_1997_wheel_front_left.glb",
+      "sha256": "e7182f246863cc16e45f2b83fffee661609735034e607275ef0957b7a2c2c4f6",
+      "size_bytes": 1732676,
+      "skins": 0,
+      "triangles": 6842
+    },
+    "wheel_front_right": {
+      "embedded_images": 4,
+      "materials": 4,
+      "nodes": 10,
+      "path": "car/runtime/williams_fw19_hockenheim_1997_wheel_front_right.glb",
+      "sha256": "3ace93fbbee6385b5dbeef6e4db68b6aabc4d8093c69f705dded63409a0f1bb8",
+      "size_bytes": 1732692,
+      "skins": 0,
+      "triangles": 6842
+    },
+    "wheel_rear_left": {
+      "embedded_images": 4,
+      "materials": 4,
+      "nodes": 10,
+      "path": "car/runtime/williams_fw19_hockenheim_1997_wheel_rear_left.glb",
+      "sha256": "8ff2bc55282898fd6fdbd7bdd409c994719118dd709c9c78a7d865f6271995d0",
+      "size_bytes": 1734704,
+      "skins": 0,
+      "triangles": 6906
+    },
+    "wheel_rear_right": {
+      "embedded_images": 4,
+      "materials": 4,
+      "nodes": 10,
+      "path": "car/runtime/williams_fw19_hockenheim_1997_wheel_rear_right.glb",
+      "sha256": "36571f0ad704ec66e312d9dede45c6178ef3aeb03279c058f8a3399d7a95a453",
+      "size_bytes": 1734716,
+      "skins": 0,
+      "triangles": 6906
+    }
+  },
+  "identity": {
+    "car": "FW19",
+    "circuit": "Hockenheim",
+    "driver": "Jacques Villeneuve",
+    "season": 1997,
+    "slug": "villenueve",
+    "slug_note": "The folder uses the spelling requested by the user; identity and metadata use the correct spelling",
+    "team": "Williams"
+  },
+  "limitations": [
+    "The suspension link deformation is visual, not a historical CAD reconstruction",
+    "Carbon normal map is not exported because the source material chains Normal Map through Bump",
+    "The driver GLB is static and carries no skeleton; the authoring blend keeps it",
+    "No physical profile, scene or launcher selector exists yet",
+    "BUILD_SOURCE and HEAD are not in parity, so the canonical launcher cannot start any session"
+  ],
+  "physics_digest_contract": "vehicle_profile_provenance_v1",
+  "physics_profile": "res://data/vehicles/f1_1997/williams/profiles/hockenheim/vehicle.json",
+  "physics_sha256": "c33b248101fc433df0a389a28eb22020541e09d74b80602cc0e370b0af85d044",
+  "physics_state": "resolved by the native profile resolver",
+  "profile_provenance": {
+    "domain_count": 18,
+    "domain_digests": {
+      "aerodynamics": "b8c2b16b08d89ab357afb65c936b9bc758fb156f3974ff9813d15092b96bdb14",
+      "brakes": "42fc0593846d009dc8bf1f03f703b6ebebea5c3e5a0572060e4521eed5e8e100",
+      "chassis": "4e720eca8fdced65b408dc41ae575690d231d928956e8fd037fa563a2ac66274",
+      "coupled_world": "079546b5cc16578ea90615ce6fd3a5a560739331c1ee0e9cd7cf30aed236f175",
+      "driving_assistance": "fbf2e5298355e4e6da4727a29ee75d6bf4317c9c57401e0213bf1be7f5e394a1",
+      "fuel": "788169efbcafcfd722283e6c21da608a5dc1c27a2ede6caccb88a70feaa8acad",
+      "powertrain": "1d9a276f29c74c2da009c74db2b115f1598e6b4f5a97123a0b941ac610e6be49",
+      "steering": "ef9ad5bf55cc63320f011f8e529129a46fecd9e552dcf9b4cb6773b485ea4b97",
+      "suspension": "698ef118bcd8eb692f0e84a7a0c68150a05a660ac4526f5ad0d02ae5ad4c542e",
+      "tires": "34a6ea49aecb60201d8c7150fad89a69699d1c20593fc2824628f6bfc00cf3e9",
+      "underfloor_contact": "6b6f9c4bb82f0e1067e3213f82def931e648bdcd5350ddeab3b204c697c5b557"
+    },
+    "manually_authored_domains": [
+      "audio",
+      "suspension_presentation"
+    ],
+    "path": "game/data/vehicles/f1_1997/williams/profiles/hockenheim/profile_provenance.json",
+    "sha256": "a5f0c16936e4eaf4b26156922d92b9ff9466af3d1c8d756bf97ad849df412942",
+    "suspension_presentation_path": "res://data/vehicles/f1_1997/williams/profiles/hockenheim/suspension_presentation.json"
+  },
+  "provenance": {
+    "blender_version": "5.2.0 LTS",
+    "branch": "main-clean",
+    "exporter": "bpy.ops.export_scene.gltf",
+    "head": "fbdae5d1f31beb8751e01a0c36bac3474506ff49",
+    "recorded_at_utc": "2026-10-17T21:01:56.967516+00:00"
+  },
+  "readiness": {
+    "evidence": {
+      "driver_grip_approved": true,
+      "export_validated": true,
+      "manifest_complete": true
+    },
+    "fuji_review": false,
+    "import_ready": false,
+    "physics_profile_note": "Profile resolves, but suspension pickup points and model coefficients are inherited from the base profile",
+    "physics_profile_ready": true,
+    "runtime_ready": false,
+    "visual_ready": false,
+    "visual_ready_note": "Exported assembly renders exist but the exported GLB set has not been reviewed in a viewer"
+  },
+  "schema": "formula90s/vehicle-import/v1",
+  "schema_version": 1,
+  "sources": {
+    "car_blend": {
+      "note": "Normalized object names; geometry, materials and images preserve the promoted snapshot",
+      "path": "car/source/williams_fw19_hockenheim_1997_car.blend",
+      "sha256": "cd4a0d62943b01abdef52d914002936bc4ccb6906b8da6ae5d295022f5746b3d",
+      "size_bytes": 23675036
+    },
+    "driver_blend": {
+      "path": "driver/source/jacques_villeneuve_williams_fw19_1997_driver.blend",
+      "sha256": "cc67bb66be9700ecf15d5c5b56680579970d485470e61e7b63ffd8f3d01ca2d0",
+      "size_bytes": 14496537
+    }
+  },
+  "standard": "Formula-90 GVEP decoupled visual asset",
+  "textures": {
+    "car": [
+      {
+        "height": 1024,
+        "packed_in_blend": true,
+        "path": "car/source/textures/Carbon_Fiber_diffuse.jpg",
+        "sha256": "b42bcd3f40aa9bcbafb8a45c369e4171275d6085836d088fca8e542ede6fa6cc",
+        "size_bytes": 273380,
+        "width": 1024
+      },
+      {
+        "height": 1024,
+        "packed_in_blend": true,
+        "path": "car/source/textures/Carbon_Fiber_normal.jpg",
+        "sha256": "7204930b86398d497eebae4cb3f78a75cf29b25982530a70200b7cfa28ead8b1",
+        "size_bytes": 53323,
+        "width": 1024
+      },
+      {
+        "height": 1024,
+        "packed_in_blend": true,
+        "path": "car/source/textures/Carbon_Fiber_roughness.jpg",
+        "sha256": "5f465e082b8de1394b621fbb0621de8ccf9e9b4d9c74e09c1118e61dcd2c9a5a",
+        "size_bytes": 42520,
+        "width": 1024
+      },
+      {
+        "height": 256,
+        "packed_in_blend": true,
+        "path": "car/source/textures/cockpit_damage.tga",
+        "sha256": "f846c563b8cb3b2ffceeabf02fb5d22c7ee845b2df52f6fc49bb3bc7442953a6",
+        "size_bytes": 262188,
+        "width": 256
+      },
+      {
+        "height": 4096,
+        "packed_in_blend": true,
+        "path": "car/source/textures/fw19_1.tga",
+        "sha256": "8710151b0a315064651151b1ff972b6522c9d2f7dbd1a4ea893325690073f06e",
+        "size_bytes": 67108908,
+        "width": 4096
+      },
+      {
+        "height": 8,
+        "packed_in_blend": true,
+        "path": "car/source/textures/fw19_b.tga",
+        "sha256": "85f10ca84b5f97639b2c907d9654ceb0be83d3869f43ffc696592fe6f6a4a082",
+        "size_bytes": 300,
+        "width": 8
+      },
+      {
+        "height": 2048,
+        "packed_in_blend": true,
+        "path": "car/source/textures/fw19_cf.tga",
+        "sha256": "179eaa9056de2532f4d94200346e0184c25586d38cf16dbb795487a5559b8c9a",
+        "size_bytes": 16777260,
+        "width": 2048
+      },
+      {
+        "height": 2048,
+        "packed_in_blend": true,
+        "path": "car/source/textures/fw19_d.tga",
+        "sha256": "d269c3f8acdb9e431334c0f2ffe7b15e2477d0be53cfd2f57cc62e9d8e41eda8",
+        "size_bytes": 16777260,
+        "width": 2048
+      },
+      {
+        "height": 8,
+        "packed_in_blend": true,
+        "path": "car/source/textures/fw19_g.tga",
+        "sha256": "bb9ad4b003b2c477e880657ea9f8398dde7dc3eaf7f3a4d52c34887de7f9c0dd",
+        "size_bytes": 300,
+        "width": 8
+      },
+      {
+        "height": 512,
+        "packed_in_blend": true,
+        "path": "car/source/textures/fw19_int.tga",
+        "sha256": "8d19c42e20964fd41ff0a9155af9b68176c482033e08e3397f71124233574433",
+        "size_bytes": 2097196,
+        "width": 1024
+      },
+      {
+        "height": 64,
+        "packed_in_blend": true,
+        "path": "car/source/textures/fw19_m.tga",
+        "sha256": "76704517c7ecf7957f8e8093e47d3d803489ddcccbdde0e1d3eceb85e02c4a69",
+        "size_bytes": 32812,
+        "width": 128
+      },
+      {
+        "height": 8,
+        "packed_in_blend": true,
+        "path": "car/source/textures/fw19_r.tga",
+        "sha256": "f199bb35afd2f911e49fea953ac0e659f33afcc6806532e11d00b128f4c02f36",
+        "size_bytes": 300,
+        "width": 8
+      },
+      {
+        "height": 8,
+        "packed_in_blend": true,
+        "path": "car/source/textures/fw19_s.tga",
+        "sha256": "630661ccda23676b0bd262b55cc12cb58605e84c319599517179f5fc7b008913",
+        "size_bytes": 300,
+        "width": 8
+      },
+      {
+        "height": 256,
+        "packed_in_blend": true,
+        "path": "car/source/textures/goodyear_tread_0_right_0.tga",
+        "sha256": "a11af9da5e9f9c906a58ca0d2b887fa329238559cc5c6206731862e9826ce001",
+        "size_bytes": 524332,
+        "width": 512
+      },
+      {
+        "height": 256,
+        "packed_in_blend": true,
+        "path": "car/source/textures/nut_center.tga",
+        "sha256": "1c755979710243a118f8fb0b3565134798bd7929f57a2c7adbc04196c9f72737",
+        "size_bytes": 262188,
+        "width": 256
+      },
+      {
+        "height": 1024,
+        "packed_in_blend": true,
+        "path": "car/source/textures/wheel_gy-oz-blck-yllw_0.tga",
+        "sha256": "a424cd452fcbcd3bf40bdcd7510101cd30dffc5088a1706475781f5c9426e146",
+        "size_bytes": 4194348,
+        "width": 1024
+      }
+    ],
+    "driver": [
+      {
+        "height": 887,
+        "packed_in_blend": true,
+        "path": "driver/source/textures/LewisHamiltonInspiredGloves.png",
+        "sha256": "98497dd40d98ff8bee0d3f4ec3412e751b5524967cc94de6626d183a4a1d34b7",
+        "size_bytes": 2111188,
+        "width": 1774
+      },
+      {
+        "height": 1254,
+        "packed_in_blend": true,
+        "path": "driver/source/textures/LewisHamiltonInspiredSuit.png",
+        "sha256": "70ea832c9cd437d7dba388c3a2f869bdd4af2fc479f45cd1fe227af59b4bb13d",
+        "size_bytes": 1999806,
+        "width": 1254
+      },
+      {
+        "height": 1024,
+        "packed_in_blend": true,
+        "path": "driver/source/textures/driver1_1.tga",
+        "sha256": "a248ab2dacdd578475fdd76f86d320bbbd9bc5ec4b8ac29448fbba4654dff754",
+        "size_bytes": 8388652,
+        "width": 2048
+      },
+      {
+        "height": 8,
+        "packed_in_blend": true,
+        "path": "driver/source/textures/driver1_2.tga",
+        "sha256": "85f10ca84b5f97639b2c907d9654ceb0be83d3869f43ffc696592fe6f6a4a082",
+        "size_bytes": 300,
+        "width": 8
+      },
+      {
+        "height": 2048,
+        "packed_in_blend": true,
+        "path": "driver/source/textures/fw19_d.tga",
+        "sha256": "d269c3f8acdb9e431334c0f2ffe7b15e2477d0be53cfd2f57cc62e9d8e41eda8",
+        "size_bytes": 16777260,
+        "width": 2048
+      },
+      {
+        "height": 256,
+        "packed_in_blend": true,
+        "path": "driver/source/textures/hans.png",
+        "sha256": "78d89b727610c6d039516bc9bdf7eeeb01a4c2e08693625bde26a3b9a9635f85",
+        "size_bytes": 26211,
+        "width": 256
+      },
+      {
+        "height": 887,
+        "packed_in_blend": true,
+        "path": "driver/source/textures/jacques_villeneuve_williams_1997_gloves_base_color.png",
+        "sha256": "60e72aec020f8f6e5f12ebdb5dfff4a91a9545bd23b29f1c28e55d91ced4dd1c",
+        "size_bytes": 2104464,
+        "width": 1774
+      },
+      {
+        "height": 1254,
+        "packed_in_blend": true,
+        "path": "driver/source/textures/jacques_villeneuve_williams_1997_sleeves_base_color.png",
+        "sha256": "4bde275f1cb556d6c9dfc6ebf22506b95866f831b4fd6b38c7f6c569d0103757",
+        "size_bytes": 2078995,
+        "width": 1254
+      }
+    ]
+  },
+  "validation": {
+    "export": {
+      "evidence": "reports/coordinate_and_pivot_report.json",
+      "export_validation_sha256": "d90bcd3b4f81b5f90f4c7d6883d1d03ebb0d6b8255f17543d7f6aa0e9dbab9db",
+      "external_libraries": 0,
+      "status": "PASS",
+      "triangles_and_bounds_verified": true
+    },
+    "fuji_drive": "pending",
+    "godot_import": "pending",
+    "physics_profile": {
+      "digest_contract": "vehicle_profile_provenance_v1",
+      "evidence": "scratch/williams_profile_build_20261017/profile_resolution.json",
+      "global_digest_sha256": "c33b248101fc433df0a389a28eb22020541e09d74b80602cc0e370b0af85d044",
+      "resolved_domains": 18,
+      "status": "PASS"
+    },
+    "reimport": {
+      "note": "Six candidates reimported; triangle counts match and bounds deviate at most 1e-6 m",
+      "status": "PASS"
+    }
+  },
+  "vehicle_id": "f1_1997_williams_hockenheim_villenueve",
+  "wheel_visual_contract": {
+    "BrakeStatic": "brake glow panel follows suspension and steering but does not rotate",
+    "SpinVisual": "tire, rim and hub rotate about local X",
+    "missing_parts": [
+      "GEO_WHEEL_<POSITION>_HUB",
+      "GEO_WHEEL_<POSITION>_CENTER_LOCK_NUT",
+      "GEO_BRAKE_<POSITION>_DISC",
+      "GEO_BRAKE_<POSITION>_CALIPER",
+      "GEO_BRAKE_<POSITION>_INBOARD_DUCT_COVER",
+      "GEO_BRAKE_<POSITION>_DUCT",
+      "GEO_FRONT_WING_UPPER_ELEMENT / INTERMEDIATE_ELEMENT",
+      "GEO_UNDERBODY_FLOOR_AND_DIFFUSER",
+      "GEO_EXHAUST_OUTLET_TUBE_LEFT / RIGHT",
+      "GEO_COCKPIT_DRIVER_SEAT",
+      "GEO_COCKPIT_HeadrestPadding",
+      "GEO_REAR_WING_CENTRAL_SUPPORT",
+      "GEO_ENGINE_COVER_REAR_CLOSURE"
+    ]
+  }
+}

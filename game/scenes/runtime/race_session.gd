@@ -94,6 +94,10 @@ func _add_runtime_systems() -> void:
 		camera_rig_cockpit.set("driver_controller_path", NodePath("../VehicleContainer/ActiveVehicle/VehicleRigidBody/DriverVisualController"))
 		camera_rig_cockpit.set("configuration_path", driver_controller.get("cockpit_configuration_path"))
 		add_child(camera_rig_cockpit)
+	else:
+		var vehicle_cockpit := active_vehicle.get_node_or_null("CockpitCamera")
+		if vehicle_cockpit is Camera3D:
+			camera_rig_cockpit = vehicle_cockpit as Node3D
 	_select_camera_view(0)
 
 	driving_aids = AIDS_SCRIPT.new() as DrivingAidsController
@@ -157,7 +161,7 @@ func _select_camera_view(camera_index: int) -> void:
 		var camera := _find_camera3d_recursive(camera_rig)
 		if camera != null:
 			camera.current = rig_index == active_camera_index
-	if camera_rig_cockpit != null:
+	if camera_rig_cockpit != null and camera_rig_cockpit.has_method("set_view_active"):
 		camera_rig_cockpit.call("set_view_active", is_cockpit_active())
 
 func _find_camera3d_recursive(node: Node) -> Camera3D:

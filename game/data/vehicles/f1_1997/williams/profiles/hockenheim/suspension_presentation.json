@@ -1,0 +1,232 @@
+{
+  "suspension": {
+    "geometry": {
+      "FL": {
+        "damper": {
+          "chassis": [
+            -0.107718,
+            0.2204355,
+            -1.12
+          ]
+        },
+        "hub_center": [
+          -0.753,
+          0.0,
+          -1.475
+        ],
+        "lower_wishbone": {
+          "inner_front": [
+            -0.165237,
+            -0.032255,
+            -1.520731
+          ],
+          "inner_rear": [
+            -0.1912,
+            -0.031258,
+            -1.063059
+          ],
+          "outer": [
+            -0.585831,
+            -0.0317,
+            -1.478898
+          ]
+        },
+        "pushrod": {
+          "outer": [
+            -0.549739,
+            -0.019274,
+            -1.4389295
+          ]
+        },
+        "rocker": {
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "damper_arm": [
+            -0.107718,
+            0.2204355,
+            -1.4462085
+          ],
+          "pivot": [
+            -0.162718,
+            0.2204355,
+            -1.4462085
+          ],
+          "pushrod_arm": [
+            -0.182718,
+            0.2204355,
+            -1.3562085
+          ]
+        },
+        "trackrod": {
+          "inner": [
+            -0.163643,
+            -0.0329515,
+            -1.6063275
+          ],
+          "outer": [
+            -0.581991,
+            -0.0334055,
+            -1.586078
+          ]
+        },
+        "upper_wishbone": {
+          "inner_front": [
+            -0.165237,
+            0.136096,
+            -1.520731
+          ],
+          "inner_rear": [
+            -0.1912,
+            0.137093,
+            -1.196632
+          ],
+          "outer": [
+            -0.585831,
+            0.13665,
+            -1.478898
+          ]
+        }
+      },
+      "FR": {
+        "mirror_of": "FL"
+      },
+      "RL": {
+        "damper": {
+          "chassis": [
+            -0.1,
+            0.1,
+            1.34
+          ]
+        },
+        "driveshaft": {
+          "inner": [
+            -0.0836164,
+            -0.0033783,
+            1.4878016
+          ],
+          "outer": [
+            -0.716,
+            0.0,
+            1.475
+          ]
+        },
+        "hub_center": [
+          -0.716,
+          0.0,
+          1.475
+        ],
+        "lower_wishbone": {
+          "inner_front": [
+            -0.1078206,
+            -0.0793768,
+            1.1482683
+          ],
+          "inner_rear": [
+            -0.073654,
+            -0.1203565,
+            1.624112
+          ],
+          "outer": [
+            -0.505193,
+            -0.0596035,
+            1.474073
+          ]
+        },
+        "pushrod": {
+          "attachment": "upper",
+          "outer": [
+            -0.48,
+            0.11,
+            1.43
+          ],
+          "type": "pullrod"
+        },
+        "rocker": {
+          "axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "damper_arm": [
+            -0.2,
+            -0.145,
+            1.3142
+          ],
+          "pivot": [
+            -0.2,
+            -0.145,
+            1.39
+          ],
+          "pushrod_arm": [
+            -0.2,
+            -0.095,
+            1.3
+          ]
+        },
+        "trackrod": {
+          "inner": [
+            -0.085,
+            -0.0675891925,
+            1.61
+          ],
+          "outer": [
+            -0.505193,
+            -0.015,
+            1.55
+          ]
+        },
+        "upper_wishbone": {
+          "inner_front": [
+            -0.0985375,
+            0.0552935,
+            1.1460326
+          ],
+          "inner_rear": [
+            -0.073654,
+            0.0512445,
+            1.624112
+          ],
+          "outer": [
+            -0.505193,
+            0.1160465,
+            1.474073
+          ]
+        }
+      },
+      "RR": {
+        "mirror_of": "RL"
+      },
+      "_comment": "Front profiles and anchors measured from f1_2030.blend. Rear upper/front-lower/shaft profiles measured; missing lower closure, pullrod and inboard mechanism reconstructed. Godot chassis-local meters.",
+      "_visual_meshes": "res://data/vehicles/f1_2030/f1_2030_suspension_meshes.json",
+      "_visual_packaging": {
+        "front": {
+          "damper_arm": [
+            0.13,
+            0.07,
+            -1.16
+          ],
+          "damper_chassis": [
+            0.13,
+            -0.02,
+            -1.13
+          ],
+          "joint_radius": 0.008,
+          "pivot": [
+            0.13,
+            0.1,
+            -1.25
+          ],
+          "pushrod_arm": [
+            0.13,
+            0.1,
+            -1.35
+          ],
+          "pushrod_section_scale": 0.55
+        }
+      }
+    }
+  }
+}

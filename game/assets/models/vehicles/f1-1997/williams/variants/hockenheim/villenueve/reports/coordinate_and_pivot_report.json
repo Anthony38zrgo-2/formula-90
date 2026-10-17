@@ -1,0 +1,861 @@
+{
+  "coordinate_contract": {
+    "authoring_axes": "+X lateral, +Y forward, +Z up, metres",
+    "conversion_rule": "(x, y, z) -> (x, z, -y)",
+    "determinant": 1.0,
+    "double_conversion_warning": "La exportaci\u00f3n glTF con export_yup=True aplica exactamente esta misma matriz. Verificado con axis_conversion_probe.json: (0,2,0) sale (0,0,-2), (-1,0,0) sale (-1,0,0) y (0,0,3) sale (0,3,0). Por tanto NO debe aplicarse la matriz a mano antes de exportar con export_yup=True; ser\u00eda una doble rotaci\u00f3n. O se deja convertir al exportador, o se aplica la matriz y se exporta con export_yup=False, pero nunca ambas.",
+    "driver_forward_authoring": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "driver_forward_runtime": [
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "forward_matrix": [
+      [
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ],
+      [
+        0.0,
+        -1.0,
+        0.0
+      ]
+    ],
+    "handedness_preserved": true,
+    "inverse_matrix": [
+      [
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0
+      ]
+    ],
+    "points": [
+      {
+        "authoring": [
+          0.0,
+          2.14,
+          -0.3
+        ],
+        "expectation": "runtime Z negative (forward)",
+        "name": "nose_tip",
+        "runtime": [
+          0.0,
+          -0.3,
+          -2.14
+        ]
+      },
+      {
+        "authoring": [
+          -0.334,
+          0.152,
+          0.087
+        ],
+        "expectation": "runtime X negative (left side)",
+        "name": "left_mirror_centre",
+        "runtime": [
+          -0.334,
+          0.087,
+          -0.152
+        ]
+      },
+      {
+        "authoring": [
+          0.0,
+          -0.128,
+          0.127
+        ],
+        "expectation": "runtime Y positive (up)",
+        "name": "helmet_centre",
+        "runtime": [
+          0.0,
+          0.127,
+          0.128
+        ]
+      },
+      {
+        "authoring": [
+          0.0,
+          -0.6,
+          0.641
+        ],
+        "expectation": "runtime Y positive and Z positive (above and behind origin)",
+        "name": "airbox_top",
+        "runtime": [
+          0.0,
+          0.641,
+          0.6
+        ]
+      }
+    ],
+    "rotation_degrees_about_x": -90.0,
+    "runtime_axes": "+X right, +Y up, -Z forward, metres",
+    "scale": 1.0,
+    "units": "metres"
+  },
+  "defects_and_limits": [
+    "Suspension link geometry is a visual deformation, not a historical CAD reconstruction",
+    "No physical profile exists yet",
+    "No scene, launcher selector or Fuji test exists yet"
+  ],
+  "dimension_correction": {
+    "before": {
+      "front_bottom_m": -0.53865,
+      "front_track_m": 1.809663,
+      "rear_bottom_m": -0.545603,
+      "rear_track_m": 1.582146,
+      "wheelbase_m": 2.881463
+    },
+    "note": "Wheel assemblies moved as rigid groups; suspension outer links followed with a smooth lateral falloff that leaves chassis-side mounts fixed",
+    "suspension_deformation": {
+      "GEO_SUSPENSION_FRONT_LINK_ASSEMBLY_LEFT": {
+        "total_vertices": 1143,
+        "vertices_shifted": 765
+      },
+      "GEO_SUSPENSION_FRONT_LINK_ASSEMBLY_RIGHT": {
+        "total_vertices": 1143,
+        "vertices_shifted": 765
+      },
+      "GEO_SUSPENSION_REAR_LINK_ASSEMBLY_LEFT": {
+        "total_vertices": 2431,
+        "vertices_shifted": 1954
+      },
+      "GEO_SUSPENSION_REAR_LINK_ASSEMBLY_RIGHT": {
+        "total_vertices": 2431,
+        "vertices_shifted": 1954
+      }
+    },
+    "targets": {
+      "common_ground_plane_m": -0.53865,
+      "front_track_m": 1.67,
+      "rear_track_m": 1.6,
+      "wheelbase_m": 2.89
+    },
+    "wheel_deltas_m": {
+      "FRONT_LEFT": [
+        0.069831,
+        0.0,
+        0.0
+      ],
+      "FRONT_RIGHT": [
+        -0.069831,
+        0.0,
+        0.0
+      ],
+      "REAR_LEFT": [
+        -0.008927,
+        -0.008537,
+        0.006953
+      ],
+      "REAR_RIGHT": [
+        0.008927,
+        -0.008537,
+        0.006953
+      ]
+    }
+  },
+  "driver_measurements": {
+    "assembly_origin_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "bounds_authoring_m": {
+      "centre": [
+        0.0,
+        0.350651,
+        -0.074143
+      ],
+      "maximum": [
+        0.221637,
+        1.019817,
+        0.273829
+      ],
+      "minimum": [
+        -0.221637,
+        -0.318515,
+        -0.422114
+      ],
+      "size": [
+        0.443273,
+        1.338331,
+        0.695943
+      ]
+    },
+    "forward_check": {
+      "faces_positive_y": true,
+      "helmet_centre_m": [
+        0.0,
+        -0.128446,
+        0.126857
+      ],
+      "visor_centre_m": [
+        0.0,
+        -0.089014,
+        0.122797
+      ],
+      "visor_forward_offset_m": 0.039432
+    },
+    "note": "Los objetos conservan coordenadas mundiales de montaje. No se centran ni se trasladan; el ensamblado con el coche se hace a identidad, sin desplazamiento adicional.",
+    "object_count": 8,
+    "objects": [
+      {
+        "bounds_authoring_m": {
+          "maximum": [
+            0.1266,
+            0.039923,
+            0.273829
+          ],
+          "minimum": [
+            -0.1266,
+            -0.296816,
+            -0.020115
+          ]
+        },
+        "location_m": [
+          0.0,
+          -0.137,
+          0.128
+        ],
+        "name": "Jacques Villeneuve 1997 helmet shell",
+        "parent": "Jacques Villeneuve helmet mounting control",
+        "type": "MESH"
+      },
+      {
+        "bounds_authoring_m": {
+          "maximum": [
+            0.1506,
+            -0.072168,
+            0.147362
+          ],
+          "minimum": [
+            -0.1506,
+            -0.10586,
+            0.098232
+          ]
+        },
+        "location_m": [
+          0.0,
+          -0.137,
+          0.128
+        ],
+        "name": "Jacques Villeneuve 1997 helmet visor",
+        "parent": "Jacques Villeneuve helmet mounting control",
+        "type": "MESH"
+      },
+      {
+        "bounds_authoring_m": {
+          "maximum": [
+            0.155145,
+            0.382079,
+            0.02634
+          ],
+          "minimum": [
+            -0.155145,
+            0.163593,
+            -0.151037
+          ]
+        },
+        "location_m": [
+          0.0,
+          0.354,
+          -0.145
+        ],
+        "name": "Jacques Villeneuve Williams racing gloves",
+        "parent": "Jacques Villeneuve arm and hand skeleton",
+        "type": "MESH"
+      },
+      {
+        "bounds_authoring_m": {
+          "maximum": [
+            0.221637,
+            0.25693,
+            -0.025573
+          ],
+          "minimum": [
+            -0.221637,
+            -0.138739,
+            -0.253609
+          ]
+        },
+        "location_m": [
+          0.0,
+          0.354,
+          -0.145
+        ],
+        "name": "Jacques Villeneuve Williams suit sleeves",
+        "parent": "Jacques Villeneuve arm and hand skeleton",
+        "type": "MESH"
+      },
+      {
+        "bounds_authoring_m": {
+          "maximum": [
+            0.202904,
+            1.019817,
+            0.015232
+          ],
+          "minimum": [
+            -0.203151,
+            -0.318515,
+            -0.422114
+          ]
+        },
+        "location_m": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "name": "Jacques Villeneuve Williams torso legs boots and safety harness",
+        "parent": "Jacques Villeneuve driver assembly",
+        "type": "MESH"
+      },
+      {
+        "bounds_authoring_m": null,
+        "location_m": [
+          0.0,
+          0.354,
+          -0.145
+        ],
+        "name": "Jacques Villeneuve arm and hand skeleton",
+        "parent": "Jacques Villeneuve driver assembly",
+        "type": "ARMATURE"
+      },
+      {
+        "bounds_authoring_m": null,
+        "location_m": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "name": "Jacques Villeneuve driver assembly",
+        "parent": null,
+        "type": "EMPTY"
+      },
+      {
+        "bounds_authoring_m": null,
+        "location_m": [
+          0.0,
+          -0.137,
+          0.128
+        ],
+        "name": "Jacques Villeneuve helmet mounting control",
+        "parent": "Jacques Villeneuve driver assembly",
+        "type": "EMPTY"
+      }
+    ],
+    "offset_from_car_origin_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "skeleton_origin_m": [
+      0.0,
+      0.354,
+      -0.145
+    ],
+    "skeleton_sides": {
+      "anatomical_left_on_negative_x": true,
+      "centreline_bones": 2,
+      "left_bone_count": 24,
+      "left_bones_on_wrong_side": [],
+      "left_maximum_x_m": 0.0,
+      "right_bone_count": 24,
+      "right_bones_on_wrong_side": [],
+      "right_minimum_x_m": 0.0
+    }
+  },
+  "exporter_axis_probe": null,
+  "mirror_decision": {
+    "checks": {
+      "corrected_has_no_negative_scale_node": true,
+      "corrected_matches_control_outward_fraction": true,
+      "corrected_vertex_count_within_one_percent_of_control": true,
+      "corrected_winding_consistent_with_normals": true,
+      "uncorrected_points_inward": true
+    },
+    "decision": "Bake the mirror into duplicated wheel meshes, reverse polygon winding and reassign custom normals by vertex",
+    "rejected_alternative": "Keep the negative scale in the glTF node and rely on each engine to flip culling"
+  },
+  "promotion": {
+    "blender_version": "5.2.0 LTS",
+    "export_validation_sha256": "d90bcd3b4f81b5f90f4c7d6883d1d03ebb0d6b8255f17543d7f6aa0e9dbab9db",
+    "measured_asset": {
+      "dimension_correction_sha256": "433c33b7c74f00406422eff52177bb218f33658b154b07b96139e9c67d372f93",
+      "path": "D:\\Formula90s\\scratch\\williams_step_seven_physics_20261017\\coordinate_report_promoted.json",
+      "sha256": "a820c22b6078fe53fe518707f73fc140db5f1410c16956054548fd8a8c1d5712",
+      "source_blend": "D:\\Formula90s\\game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve\\car/source/williams_fw19_hockenheim_1997_car.blend",
+      "source_sha256": "cd4a0d62943b01abdef52d914002936bc4ccb6906b8da6ae5d295022f5746b3d"
+    },
+    "promoted_by": "assistant",
+    "recorded_at_utc": "2026-10-17T21:01:36.569515+00:00",
+    "repository": {
+      "branch": "main-clean",
+      "build_source": "304101829536cb63fb0c712fe4ae1020c4a130c0",
+      "head": "fbdae5d1f31beb8751e01a0c36bac3474506ff49",
+      "modified_paths": [
+        ".gitignore",
+        "game/BUILD_SOURCE",
+        "game/addons/formula90s/bin/formula90_core.dll",
+        "game/addons/formula90s/bin/formula90_core.windows.template_debug.x86_64.dll",
+        "game/addons/formula90s/bin/game_sim.dll",
+        "game/addons/formula90s/bin/game_sim.windows.template_debug.x86_64.dll",
+        "game/addons/formula90s/bin/libformula90s.windows.template_debug.x86_64.dll",
+        "game/addons/formula90s/bin/psx_art_plugin.dll",
+        "game/addons/formula90s/bin/psx_art_plugin.windows.template_debug.x86_64.dll",
+        "game/addons/formula90s/bin/vehicle_audio_engine.dll",
+        "game/addons/formula90s/bin/vehicle_audio_engine.windows.template_debug.x86_64.dll",
+        "game/addons/formula90s/bin/vehicle_physics_engine.windows.template_debug.x86_64.dll",
+        "game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/car/source/williams_fw19_hockenheim_1997_car.blend",
+        "game/assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/reports/authoring_source_promotion.json"
+      ],
+      "root": "D:\\Formula90s",
+      "status_entry_count": 467
+    },
+    "user_request": "Correct the visual model to the 1997 track widths, wheelbase and ground plane"
+  },
+  "report_id": "williams_fw19_hockenheim_1997_coordinate_and_pivot_report",
+  "validation": {
+    "export_validation_passed": true,
+    "triangles_and_bounds_verified": true
+  },
+  "williams_measurements": {
+    "bounds_authoring_m": {
+      "centre": [
+        0.0,
+        -0.082449,
+        0.050981
+      ],
+      "maximum": [
+        0.994552,
+        2.139685,
+        0.640612
+      ],
+      "minimum": [
+        -0.994552,
+        -2.304584,
+        -0.53865
+      ]
+    },
+    "chassis_object_count": 30,
+    "dimensions": {
+      "body_width_without_wheels_m": 1.661375,
+      "height_m": 1.179262,
+      "length_m": 4.444269,
+      "width_with_wheels_m": 1.989105
+    },
+    "floor_height_from_ground_m": 0.024899,
+    "front_track_m": 1.669974,
+    "fw19_d_faces_in_chassis": 0,
+    "ground_plane_offset_m": 0.53865,
+    "material_face_counts_chassis": {
+      "Screen": 24,
+      "UniformBlenderKitCarbonFiber.004": 252,
+      "UniformBlenderKitCarbonFiber.006": 1928,
+      "Williams steering column charcoal metal": 34,
+      "cockpit_damage.tGA:cockpit_damage.tga": 840,
+      "fw19_1.tGA:fw19_1.tga": 39607,
+      "fw19_b.tGA:fw19_b.tga": 1353,
+      "fw19_cf.tGA:fw19_cf.tga": 17594,
+      "fw19_g.tGA:fw19_g.tga": 164,
+      "fw19_int.tGA:fw19_int.tga": 61,
+      "fw19_m.tGA:fw19_m.tga": 226,
+      "fw19_r.tGA:fw19_r.tga": 64,
+      "fw19_s.tGA:fw19_s.tga": 1422
+    },
+    "origin_offset_from_bounds_centre_m": [
+      0.0,
+      -0.082449,
+      0.050981
+    ],
+    "rear_track_m": 1.6,
+    "steering": {
+      "column_axis_authoring": "Y",
+      "column_axis_runtime": "-Z",
+      "column_end_deviation_m": 0.0,
+      "column_end_documented_m": [
+        0.0,
+        0.462032,
+        -0.015
+      ],
+      "column_end_measured_m": [
+        0.0,
+        0.462032,
+        -0.015
+      ],
+      "column_length_documented_m": 0.1274386073,
+      "column_length_measured_m": 0.127439,
+      "column_mesh_bounds_m": {
+        "maximum": [
+          0.013,
+          0.462032,
+          -0.002
+        ],
+        "minimum": [
+          -0.013,
+          0.334593,
+          -0.028
+        ]
+      },
+      "column_start_deviation_m": 0.0,
+      "column_start_documented_m": [
+        0.0,
+        0.334593,
+        -0.015
+      ],
+      "column_start_measured_m": [
+        0.0,
+        0.334593,
+        -0.015
+      ],
+      "mount_control_location_m": [
+        0.0,
+        0.322593,
+        -0.015
+      ],
+      "mount_control_rotation_euler_degrees": [
+        0.0,
+        0.0,
+        180.000005
+      ],
+      "pivot_authoring_m": [
+        0.0,
+        0.322622,
+        -0.015
+      ],
+      "pivot_offset_from_mount_m": 2.9e-05,
+      "pivot_runtime_m": [
+        0.0,
+        -0.015,
+        -0.322622
+      ],
+      "rotation_axis_authoring": "Y",
+      "rotation_axis_runtime": "-Z",
+      "rotation_test": {
+        "axial_centroid_drift_m": 0.0,
+        "centroid_after": [
+          -0.002967,
+          0.005104,
+          -0.001084
+        ],
+        "centroid_before": [
+          -1.7e-05,
+          0.005903,
+          -0.001084
+        ],
+        "centroid_off_axis_m": 0.005903,
+        "depth_after_m": 0.046751,
+        "depth_before_m": 0.046751,
+        "passed": true,
+        "radial_error_m": 0.0
+      },
+      "wheel_body_centre_m": [
+        0.0,
+        0.322622,
+        -0.014916
+      ]
+    },
+    "wheel_object_count": 32,
+    "wheel_pivot_tests": [
+      {
+        "axial_centroid_drift_m": 0.0,
+        "centroid_after": [
+          -0.048056,
+          0.002762,
+          -0.003595
+        ],
+        "centroid_before": [
+          -0.048056,
+          4.2e-05,
+          -0.004533
+        ],
+        "centroid_off_axis_m": 0.004533,
+        "lateral_extent_after_m": 0.307541,
+        "lateral_extent_before_m": 0.307541,
+        "passed": true,
+        "position": "FRONT_LEFT",
+        "radial_error_m": 0.0
+      },
+      {
+        "axial_centroid_drift_m": 0.0,
+        "centroid_after": [
+          0.048056,
+          0.002762,
+          -0.003595
+        ],
+        "centroid_before": [
+          0.048056,
+          4.2e-05,
+          -0.004533
+        ],
+        "centroid_off_axis_m": 0.004533,
+        "lateral_extent_after_m": 0.307541,
+        "lateral_extent_before_m": 0.307541,
+        "passed": true,
+        "position": "FRONT_RIGHT",
+        "radial_error_m": 0.0
+      },
+      {
+        "axial_centroid_drift_m": 0.0,
+        "centroid_after": [
+          -0.038307,
+          -0.005089,
+          -0.002313
+        ],
+        "centroid_before": [
+          -0.038307,
+          -0.005456,
+          0.001215
+        ],
+        "centroid_off_axis_m": 0.00559,
+        "lateral_extent_after_m": 0.389105,
+        "lateral_extent_before_m": 0.389105,
+        "passed": true,
+        "position": "REAR_LEFT",
+        "radial_error_m": 0.0
+      },
+      {
+        "axial_centroid_drift_m": 0.0,
+        "centroid_after": [
+          0.038307,
+          -0.005089,
+          -0.002313
+        ],
+        "centroid_before": [
+          0.038307,
+          -0.005456,
+          0.001215
+        ],
+        "centroid_off_axis_m": 0.00559,
+        "lateral_extent_after_m": 0.389105,
+        "lateral_extent_before_m": 0.389105,
+        "passed": true,
+        "position": "REAR_RIGHT",
+        "radial_error_m": 0.0
+      }
+    ],
+    "wheel_reassembly_tests": [
+      {
+        "maximum_error_m": 0.0,
+        "passed": true,
+        "position": "FRONT_LEFT"
+      },
+      {
+        "maximum_error_m": 0.0,
+        "passed": true,
+        "position": "FRONT_RIGHT"
+      },
+      {
+        "maximum_error_m": 0.0,
+        "passed": true,
+        "position": "REAR_LEFT"
+      },
+      {
+        "maximum_error_m": 0.0,
+        "passed": true,
+        "position": "REAR_RIGHT"
+      }
+    ],
+    "wheelbase_m": 2.89,
+    "wheels": {
+      "FRONT_LEFT": {
+        "bounds_authoring_m": {
+          "maximum": [
+            -0.681217,
+            1.458941,
+            0.085249
+          ],
+          "minimum": [
+            -0.988758,
+            0.835043,
+            -0.53865
+          ]
+        },
+        "centre_authoring_m": [
+          -0.834987,
+          1.146992,
+          -0.226701
+        ],
+        "centre_runtime_m": [
+          -0.834987,
+          -0.226701,
+          -1.146992
+        ],
+        "mesh_names": [
+          "GEO_WHEEL_FRONT_LEFT_RIM_AND_SPOKES",
+          "GEO_WHEEL_FRONT_LEFT_RIM_BARREL",
+          "GEO_WHEEL_FRONT_LEFT_RIM_BARREL_INBOARD",
+          "GEO_WHEEL_FRONT_LEFT_RIM_BARREL_OUTBOARD",
+          "GEO_WHEEL_FRONT_LEFT_TIRE",
+          "GEO_WHEEL_FRONT_LEFT_TIRE_SIDEWALL_INBOARD",
+          "GEO_WHEEL_FRONT_LEFT_TIRE_SIDEWALL_OUTBOARD"
+        ],
+        "offset_from_car_origin_runtime_m": [
+          -0.834987,
+          -0.226701,
+          -1.146992
+        ],
+        "position": "FRONT_LEFT",
+        "radius_authoring_m": 0.311949,
+        "radius_y_m": 0.311949,
+        "radius_z_m": 0.311949,
+        "spin_axis_authoring": "X",
+        "spin_axis_runtime": "X",
+        "tyre_width_m": 0.307541
+      },
+      "FRONT_RIGHT": {
+        "bounds_authoring_m": {
+          "maximum": [
+            0.988758,
+            1.458941,
+            0.085249
+          ],
+          "minimum": [
+            0.681217,
+            0.835043,
+            -0.53865
+          ]
+        },
+        "centre_authoring_m": [
+          0.834987,
+          1.146992,
+          -0.226701
+        ],
+        "centre_runtime_m": [
+          0.834987,
+          -0.226701,
+          -1.146992
+        ],
+        "mesh_names": [
+          "GEO_WHEEL_FRONT_RIGHT_RIM_AND_SPOKES",
+          "GEO_WHEEL_FRONT_RIGHT_RIM_BARREL",
+          "GEO_WHEEL_FRONT_RIGHT_RIM_BARREL_INBOARD",
+          "GEO_WHEEL_FRONT_RIGHT_RIM_BARREL_OUTBOARD",
+          "GEO_WHEEL_FRONT_RIGHT_TIRE",
+          "GEO_WHEEL_FRONT_RIGHT_TIRE_SIDEWALL_INBOARD",
+          "GEO_WHEEL_FRONT_RIGHT_TIRE_SIDEWALL_OUTBOARD"
+        ],
+        "offset_from_car_origin_runtime_m": [
+          0.834987,
+          -0.226701,
+          -1.146992
+        ],
+        "position": "FRONT_RIGHT",
+        "radius_authoring_m": 0.311949,
+        "radius_y_m": 0.311949,
+        "radius_z_m": 0.311949,
+        "spin_axis_authoring": "X",
+        "spin_axis_runtime": "X",
+        "tyre_width_m": 0.307541
+      },
+      "REAR_LEFT": {
+        "bounds_authoring_m": {
+          "maximum": [
+            -0.605447,
+            -1.420992,
+            0.105383
+          ],
+          "minimum": [
+            -0.994552,
+            -2.065024,
+            -0.53865
+          ]
+        },
+        "centre_authoring_m": [
+          -0.8,
+          -1.743008,
+          -0.216634
+        ],
+        "centre_runtime_m": [
+          -0.8,
+          -0.216634,
+          1.743008
+        ],
+        "mesh_names": [
+          "GEO_WHEEL_REAR_LEFT_RIM_AND_SPOKES",
+          "GEO_WHEEL_REAR_LEFT_RIM_BARREL",
+          "GEO_WHEEL_REAR_LEFT_RIM_BARREL_INBOARD",
+          "GEO_WHEEL_REAR_LEFT_RIM_BARREL_OUTBOARD",
+          "GEO_WHEEL_REAR_LEFT_TIRE",
+          "GEO_WHEEL_REAR_LEFT_TIRE_SIDEWALL_INBOARD",
+          "GEO_WHEEL_REAR_LEFT_TIRE_SIDEWALL_OUTBOARD"
+        ],
+        "offset_from_car_origin_runtime_m": [
+          -0.8,
+          -0.216634,
+          1.743008
+        ],
+        "position": "REAR_LEFT",
+        "radius_authoring_m": 0.322016,
+        "radius_y_m": 0.322016,
+        "radius_z_m": 0.322016,
+        "spin_axis_authoring": "X",
+        "spin_axis_runtime": "X",
+        "tyre_width_m": 0.389105
+      },
+      "REAR_RIGHT": {
+        "bounds_authoring_m": {
+          "maximum": [
+            0.994552,
+            -1.420992,
+            0.105383
+          ],
+          "minimum": [
+            0.605447,
+            -2.065024,
+            -0.53865
+          ]
+        },
+        "centre_authoring_m": [
+          0.8,
+          -1.743008,
+          -0.216634
+        ],
+        "centre_runtime_m": [
+          0.8,
+          -0.216634,
+          1.743008
+        ],
+        "mesh_names": [
+          "GEO_WHEEL_REAR_RIGHT_RIM_AND_SPOKES",
+          "GEO_WHEEL_REAR_RIGHT_RIM_BARREL",
+          "GEO_WHEEL_REAR_RIGHT_RIM_BARREL_INBOARD",
+          "GEO_WHEEL_REAR_RIGHT_RIM_BARREL_OUTBOARD",
+          "GEO_WHEEL_REAR_RIGHT_TIRE",
+          "GEO_WHEEL_REAR_RIGHT_TIRE_SIDEWALL_INBOARD",
+          "GEO_WHEEL_REAR_RIGHT_TIRE_SIDEWALL_OUTBOARD"
+        ],
+        "offset_from_car_origin_runtime_m": [
+          0.8,
+          -0.216634,
+          1.743008
+        ],
+        "position": "REAR_RIGHT",
+        "radius_authoring_m": 0.322016,
+        "radius_y_m": 0.322016,
+        "radius_z_m": 0.322016,
+        "spin_axis_authoring": "X",
+        "spin_axis_runtime": "X",
+        "tyre_width_m": 0.389105
+      }
+    }
+  }
+}

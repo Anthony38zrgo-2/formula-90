@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicle/vehicle_definition.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/vehicles/f1_1997_williams/f1_1997_williams_hockenheim_villenueve.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"f1_1997_williams_hockenheim_villenueve"
+display_name = "Williams FW19 1997 (Hockenheim, Villeneuve)"
+vehicle_scene = ExtResource("2")
+physics_config_path = "res://data/vehicles/f1_1997/williams/profiles/hockenheim/vehicle.json"
+manifest_path = "res://assets/models/vehicles/f1-1997/williams/variants/hockenheim/villenueve/manifest.json"
+tcam_config_path = "res://data/cameras/f1_1997_williams_hockenheim_villenueve_tcam.json"
