@@ -598,11 +598,13 @@ mod tests {
                 }
             });
             crate::suspension_kinematics::counters::reset();
-            standard.step(&configuration, &samples, 1.0 / 120.0);
+            standard.step_with_integration_method(&configuration,
+                &[crate::tire_thermals::TireMechanicalModifiers::identity(); 4], &samples, 1.0 / 120.0, true);
             standard_geometry_solves +=
                 crate::suspension_kinematics::counters::solve_corner_calls();
             crate::suspension_kinematics::counters::reset();
-            simplified.step(&configuration, &samples, 1.0 / 120.0);
+            simplified.step_with_integration_method(&configuration,
+                &[crate::tire_thermals::TireMechanicalModifiers::identity(); 4], &samples, 1.0 / 120.0, true);
             simplified_geometry_solves +=
                 crate::suspension_kinematics::counters::solve_corner_calls();
             for index in 0..4 {
