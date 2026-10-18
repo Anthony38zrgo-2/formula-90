@@ -5,6 +5,8 @@ const DATTO_REGULAR_FONT := preload("res://fonts/D-DIN.ttf")
 const STANDARD_FONT_SIZE := 18
 
 var _lap_timing_controller: LapTimingController
+var _configured_vehicle: Node
+var _configured_vehicle_profile_path := ""
 
 
 func bind_runtime(
@@ -90,6 +92,7 @@ func _position_lap_timing_panel() -> void:
 
 
 func _update_speed_gauge() -> void:
+	_synchronize_vehicle_powertrain_configuration()
 	super._update_speed_gauge()
 	if retro_hud == null:
 		return
@@ -157,6 +160,27 @@ func _update_speed_gauge() -> void:
 		has_fuel_delta,
 		oil_temperature_color,
 		water_temperature_color)
+
+
+func _synchronize_vehicle_powertrain_configuration() -> void:
+	if retro_hud == null:
+		return
+	var configuration_path := ""
+	if is_instance_valid(_vehicle):
+		var configuration_path_value: Variant = _vehicle.get("physics_config_path")
+		if configuration_path_value is String:
+			configuration_path = configuration_path_value
+	if _configured_vehicle == _vehicle and _configured_vehicle_profile_path == configuration_path:
+		return
+	_configured_vehicle = _vehicle
+	_configured_vehicle_profile_path = configuration_path
+	var powertrain_configuration: Dictionary = {}
+	if not configuration_path.is_empty():
+		var vehicle_configuration: Dictionary = preload("res://scripts/vehicle/vehicle_profile_configuration.gd").load_configuration(configuration_path)
+		var powertrain_value: Variant = vehicle_configuration.get("powertrain", {})
+		if powertrain_value is Dictionary:
+			powertrain_configuration = powertrain_value
+	retro_hud.call("set_powertrain_configuration", powertrain_configuration)
 
 
 func _engine_thermal_state() -> Dictionary:

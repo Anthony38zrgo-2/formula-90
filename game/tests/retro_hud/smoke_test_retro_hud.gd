@@ -1,5 +1,9 @@
 extends SceneTree
 
+class ProfileVehicle extends Node:
+	var physics_config_path := "res://data/vehicles/f1_1997/williams/profiles/hockenheim/vehicle.json"
+
+
 func _init() -> void:
 	call_deferred("_run")
 
@@ -49,6 +53,23 @@ func _run() -> void:
 	if config.peak_activation_rpm < config.rpm_min or config.peak_activation_rpm > config.rpm_max:
 		failures.append("peak activation RPM is outside the RPM scale")
 
+	var adapter := CompetitionHudAdapter.new()
+	var profile_vehicle := ProfileVehicle.new()
+	adapter.retro_hud = display
+	adapter.set("_vehicle", profile_vehicle)
+	adapter.call("_synchronize_vehicle_powertrain_configuration")
+	_check_vehicle_limits(display, 17500.0, failures)
+	display.reload_config()
+	_check_vehicle_limits(display, 17500.0, failures)
+	profile_vehicle.physics_config_path = "res://data/vehicles/f1_2030/profiles/geometric/vehicle.json"
+	adapter.call("_synchronize_vehicle_powertrain_configuration")
+	_check_vehicle_limits(display, 18000.0, failures)
+	adapter.set("_vehicle", null)
+	adapter.call("_synchronize_vehicle_powertrain_configuration")
+	if not is_equal_approx(display.config.revolutions_per_minute_maximum, 19000.0):
+		failures.append("unbinding the vehicle did not restore HUD JSON defaults")
+	adapter.free()
+	profile_vehicle.free()
 	display.queue_free()
 	if failures.is_empty():
 		print("[PASS] Retro HUD loads its procedural display, state, and validated config.")
@@ -56,3 +77,23 @@ func _run() -> void:
 		for failure in failures:
 			printerr("[FAIL] " + failure)
 	quit(failures.size())
+
+
+func _check_vehicle_limits(display: RetroHudDisplay, engine_limit: float, failures: Array[String]) -> void:
+	if not is_equal_approx(display.config.revolutions_per_minute_redline, engine_limit):
+		failures.append("HUD redline does not match the resolved vehicle JSON")
+	if not is_equal_approx(display.config.revolutions_per_minute_maximum, engine_limit * 19000.0 / 18000.0):
+		failures.append("tachometer scale did not follow the vehicle limit")
+	if not is_equal_approx(display.config.ideal_shift_revolutions_per_minute, engine_limit * 17400.0 / 18000.0):
+		failures.append("ideal shift light did not retain the HUD JSON proportion")
+	if not is_equal_approx(display.config.urgent_shift_revolutions_per_minute, engine_limit * 17800.0 / 18000.0):
+		failures.append("urgent shift light did not retain the HUD JSON proportion")
+	display.set_readout(200.0, display.config.urgent_shift_revolutions_per_minute - 1.0, "4")
+	if display.engine_readout_color() != display.config.digital_color:
+		failures.append("engine readout turns red before the configured warning")
+	display.set_readout(200.0, display.config.urgent_shift_revolutions_per_minute, "4")
+	if display.engine_readout_color() != display.config.alert_color:
+		failures.append("engine readout does not turn red at the configured warning")
+	display.set_readout(200.0, engine_limit, "4")
+	if display.engine_readout_color() != display.config.alert_color:
+		failures.append("engine readout does not turn red at the vehicle limiter")

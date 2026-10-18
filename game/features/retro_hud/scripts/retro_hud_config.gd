@@ -49,6 +49,23 @@ func apply(data: Dictionary) -> void:
 	_apply(data)
 
 
+func apply_powertrain_configuration(powertrain_configuration: Dictionary) -> void:
+	var engine_limit := float(powertrain_configuration.get("max_rpm", 0.0))
+	if not is_finite(engine_limit) or engine_limit <= revolutions_per_minute_minimum:
+		return
+	var threshold_scale := engine_limit / maxf(revolutions_per_minute_redline, 1.0)
+	revolutions_per_minute_maximum = maxf(
+		revolutions_per_minute_minimum + 1.0,
+		revolutions_per_minute_maximum * threshold_scale)
+	ideal_shift_revolutions_per_minute *= threshold_scale
+	urgent_shift_revolutions_per_minute *= threshold_scale
+	revolutions_per_minute_redline = engine_limit
+	rpm_min = revolutions_per_minute_minimum
+	rpm_max = revolutions_per_minute_maximum
+	rpm_redline = revolutions_per_minute_redline
+	peak_activation_rpm = clampf(peak_activation_rpm * threshold_scale, rpm_min, rpm_max)
+
+
 func _apply(data: Dictionary) -> void:
 	revolutions_per_minute_minimum = maxf(
 		float(data.get("revolutions_per_minute_minimum", revolutions_per_minute_minimum)),

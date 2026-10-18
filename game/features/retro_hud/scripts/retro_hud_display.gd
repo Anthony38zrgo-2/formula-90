@@ -39,6 +39,7 @@ var config: RetroHudConfig = CONFIG_SCRIPT.new()
 var _peak_rpm := 0.0
 var _design_origin := Vector2.ZERO
 var _design_scale_factor := 1.0
+var _powertrain_configuration: Dictionary = {}
 
 
 func _ready() -> void:
@@ -100,10 +101,16 @@ func set_state(next_state: RetroHudState) -> void:
 
 func reload_config() -> void:
 	config = CONFIG_SCRIPT.load_from_json(config_path)
+	config.apply_powertrain_configuration(_powertrain_configuration)
 	if apply_layout_from_config:
 		scale = Vector2.ONE * config.display_scale
 		visible = config.visible
 	queue_redraw()
+
+
+func set_powertrain_configuration(powertrain_configuration: Dictionary) -> void:
+	_powertrain_configuration = powertrain_configuration.duplicate(true)
+	reload_config()
 
 
 func apply_hud_layout(scale_value: float, visible_value: bool) -> void:
@@ -151,7 +158,7 @@ func _draw_revolutions_per_minute_scale() -> void:
 	_draw_revolutions_per_minute_band(
 		config.revolutions_per_minute_minimum,
 		clampf(state.engine_revolutions_per_minute, config.revolutions_per_minute_minimum, config.urgent_shift_revolutions_per_minute),
-		config.dial_color)
+		config.alert_color if state.engine_revolutions_per_minute >= config.urgent_shift_revolutions_per_minute else config.dial_color)
 	var segment_count := maxi(config.revolutions_per_minute_segment_count, 2)
 	for segment_index in range(segment_count):
 		var segment_ratio := float(segment_index) / float(segment_count - 1)
