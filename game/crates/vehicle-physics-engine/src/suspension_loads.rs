@@ -43,9 +43,7 @@
 //! ```
 //! Contact forces are REPLACED by anchor reactions (they are the same load,
 //! transmitted). Whole-system balance (validation, not assumption):
-//! `|sum_wheel C + F_c + W - m*a| ~= 0`. Total force matches legacy within
-//! unsprung terms; total MOMENT differs by design (anchors vs contact patch:
-//! this is where anti-dive/squat and jacking live).
+//! `|sum_wheel C + F_c + W - m*a| ~= 0`.
 //!
 //! Airborne wheels (`!grounded`): same solver with `F_c = 0`, so the hanging
 //! unsprung weight distributes to the anchors (pulls the body down at the
@@ -105,12 +103,16 @@ use serde::{Deserialize, Serialize};
 pub struct AnchorReaction {
     pub position: Vec3,
     pub force: Vec3,
+    #[serde(default)]
+    pub moment_newton_metres: Vec3,
     /// 0..3 leg index / 4 trackrod / 5 driveshaft / 6 rocker pivot / 7 damper.
     pub kind: u8,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 pub struct WheelLoadPaths {
+    #[serde(default)]
+    pub moment_balance_residual_newton_metres: f64,
     /// Vertical share through rod+damper+rocker (sets the aero platform).
     pub element_share: f64,
     /// Vertical share through the 4 wishbone legs.
@@ -503,6 +505,7 @@ pub(crate) fn reactions_with_prepared_response(
         out.push(AnchorReaction {
             position: *inner,
             force: r,
+            moment_newton_metres: Vec3::ZERO,
             kind,
         });
     }
@@ -529,11 +532,14 @@ pub(crate) fn reactions_with_prepared_response(
     out.push(AnchorReaction {
         position: rocker_pivot,
         force: r_pivot,
+        moment_newton_metres: (frame.links[frame.rod_index].0 - rocker_pivot).cross(f_rock_rod)
+            + (damper_chassis - rocker_pivot).cross(f_rock_elem),
         kind: 6,
     });
     out.push(AnchorReaction {
         position: damper_chassis,
         force: r_damper,
+        moment_newton_metres: Vec3::ZERO,
         kind: 7,
     });
     let _ = resid_eq;
@@ -555,12 +561,14 @@ pub(crate) fn reactions_with_prepared_response(
         inertia.z - contact_force.z - w_grav.z,
     );
     let bal = (sum + expect).length();
+    let moment_balance_residual_newton_metres = (anchor_wrench(&out, frame.wheel_center).1 - mc).length();
     let rod_mm = if rod_reference_newtons.is_finite() {
         (rod_solved - rod_reference_newtons).abs()
     } else {
         0.0
     };
     let paths = WheelLoadPaths {
+        moment_balance_residual_newton_metres,
         element_share: elem_y * inv,
         wishbone_share: wish_y * inv,
         other_share: other_y * inv,
@@ -687,7 +695,7 @@ pub fn anchor_wrench(list: &[AnchorReaction], cg_local: Vec3) -> (Vec3, Vec3) {
     let mut m = Vec3::ZERO;
     for r in list {
         f = f + r.force;
-        m = m + (r.position - cg_local).cross(r.force);
+        m = m + (r.position - cg_local).cross(r.force) + r.moment_newton_metres;
     }
     (f, m)
 }
@@ -908,13 +916,6 @@ mod tests {
         assert!(!paths.singular);
     }
 
-    /// The geometric wrench transmits through linkage anchors, so the applied
-    /// moment intentionally differs from the legacy contact-patch application.
-    /// What must hold is mirror consistency: a symmetric drive load on RL+RR may
-    /// produce pitch, but never net yaw or roll. Without this guard a bad
-    /// hardpoint could convert engine torque into free yaw with no test failing
-    /// (the F1 2030 rear trackrod shipped with a 70 mm mount error doing exactly
-    /// that through bump steer).
     #[test]
     fn f1_2030_symmetric_rear_load_has_no_net_yaw_or_roll() {
         let cfg = crate::vehicle_config::VehicleConfig::from_json_str(include_str!(

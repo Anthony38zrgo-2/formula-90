@@ -242,8 +242,6 @@ fn symmetric_settle_gives_symmetric_anchors_and_balance() {
             + lw.load_path_other_n / tot;
         assert!((s - 1.0).abs() < 0.02, "shares sum {s}");
     }
-    // Anchor verticals per axle match the contact load transfer base: anchors
-    // carry contacts minus hanging unsprung weights (G = F_c + W - m a).
     let fz_f = st.wheels[0].total_normal_force + st.wheels[1].total_normal_force;
     let anch_f = (st.wheels[0].load_path_element_n
         + st.wheels[0].load_path_wishbone_n
@@ -251,14 +249,10 @@ fn symmetric_settle_gives_symmetric_anchors_and_balance() {
         + (st.wheels[1].load_path_element_n
             + st.wheels[1].load_path_wishbone_n
             + st.wheels[1].load_path_other_n);
-    let g = 9.80665;
-    let unsprung_f =
-        WheelMechanicalTuning::for_wheel(&sim.config, WheelIndex::FrontLeft).unsprung_mass_kg * g
-            + WheelMechanicalTuning::for_wheel(&sim.config, WheelIndex::FrontRight).unsprung_mass_kg * g;
-    let expect_f = fz_f - unsprung_f;
+    let expect_f = fz_f;
     assert!(
         (anch_f - expect_f).abs() < expect_f.abs() * 0.05 + 20.0,
-        "axle anchor total {anch_f} vs contacts-minus-unsprung {expect_f}"
+        "axle anchor total {anch_f} vs contacts {expect_f}"
     );
 }
 
@@ -442,7 +436,7 @@ fn arb_increases_roll_restoring_torque() {
 }
 
 #[test]
-fn airborne_wheel_hangs_on_linkage_without_nan() {
+fn airborne_wheel_does_not_duplicate_weight_already_carried_by_total_body_mass() {
     let (prof, _, _) = profile_with_arb(0.15, 0.09);
     let cfg = sim_config(&prof);
     let mut sim = settled_sim(&prof, 30);
@@ -462,12 +456,11 @@ fn airborne_wheel_hangs_on_linkage_without_nan() {
     let fl = &sim.state.suspension.wheels[0];
     assert!(!fl.is_grounded);
     assert!(fl.total_normal_force == 0.0);
-    // Hanging weight still reaches the body through the anchors (downward).
     let hanging = fl.load_path_element_n + fl.load_path_wishbone_n + fl.load_path_other_n;
     assert!(hanging.is_finite());
     assert!(
-        hanging < 0.0,
-        "hanging wheel must pull the body down, got {hanging}"
+        hanging.abs() < 1e-8,
+        "virtual wheel adds duplicate load to the total vehicle body: {hanging}"
     );
     // Others stay finite and planted.
     for w in 1..4 {

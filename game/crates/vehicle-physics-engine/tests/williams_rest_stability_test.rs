@@ -102,7 +102,11 @@ fn williams_settles_at_rest_without_parasitic_yaw() {
             "position_z": simulator.state.transform.origin.z,
         })
     );
-    assert!(yaw_deviation < 0.05, "rest yaw deviation {yaw_deviation}");
+    assert!(yaw_deviation < 0.001, "rest yaw deviation {yaw_deviation}");
     assert!(lateral_deviation < 0.05, "rest lateral deviation {lateral_deviation}");
     assert!(compression_travel < 50.0, "rest compression travel {compression_travel} mm");
+    let total_normal_force = simulator.state.suspension.wheels.iter().map(|wheel| wheel.total_normal_force).sum::<f64>();
+    let total_weight = simulator.config.chassis.total_vehicle_mass(&simulator.config.tires, &simulator.config.fuel) * 9.80665;
+    assert!((total_normal_force - total_weight).abs() < total_weight * 0.01,
+        "normal load {total_normal_force} differs from vehicle weight {total_weight}");
 }

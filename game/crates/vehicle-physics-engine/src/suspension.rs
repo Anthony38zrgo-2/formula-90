@@ -474,7 +474,9 @@ impl SuspensionSystem {
                     grounded, unsprung_mass_kilograms, unsprung_acceleration_metres_per_second_squared,
                     spring_force_newtons, damping_force_newtons, auxiliary_force_newtons,
                     motion_ratio, rod_reference_newtons, body, centre_of_gravity_local) {
-                    if wrench.paths.balance_residual_n <= 1.0 && !wrench.paths.singular {
+                    if wrench.paths.balance_residual_n <= 1.0
+                        && wrench.paths.moment_balance_residual_newton_metres <= 1.0
+                        && !wrench.paths.singular {
                         if let Some(counts) = &self.benchmark_evaluation_counts { counts[3].fetch_add(1, std::sync::atomic::Ordering::Relaxed); }
                         return wrench;
                     }

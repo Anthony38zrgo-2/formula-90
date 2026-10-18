@@ -4,8 +4,8 @@ use crate::powertrain::PowertrainState;
 use crate::slow_states::{SlowStateBackend, SlowStateSystem};
 use crate::powertrain_thermals::{PowertrainThermalInput, PowertrainThermalSystem};
 use crate::suspension::{rest_compression_m, SuspensionSystem};
+use crate::static_lateral_contact::{solve_static_lateral_contact_forces, StaticLateralContact};
 use crate::suspension_geo_config::SuspensionModelKind;
-use crate::wheel_mechanics::WheelMechanicalTuning;
 use crate::telemetry::TelemetryFrame;
 use crate::tire::TireSystem;
 use crate::tire_thermals::{
@@ -538,6 +538,12 @@ impl VehicleSimulator {
         let total_mass_initial = cfg.chassis.total_vehicle_mass(&cfg.tires, &cfg.fuel).max(1e-6);
         let body_inertia = principal_inertia(cfg);
         let body_transform = st.transform;
+        let separately_integrated_unsprung_mass_kilograms = 0.0;
+        let separately_integrated_unsprung_acceleration_metres_per_second_squared = 0.0;
+        let mut static_lateral_contacts = [StaticLateralContact::default(); 4];
+        let mut contact_forward_directions_world = [Vec3::ZERO; 4];
+        let mut contact_lateral_directions_world = [Vec3::ZERO; 4];
+        let mut contact_normals_world = [Vec3::ZERO; 4];
         for wheel in WheelIndex::ALL {
             let i = wheel as usize;
             let travel_delta_m = st.suspension.wheels[i].suspension_compression_m
@@ -591,22 +597,17 @@ impl VehicleSimulator {
                         st.powertrain.brake_torques[i],
                     );
                 }
-                // SUS-GEO-05: airborne wheels still hang on the linkage: the
-                // hanging unsprung weight distributes to the anchors instead
-                // of vanishing (legacy `continue`s with no body load).
                 if is_geo && coupled_context.is_none() {
                     if let Some(geo) = cfg.suspension.geometric_suspension.as_ref() {
                         let ws = &st.suspension.wheels[i];
                         let q = ws.suspension_compression_m
                             - rest_compression_m(cfg, wheel);
-                        let tuning = WheelMechanicalTuning::for_wheel(cfg, wheel);
-                        let (sf, df, aux, mr, rod, acc) = (
+                        let (sf, df, aux, mr, rod) = (
                             ws.spring_force,
                             ws.damping_force,
                             ws.antiroll_force + ws.bottom_out_force,
                             ws.motion_ratio,
                             ws.rod_axial_force_n,
-                            ws.unsprung_acceleration_m_s2,
                         );
                         let wrench = st.suspension.wheel_wrench(
                             geo,
@@ -617,8 +618,8 @@ impl VehicleSimulator {
                             Vec3::ZERO,
                             Vec3::ZERO,
                             false,
-                            tuning.unsprung_mass_kg,
-                            acc,
+                            separately_integrated_unsprung_mass_kilograms,
+                            separately_integrated_unsprung_acceleration_metres_per_second_squared,
                             sf,
                             df,
                             aux,
@@ -695,26 +696,34 @@ impl VehicleSimulator {
                 );
             }
 
-            let mut lateral_force = st.tires.wheels[i].lateral_force;
-            let static_weight = static_contact_blend(point_velocity_wheel.x, point_velocity_wheel.z);
-            if static_weight > 0.0 {
-                let static_force = static_contact_lateral_force(
-                    total_mass_initial,
-                    body_inertia,
-                    arm,
-                    contact_right,
-                    point_velocity_wheel.x,
-                    dt,
-                );
-                let lateral_capacity = ((st.tires.wheels[i].lateral_capacity_newtons.powi(2)
-                    - st.tires.wheels[i].longitudinal_force.powi(2))
-                .max(0.0))
-                .sqrt();
-                let bounded_force = static_force.clamp(-lateral_capacity, lateral_capacity);
-                lateral_force =
-                    bounded_force * static_weight + lateral_force * (1.0 - static_weight);
-                st.tires.wheels[i].lateral_force = lateral_force;
-            }
+            let lateral_capacity = (st.tires.wheels[i].lateral_capacity_newtons.powi(2)
+                - st.tires.wheels[i].longitudinal_force.powi(2)).max(0.0).sqrt();
+            static_lateral_contacts[i] = StaticLateralContact {
+                arm_from_center_world_metres: arm,
+                lateral_direction_world: contact_right,
+                lateral_velocity_metres_per_second: point_velocity_wheel.x,
+                force_capacity_newtons: lateral_capacity,
+                blend_weight: static_contact_blend(point_velocity_wheel.x, point_velocity_wheel.z),
+            };
+            contact_forward_directions_world[i] = contact_forward;
+            contact_lateral_directions_world[i] = contact_right;
+            contact_normals_world[i] = contact_normal;
+        }
+        let static_lateral_forces = solve_static_lateral_contact_forces(
+            total_mass_initial, body_inertia, body_transform.basis, &static_lateral_contacts, dt,
+        );
+        for wheel in WheelIndex::ALL {
+            let i = wheel as usize;
+            if !st.suspension.wheels[i].is_grounded { continue; }
+            let contact_point = st.suspension.wheels[i].effective_contact_point;
+            let arm = contact_point - cg_world;
+            let steer_angle = st.tires.wheels[i].steer_angle_rad;
+            let contact_right = contact_lateral_directions_world[i];
+            let contact_forward = contact_forward_directions_world[i];
+            let contact_normal = contact_normals_world[i];
+            let lateral_force = static_lateral_forces[i]
+                + st.tires.wheels[i].lateral_force * (1.0 - static_lateral_contacts[i].blend_weight);
+            st.tires.wheels[i].lateral_force = lateral_force;
             let tire = &st.tires.wheels[i];
             let tire_force_world =
                 contact_right * lateral_force + contact_forward * tire.longitudinal_force;
@@ -732,14 +741,12 @@ impl VehicleSimulator {
                     let ws = &st.suspension.wheels[i];
                     let q = ws.suspension_compression_m
                         - rest_compression_m(cfg, wheel);
-                    let tuning = WheelMechanicalTuning::for_wheel(cfg, wheel);
-                    let (sf, df, aux, mr, rod, acc) = (
+                    let (sf, df, aux, mr, rod) = (
                         ws.spring_force,
                         ws.damping_force,
                         ws.antiroll_force + ws.bottom_out_force,
                         ws.motion_ratio,
                         ws.rod_axial_force_n,
-                        ws.unsprung_acceleration_m_s2,
                     );
                     let wrench = st.suspension.wheel_wrench(
                         geo,
@@ -750,8 +757,8 @@ impl VehicleSimulator {
                         contact_point,
                         align_world,
                         true,
-                        tuning.unsprung_mass_kg,
-                        acc,
+                        separately_integrated_unsprung_mass_kilograms,
+                        separately_integrated_unsprung_acceleration_metres_per_second_squared,
                         sf,
                         df,
                         aux,
