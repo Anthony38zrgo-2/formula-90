@@ -12,7 +12,7 @@ const DT: f64 = 1.0 / 120.0;
 
 #[test]
 fn pit_service_facade_refuels_and_replaces_tires() {
-    assert_eq!(f90_core_abi_version(), 19);
+    assert_eq!(f90_core_abi_version(), 21);
 
     let config_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../data/vehicles/f1_2030/f1_2030_v10_geometric.json");

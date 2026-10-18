@@ -162,10 +162,6 @@ pub(crate) fn default_contact_ramp_tau() -> f64 {
     // 0.0 = legacy hard contact switch. GRIP-06 opts in through the profile.
     0.0
 }
-pub(crate) fn default_surface_transition_tau() -> f64 {
-    // 0.0 = legacy instantaneous surface steps. GRIP-06 opts in through the profile.
-    0.0
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]

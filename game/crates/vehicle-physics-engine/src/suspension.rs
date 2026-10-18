@@ -7,7 +7,7 @@
 use crate::suspension_geo_config::{AntiRollConfig, GeometricSuspensionConfig, SuspensionModelKind};
 use crate::suspension_kinematics::{jacobian, solve_corner};
 use crate::tire_thermals::TireMechanicalModifiers;
-use crate::types::{RaycastHit, SurfaceType, TriRaycastSample, Vec3, WheelIndex};
+use crate::types::{Mat3, RaycastHit, SurfaceType, TriRaycastSample, Vec3, WheelIndex};
 use crate::vehicle_config::VehicleConfig;
 use crate::wheel_mechanics::{
     static_wheel_load, tire_radius, tire_width, WheelMechanicalTuning,
@@ -534,8 +534,25 @@ impl SuspensionSystem {
         samples: &[TriRaycastSample; 4],
         dt: f64,
     ) {
+        self.step_with_modifiers_and_body_orientation(
+            config,
+            modifiers,
+            samples,
+            dt,
+            Mat3::IDENTITY,
+        );
+    }
+
+    pub fn step_with_modifiers_and_body_orientation(
+        &mut self,
+        config: &VehicleConfig,
+        modifiers: &[TireMechanicalModifiers; 4],
+        samples: &[TriRaycastSample; 4],
+        dt: f64,
+        body_orientation: Mat3,
+    ) {
         self.step_with_integration_method(config, modifiers, samples, dt,
-            self.backend == SuspensionBackend::Simplified);
+            self.backend == SuspensionBackend::Simplified, body_orientation);
     }
 
     fn step_with_integration_method(
@@ -545,10 +562,11 @@ impl SuspensionSystem {
         contact_samples: &[TriRaycastSample; 4],
         duration_seconds: f64,
         use_implicit_integration: bool,
+        body_orientation: Mat3,
     ) {
         let duration_seconds = duration_seconds.max(1e-5);
         for index in 0..4 {
-            self.sample_contact(configuration, WheelIndex::ALL[index], &contact_samples[index], duration_seconds);
+            self.sample_contact(configuration, WheelIndex::ALL[index], &contact_samples[index], duration_seconds, body_orientation);
         }
 
         // ARB must use one coherent compression snapshot, not values modified by solve order.
@@ -639,7 +657,9 @@ impl SuspensionSystem {
         wheel: WheelIndex,
         sample: &TriRaycastSample,
         dt: f64,
+        body_orientation: Mat3,
     ) {
+        let backend = self.backend;
         let state = &mut self.wheels[wheel as usize];
         let spring_len = spring_length(config, wheel);
         let radius = tire_radius(config, wheel);
@@ -727,7 +747,11 @@ impl SuspensionSystem {
         // patch (previous-tick offsets, mm-cm scale, filter-consistent).
         if is_geometric(config) {
             state.effective_contact_point = state.effective_contact_point
-                + Vec3::new(state.hub_lateral_m, 0.0, state.hub_long_m);
+                + backend.contact_hub_offset_world_metres(
+                    body_orientation,
+                    state.hub_lateral_m,
+                    state.hub_long_m,
+                );
         }
         state.effective_surface = dominant_surface(sample);
         filter_surface_values(
@@ -1913,9 +1937,9 @@ mod tests {
         };
         // First call performs the one-shot snapshot initialization; afterwards the
         // state compression feeds the travel delta directly.
-        sus.sample_contact(&cfg, wheel, &sample, dt);
+        sus.sample_contact(&cfg, wheel, &sample, dt, Mat3::IDENTITY);
         sus.wheels[wheel as usize].suspension_compression_m = rest;
-        sus.sample_contact(&cfg, wheel, &sample, dt);
+        sus.sample_contact(&cfg, wheel, &sample, dt, Mat3::IDENTITY);
         let s = &sus.wheels[wheel as usize];
         assert!(
             (s.kinematic_camber_rad - cfg.suspension.front_camber).abs() < 1e-12,
@@ -1944,15 +1968,15 @@ mod tests {
         // Initialize both wheels with a rest-time contact snapshot, then drive the
         // state compression directly so the travel delta is exact.
         for wheel in [WheelIndex::FrontLeft, WheelIndex::FrontRight] {
-            sus.sample_contact(&cfg, wheel, &sample_at(rest), dt);
+            sus.sample_contact(&cfg, wheel, &sample_at(rest), dt, Mat3::IDENTITY);
         }
 
         // Bump: +20 mm travel => camber shifts by gain * travel (negative direction).
         let bump = rest + 0.020;
         sus.wheels[WheelIndex::FrontLeft as usize].suspension_compression_m = bump;
         sus.wheels[WheelIndex::FrontRight as usize].suspension_compression_m = bump;
-        sus.sample_contact(&cfg, WheelIndex::FrontLeft, &sample_at(bump), dt);
-        sus.sample_contact(&cfg, WheelIndex::FrontRight, &sample_at(bump), dt);
+        sus.sample_contact(&cfg, WheelIndex::FrontLeft, &sample_at(bump), dt, Mat3::IDENTITY);
+        sus.sample_contact(&cfg, WheelIndex::FrontRight, &sample_at(bump), dt, Mat3::IDENTITY);
         let fl = &sus.wheels[WheelIndex::FrontLeft as usize];
         let fr = &sus.wheels[WheelIndex::FrontRight as usize];
         let expected = cfg.suspension.front_camber + (-0.021 * 0.020);
@@ -1971,8 +1995,8 @@ mod tests {
         let rebound = rest - 0.010;
         sus.wheels[WheelIndex::FrontLeft as usize].suspension_compression_m = rebound;
         sus.wheels[WheelIndex::FrontRight as usize].suspension_compression_m = rebound;
-        sus.sample_contact(&cfg, WheelIndex::FrontLeft, &sample_at(rebound), dt);
-        sus.sample_contact(&cfg, WheelIndex::FrontRight, &sample_at(rebound), dt);
+        sus.sample_contact(&cfg, WheelIndex::FrontLeft, &sample_at(rebound), dt, Mat3::IDENTITY);
+        sus.sample_contact(&cfg, WheelIndex::FrontRight, &sample_at(rebound), dt, Mat3::IDENTITY);
         let rl = &sus.wheels[WheelIndex::FrontLeft as usize];
         let rr = &sus.wheels[WheelIndex::FrontRight as usize];
         let expected_rebound = cfg.suspension.front_camber + (-0.021 * -0.010);
@@ -1998,7 +2022,7 @@ mod tests {
             center: flat_hit(max_len - rest),
             outer: flat_hit(max_len - rest),
         };
-        sus.sample_contact(&cfg, WheelIndex::FrontLeft, &sample, dt);
+        sus.sample_contact(&cfg, WheelIndex::FrontLeft, &sample, dt, Mat3::IDENTITY);
         let fl = &sus.wheels[WheelIndex::FrontLeft as usize];
         assert!(
             (fl.kinematic_camber_rad - cfg.suspension.front_camber).abs() < 1e-12,
@@ -2016,7 +2040,7 @@ mod tests {
 
         // Same geometric relationship on the right wheel mirrors the incline sign,
         // keeping the axle symmetric across identical (mirrored) road shapes.
-        sus.sample_contact(&cfg, WheelIndex::FrontRight, &sample, dt);
+        sus.sample_contact(&cfg, WheelIndex::FrontRight, &sample, dt, Mat3::IDENTITY);
         let fr = &sus.wheels[WheelIndex::FrontRight as usize];
         let expected_right = cfg.suspension.front_camber + incline;
         assert!(

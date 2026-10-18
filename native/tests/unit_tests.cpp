@@ -2,11 +2,22 @@
 #include "formula90s/presentation/directional_sprite_math.hpp"
 #include "formula90s/camera/camera_math.hpp"
 #include "formula90s/presentation/vehicle_visual_3d_math.hpp"
+#include "formula90s/core/f90_core.h"
 #include <cmath>
+#include <cstddef>
 #include <iostream>
 static int failures=0;
 static void check(bool value,const char *name){if(!value){std::cerr<<"FAIL "<<name<<"\n";++failures;}else std::cout<<"PASS "<<name<<"\n";}
 int main(){
+	check(offsetof(F90CoreFrameOut, resolved_body_mass_kilograms) == 2048, "core_frame_resolved_mass_offset");
+	check(offsetof(F90CoreFrameOut, resolved_center_of_mass_local) == 2056, "core_frame_resolved_center_of_mass_offset");
+	check(offsetof(F90CoreFrameOut, resolved_inertia_diagonal) == 2080, "core_frame_resolved_inertia_offset");
+	check(offsetof(F90CoreFrameOut, resolved_body_properties_authoritative) == 2104, "core_frame_authoritative_flag_offset");
+	check(sizeof(F90CoreFrameOut) == 2112, "core_frame_size_matches_rust_abi_20");
+	check(sizeof(F90UnderfloorRawContact) == 96, "core_underfloor_raw_contact_size_matches_rust_abi_21");
+	check(offsetof(F90UnderfloorRawContact, body_local_position) == 64, "core_underfloor_body_local_position_offset");
+	check(offsetof(F90UnderfloorRawContact, relative_tangential_speed_metres_per_second) == 88, "core_underfloor_relative_tangential_offset");
+	check(sizeof(F90UnderfloorSample) == 3440, "core_underfloor_sample_size_matches_rust_abi_21");
  check(std::abs(formula90s::presentation::clockwise_view_angle(0.0,1.0,0.0,1.0)-0.0)<.01,"sprite_rear_angle");
  check(std::abs(formula90s::presentation::clockwise_view_angle(-0.382683,0.923880,0.0,1.0)-337.5)<.01,"sprite_right_turn_uses_clockwise_frame");
  check(std::abs(formula90s::presentation::clockwise_view_angle(0.382683,0.923880,0.0,1.0)-22.5)<.01,"sprite_left_turn_uses_counterpart_frame");

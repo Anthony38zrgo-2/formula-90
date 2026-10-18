@@ -3,7 +3,7 @@ use crate::brake_thermals::{BrakeThermalInput, BrakeThermalSystem, BrakeToTireHe
 use crate::powertrain::PowertrainState;
 use crate::slow_states::{SlowStateBackend, SlowStateSystem};
 use crate::powertrain_thermals::{PowertrainThermalInput, PowertrainThermalSystem};
-use crate::suspension::{rest_compression_m, SuspensionSystem};
+use crate::suspension::{rest_compression_m, SuspensionBackend, SuspensionSystem};
 use crate::static_lateral_contact::{solve_static_lateral_contact_forces, StaticLateralContact};
 use crate::suspension_geo_config::SuspensionModelKind;
 use crate::telemetry::TelemetryFrame;
@@ -334,6 +334,7 @@ impl VehicleSimulator {
         let coupled_context = self.coupled_force_context.as_ref();
         let cfg = &self.config;
         let st = &mut self.state;
+        let suspension_backend = st.suspension.backend;
         let basis = st.transform.basis;
         let local_velocity = basis.inverse_transform_vector(st.linear_velocity);
         let forward_speed = -local_velocity.z;
@@ -370,7 +371,10 @@ impl VehicleSimulator {
                 velocity_m_s: local_velocity,
                 angular_velocity_rad_s: basis.inverse_transform_vector(st.angular_velocity),
                 wind_velocity_m_s: basis.inverse_transform_vector(self.wind_velocity_world),
-                center_of_mass_m: center_of_mass_local(cfg),
+                center_of_mass_m: center_of_mass_local_for_suspension_backend(
+                    cfg,
+                    suspension_backend,
+                ),
                 probe_mode: self.aero_probe_mode,
             },
             aero_environment,
@@ -475,7 +479,9 @@ impl VehicleSimulator {
                 } else { 0.0 };
             }
         } else {
-            st.suspension.step_with_modifiers(cfg, &thermal_modifiers, samples, dt);
+            st.suspension.step_with_modifiers_and_body_orientation(
+                cfg, &thermal_modifiers, samples, dt, basis,
+            );
         }
 
         let wheel_spins = [
@@ -512,7 +518,8 @@ impl VehicleSimulator {
 
         let mut total_force = Vec3::ZERO;
         let mut total_torque = Vec3::ZERO;
-        let cg_world = center_of_mass_world(cfg, &st.transform);
+        let cg_world =
+            center_of_mass_world_for_suspension_backend(cfg, suspension_backend, &st.transform);
         // Lateral slip velocity per wheel (wheel frame) captured during the force
         // loop and consumed by the thermal update.
         let mut wheel_lateral_slip_ms = [0.0f64; 4];
@@ -534,9 +541,9 @@ impl VehicleSimulator {
         // chassis anchor reactions (same load, transmitted). Legacy untouched.
         let is_geo = matches!(cfg.suspension.suspension_model, SuspensionModelKind::Geometric)
             && cfg.suspension.geometric_suspension.is_some();
-        let cg_local = center_of_mass_local(cfg);
+        let cg_local = center_of_mass_local_for_suspension_backend(cfg, suspension_backend);
         let total_mass_initial = cfg.chassis.total_vehicle_mass(&cfg.tires, &cfg.fuel).max(1e-6);
-        let body_inertia = principal_inertia(cfg);
+        let body_inertia = principal_inertia_for_suspension_backend(cfg, suspension_backend);
         let body_transform = st.transform;
         let separately_integrated_unsprung_mass_kilograms = 0.0;
         let separately_integrated_unsprung_acceleration_metres_per_second_squared = 0.0;
@@ -1065,7 +1072,7 @@ impl VehicleSimulator {
         let grounded_mult = cfg.aids.stability_grounded_multiplier.max(0.0);
         let ground_factor = (grounded_fraction * (grounded_mult - 1.0)).clamp(0.0, 5.0) + 1.0;
 
-        let inertia_y = principal_inertia(cfg).y;
+        let inertia_y = principal_inertia_for_suspension_backend(cfg, st.suspension.backend).y;
         let torque_y =
             -yaw_rate.signum() * over * cfg.aids.stability_yaw_strength * inertia_y * ground_factor;
         basis.transform_vector(Vec3::new(0.0, torque_y, 0.0))
@@ -1076,7 +1083,8 @@ impl VehicleSimulator {
         let cfg = &self.config;
         let st = &mut self.state;
         let old_basis = st.transform.basis;
-        let cg_local = center_of_mass_local(cfg);
+        let cg_local =
+            center_of_mass_local_for_suspension_backend(cfg, st.suspension.backend);
         let mut cg_world = st.transform.origin + old_basis.transform_vector(cg_local);
 
         let total_mass = cfg.chassis.total_vehicle_mass(&cfg.tires, &cfg.fuel);
@@ -1085,7 +1093,7 @@ impl VehicleSimulator {
         st.linear_velocity += st.linear_acceleration * dt;
         cg_world += st.linear_velocity * dt;
 
-        let inertia = principal_inertia(cfg);
+        let inertia = principal_inertia_for_suspension_backend(cfg, st.suspension.backend);
         let torque_local = old_basis.inverse_transform_vector(forces.torque_world);
         let mut omega_local = old_basis.inverse_transform_vector(st.angular_velocity);
         let i_omega = Vec3::new(
@@ -1411,8 +1419,30 @@ pub fn center_of_mass_local(config: &VehicleConfig) -> Vec3 {
         .center_of_mass_local_metres
 }
 
+pub fn center_of_mass_local_for_suspension_backend(
+    config: &VehicleConfig,
+    suspension_backend: SuspensionBackend,
+) -> Vec3 {
+    crate::vehicle_mass_properties::resolve_vehicle_mass_properties_for_suspension_backend(
+        config,
+        suspension_backend,
+    )
+    .center_of_mass_local_metres
+}
+
 pub fn center_of_mass_world(config: &VehicleConfig, transform: &Transform3D) -> Vec3 {
     transform.transform_point(center_of_mass_local(config))
+}
+
+pub fn center_of_mass_world_for_suspension_backend(
+    config: &VehicleConfig,
+    suspension_backend: SuspensionBackend,
+    transform: &Transform3D,
+) -> Vec3 {
+    transform.transform_point(center_of_mass_local_for_suspension_backend(
+        config,
+        suspension_backend,
+    ))
 }
 
 pub fn default_spawn_height(config: &VehicleConfig) -> f64 {
@@ -1552,6 +1582,24 @@ fn principal_inertia(config: &VehicleConfig) -> Vec3 {
     let moments = crate::vehicle_mass_properties::resolve_vehicle_mass_properties(config)
         .principal_moments();
     Vec3::new(moments[0], moments[1], moments[2])
+}
+
+fn principal_inertia_for_suspension_backend(
+    config: &VehicleConfig,
+    suspension_backend: SuspensionBackend,
+) -> Vec3 {
+    match suspension_backend {
+        SuspensionBackend::Standard => principal_inertia(config),
+        SuspensionBackend::Simplified => {
+            let moments =
+                crate::vehicle_mass_properties::resolve_vehicle_mass_properties_for_suspension_backend(
+                    config,
+                    suspension_backend,
+                )
+                .principal_moments();
+            Vec3::new(moments[0], moments[1], moments[2])
+        }
+    }
 }
 
 /// Below this contact lateral speed the tire is treated as a sticking contact.

@@ -23,7 +23,7 @@ use crate::{CoreConfig, CoreFacade};
 
 /// ABI v5: brake energy diagnostics were appended after the brake thermal tail.
 /// v13: added `f90_core_audio_set_ambient` (listener distance + TC/limiter downlink).
-pub const F90_CORE_ABI_VERSION: u32 = 19;
+pub const F90_CORE_ABI_VERSION: u32 = 21;
 
 /// Reuses the mirrored `game_sim` tri-ray sample struct (already mirrored as
 /// `F90SimTriRaycastSample` in `f90_sim_bridge.h`); here it is `F90TriRaycastSample`
@@ -222,6 +222,11 @@ pub struct F90CoreFrameOut {
     pub aerodynamic_body_drag_newtons: f64,
     pub aerodynamic_wing_and_floor_drag_newtons: f64,
     pub aerodynamic_wheel_drag_newtons: [f64; 4],
+    // Append-only ABI 20 authoritative body mass properties (Simplified route).
+    pub resolved_body_mass_kilograms: f64,
+    pub resolved_center_of_mass_local: [f64; 3],
+    pub resolved_inertia_diagonal: [f64; 3],
+    pub resolved_body_properties_authoritative: f64,
 }
 
 fn write_error(buf: *mut u8, len: u32, msg: &str) {
@@ -690,6 +695,14 @@ fn write_core_frame_output(frame: &crate::frame::CoreFrame, output: *mut F90Core
                 tire_wear_outer_fraction: frame.tire_wear_outer_fraction,
                 tire_wear_remaining_fraction: frame.tire_wear_remaining_fraction,
                 tire_wear_grip_scale: frame.tire_wear_grip_scale,
+                resolved_body_mass_kilograms: frame.resolved_body_mass_kilograms,
+                resolved_center_of_mass_local: frame.resolved_center_of_mass_local_metres,
+                resolved_inertia_diagonal: frame.resolved_inertia_diagonal_kilogram_square_metres,
+                resolved_body_properties_authoritative: if frame.resolved_body_properties_authoritative {
+                    1.0
+                } else {
+                    0.0
+                },
             };
         }
     }
@@ -1089,7 +1102,15 @@ mod layout_tests {
         assert_eq!(offset_of!(F90CoreFrameOut, aerodynamic_body_drag_newtons), 2000);
         assert_eq!(offset_of!(F90CoreFrameOut, aerodynamic_wing_and_floor_drag_newtons), 2008);
         assert_eq!(offset_of!(F90CoreFrameOut, aerodynamic_wheel_drag_newtons), 2016);
-        assert_eq!(size_of::<F90CoreFrameOut>(), 2048);
+        // Append-only ABI 20 authoritative body mass properties.
+        assert_eq!(offset_of!(F90CoreFrameOut, resolved_body_mass_kilograms), 2048);
+        assert_eq!(offset_of!(F90CoreFrameOut, resolved_center_of_mass_local), 2056);
+        assert_eq!(offset_of!(F90CoreFrameOut, resolved_inertia_diagonal), 2080);
+        assert_eq!(
+            offset_of!(F90CoreFrameOut, resolved_body_properties_authoritative),
+            2104
+        );
+        assert_eq!(size_of::<F90CoreFrameOut>(), 2112);
     }
 
     /// A `F90TriRaycastSample` reuses the mirrored game_sim struct; its per-hit
@@ -1343,6 +1364,67 @@ mod abi_tests {
 
         unsafe { f90_core_destroy(h) };
     }
+
+    #[test]
+    fn simplified_step_publishes_resolved_body_properties_in_the_frame() {
+        let repository = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let profile = repository
+            .join("game/data/vehicles/f1_1997/williams/profiles/hockenheim/vehicle.json");
+        let options = serde_json::json!({
+            "config_json_path": profile.to_string_lossy(),
+            "use_canonical": false,
+            "enable_audio": false
+        })
+        .to_string();
+        let options = CString::new(options).unwrap();
+        let mut errors = [0u8; 256];
+        let handle = unsafe { f90_core_create(options.as_ptr(), errors.as_mut_ptr(), errors.len() as u32) };
+        assert!(!handle.is_null(), "create failed: {}", String::from_utf8_lossy(&errors));
+        let identifier = f90_core_spawn(handle);
+        assert_ne!(identifier, 0, "spawn must succeed");
+
+        {
+            let entity = &mut facade_mut(handle).world.entities[0];
+            let configuration = entity.sim.config.clone();
+            entity.sim.state.suspension.select_backend(
+                &configuration,
+                vehicle_physics_engine::SuspensionBackend::Simplified,
+            );
+        }
+        assert!(f90_core_set_fuel_kg(handle, identifier, 0.0));
+
+        let resolved = {
+            let entity = &facade_ref(handle).world.entities[0];
+            vehicle_physics_engine::vehicle_mass_properties::resolve_vehicle_mass_properties_for_suspension_backend(
+                &entity.sim.config,
+                vehicle_physics_engine::SuspensionBackend::Simplified,
+            )
+        };
+        let moments = resolved.principal_moments();
+        let center = resolved.center_of_mass_local_metres;
+
+        let samples = flat_samples();
+        let mut output = F90CoreFrameOut::default();
+        unsafe {
+            f90_core_step(
+                handle, identifier,
+                0.0, 0.3, 0.0,
+                0.0, 0.0, 0.0, 1.0,
+                0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0,
+                1, 0, 1.0 / 120.0,
+                samples.as_ptr(), std::ptr::null_mut(), &mut output,
+            )
+        };
+
+        assert_eq!(output.resolved_body_properties_authoritative, 1.0);
+        assert_eq!(output.resolved_body_mass_kilograms, resolved.total_mass_kilograms);
+        assert_eq!(output.resolved_center_of_mass_local, [center.x, center.y, center.z]);
+        assert_eq!(output.resolved_inertia_diagonal, [moments[0], moments[1], moments[2]]);
+
+        unsafe { f90_core_destroy(handle) };
+    }
 }
 
 #[cfg(test)]
@@ -1352,10 +1434,10 @@ mod raw_contact_layout_tests {
 
     #[test]
     fn raw_contact_input_layout_matches_native_interface() {
-        assert_eq!(size_of::<UnderfloorRawContact>(), 64);
+        assert_eq!(size_of::<UnderfloorRawContact>(), 96);
         assert_eq!(offset_of!(F90UnderfloorSample, raw_contact_count), 360);
         assert_eq!(offset_of!(F90UnderfloorSample, raw_contacts), 368);
-        assert_eq!(size_of::<F90UnderfloorSample>(), 2416);
+        assert_eq!(size_of::<F90UnderfloorSample>(), 3440);
     }
 }
 

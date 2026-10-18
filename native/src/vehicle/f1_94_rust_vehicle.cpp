@@ -4,10 +4,14 @@
 
 
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/classes/box_shape3d.hpp>
+#include <godot_cpp/classes/collision_shape3d.hpp>
 #include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/mesh_instance3d.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/os.hpp>
+#include <godot_cpp/variant/typed_array.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include <cmath>
@@ -398,6 +402,7 @@ void F194RustVehicle::setup_raycasts() {
 	}
 
 	simplified_aerodynamics_enabled = OS::get_singleton()->get_environment("FORMULA90_AERODYNAMICS_BACKEND") == "simplified";
+	simplified_suspension_enabled = OS::get_singleton()->get_environment("FORMULA90_SUSPENSION_BACKEND") == "simplified";
 	const char *uf_names[5] = {
 		"UnderfloorFrontLeft", "UnderfloorFrontRight", "UnderfloorCenter",
 		"DiffuserThroat", "DiffuserExit"
@@ -427,6 +432,84 @@ void F194RustVehicle::setup_raycasts() {
 		ray->add_exception(this);
 		underfloor_raycasts_[i] = ray;
 	}
+}
+
+void F194RustVehicle::configure_simplified_underfloor_geometry() {
+	if (!simplified_suspension_enabled || chassis_node_ == nullptr) {
+		return;
+	}
+	const Transform3D inverse_body = get_global_transform().affine_inverse();
+	TypedArray<Node> meshes = chassis_node_->find_children("*", "MeshInstance3D", true, false);
+	Vector<AABB> mesh_bounds;
+	double floor_minimum = 1.0e9;
+	for (int index = 0; index < meshes.size(); ++index) {
+		MeshInstance3D *mesh = Object::cast_to<MeshInstance3D>(meshes[index]);
+		if (mesh == nullptr || mesh->get_mesh().is_null()) {
+			continue;
+		}
+		const Transform3D relative = inverse_body * mesh->get_global_transform();
+		const AABB bounds = relative.xform(mesh->get_aabb());
+		mesh_bounds.push_back(bounds);
+		floor_minimum = MIN(floor_minimum, bounds.position.y);
+	}
+	if (mesh_bounds.is_empty() || floor_minimum > 1.0e8) {
+		return;
+	}
+	measured_chassis_floor_local_y_ = floor_minimum;
+
+	for (int probe_index = 0; probe_index < 5; ++probe_index) {
+		RayCast3D *probe = underfloor_raycasts_[probe_index];
+		if (probe == nullptr) {
+			continue;
+		}
+		const Vector3 probe_position = probe->get_position();
+		double station_floor = 1.0e9;
+		for (int bound_index = 0; bound_index < mesh_bounds.size(); ++bound_index) {
+			const AABB &bounds = mesh_bounds[bound_index];
+			const bool covers_x = probe_position.x >= bounds.position.x - 0.05 && probe_position.x <= bounds.position.x + bounds.size.x + 0.05;
+			const bool covers_z = probe_position.z >= bounds.position.z - 0.05 && probe_position.z <= bounds.position.z + bounds.size.z + 0.05;
+			if (covers_x && covers_z) {
+				station_floor = MIN(station_floor, bounds.position.y);
+			}
+		}
+		if (station_floor > 1.0e8) {
+			station_floor = floor_minimum;
+		}
+		probe->set_position(Vector3(probe_position.x, station_floor, probe_position.z));
+	}
+
+	AABB floor_footprint;
+	bool has_footprint = false;
+	for (int bound_index = 0; bound_index < mesh_bounds.size(); ++bound_index) {
+		const AABB &bounds = mesh_bounds[bound_index];
+		if (bounds.position.y > floor_minimum + 0.005) {
+			continue;
+		}
+		if (!has_footprint) {
+			floor_footprint = bounds;
+			has_footprint = true;
+		} else {
+			floor_footprint = floor_footprint.merge(bounds);
+		}
+	}
+	if (!has_footprint) {
+		return;
+	}
+	const double floor_thickness = 0.03;
+	CollisionShape3D *floor_collision = Object::cast_to<CollisionShape3D>(find_child("SimplifiedFloorCollision", true, false));
+	if (floor_collision == nullptr) {
+		floor_collision = memnew(CollisionShape3D);
+		floor_collision->set_name("SimplifiedFloorCollision");
+		add_child(floor_collision);
+	}
+	Ref<BoxShape3D> floor_shape;
+	floor_shape.instantiate();
+	floor_shape->set_size(Vector3(floor_footprint.size.x, floor_thickness, floor_footprint.size.z));
+	floor_collision->set_shape(floor_shape);
+	floor_collision->set_position(Vector3(
+		floor_footprint.position.x + floor_footprint.size.x * 0.5,
+		floor_minimum + floor_thickness * 0.5,
+		floor_footprint.position.z + floor_footprint.size.z * 0.5));
 }
 
 void F194RustVehicle::_notification(int p_what) {
@@ -537,6 +620,8 @@ void F194RustVehicle::_ready() {
 	if (!rear_right_wheel_node_path_.is_empty()) {
 		wheel_nodes_[3] = Object::cast_to<Node3D>(get_node_or_null(rear_right_wheel_node_path_));
 	}
+
+	configure_simplified_underfloor_geometry();
 
 	UtilityFunctions::print("[F194RustVehicle] Black-box Rust Physics Core GDExtension ready!");
 }
@@ -1093,6 +1178,30 @@ Vector3 F194RustVehicle::get_inertia_diagonal_value() const {
 	return get_inertia();
 }
 
+void F194RustVehicle::apply_resolved_center_of_mass(const Vector3 &p_center_of_mass) {
+	if (!p_center_of_mass.is_finite()) {
+		return;
+	}
+	set_center_of_mass_mode(RigidBody3D::CENTER_OF_MASS_MODE_CUSTOM);
+	set_center_of_mass(p_center_of_mass);
+}
+
+void F194RustVehicle::apply_resolved_inertia_diagonal(const Vector3 &p_inertia_diagonal) {
+	if (!p_inertia_diagonal.is_finite() || p_inertia_diagonal.x <= 0.0F || p_inertia_diagonal.y <= 0.0F || p_inertia_diagonal.z <= 0.0F) {
+		UtilityFunctions::push_warning("[F194RustVehicle] Resolved inertia is invalid; retaining automatic inertia.");
+		return;
+	}
+	PhysicsServer3D *physics_server = PhysicsServer3D::get_singleton();
+	if (physics_server) {
+		physics_server->body_set_param(get_rid(), PhysicsServer3D::BODY_PARAM_INERTIA, p_inertia_diagonal);
+	}
+	if (!inertia_initialized_) {
+		UtilityFunctions::print(String("[F194RustVehicle] Resolved body properties COM=") + Variant(get_center_of_mass()).stringify() +
+			" inertia=" + Variant(p_inertia_diagonal).stringify());
+	}
+	inertia_initialized_ = true;
+}
+
 void F194RustVehicle::synchronize_rigid_body_mass_properties() {
 	if (!sim_ptr_) {
 		return;
@@ -1100,26 +1209,10 @@ void F194RustVehicle::synchronize_rigid_body_mass_properties() {
 	if (fn_get_center_of_mass_local_) {
 		double com_x = 0.0, com_y = 0.0, com_z = 0.0;
 		fn_get_center_of_mass_local_(sim_ptr_, &com_x, &com_y, &com_z);
-		if (std::isfinite(com_x) && std::isfinite(com_y) && std::isfinite(com_z)) {
-			set_center_of_mass_mode(RigidBody3D::CENTER_OF_MASS_MODE_CUSTOM);
-			set_center_of_mass(Vector3((float)com_x, (float)com_y, (float)com_z));
-		}
+		apply_resolved_center_of_mass(Vector3((float)com_x, (float)com_y, (float)com_z));
 	}
 	if (fn_get_inertia_diagonal_) {
-		const Vector3 resolved_inertia = get_inertia_diagonal_value();
-		if (resolved_inertia.is_finite() && resolved_inertia.x > 0.0F && resolved_inertia.y > 0.0F && resolved_inertia.z > 0.0F) {
-			PhysicsServer3D *physics_server = PhysicsServer3D::get_singleton();
-			if (physics_server) {
-				physics_server->body_set_param(get_rid(), PhysicsServer3D::BODY_PARAM_INERTIA, resolved_inertia);
-			}
-			if (!inertia_initialized_) {
-				UtilityFunctions::print(String("[F194RustVehicle] Resolved body properties COM=") + Variant(get_center_of_mass()).stringify() +
-					" inertia=" + Variant(resolved_inertia).stringify());
-			}
-			inertia_initialized_ = true;
-		} else {
-			UtilityFunctions::push_warning("[F194RustVehicle] Resolved inertia is invalid; retaining automatic inertia.");
-		}
+		apply_resolved_inertia_diagonal(get_inertia_diagonal_value());
 	}
 }
 
@@ -1717,26 +1810,41 @@ void F194RustVehicle::collect_underfloor_sample(F90UnderfloorSample *p_sample, P
     const Vector3 body_velocity = p_state->get_linear_velocity();
     const Vector3 angular_velocity = p_state->get_angular_velocity();
     const Transform3D body_transform = p_state->get_transform();
+    const Transform3D body_inverse_transform = body_transform.affine_inverse();
     const int contact_count = MIN(p_state->get_contact_count(), 32);
     p_sample->raw_contact_count = contact_count;
     for (int contact_index = 0; contact_index < contact_count; ++contact_index) {
         F90UnderfloorRawContact &contact = p_sample->raw_contacts[contact_index];
-        const Vector3 local_position = p_state->get_contact_local_position(contact_index);
-        const Vector3 local_normal = p_state->get_contact_local_normal(contact_index);
-        const Vector3 world_lever = body_transform.basis.xform(local_position);
-        const Vector3 point_velocity = body_velocity + angular_velocity.cross(world_lever);
+        const Vector3 contact_world_position = p_state->get_contact_local_position(contact_index);
+        const Vector3 contact_world_normal = p_state->get_contact_local_normal(contact_index);
         const Vector3 collider_velocity = p_state->get_contact_collider_velocity_at_position(contact_index);
-        const Vector3 relative_velocity = point_velocity - collider_velocity;
-        const Vector3 world_normal = body_transform.basis.xform(local_normal);
+
+        const Vector3 legacy_world_lever = body_transform.basis.xform(contact_world_position);
+        const Vector3 legacy_point_velocity = body_velocity + angular_velocity.cross(legacy_world_lever);
+        const Vector3 legacy_relative_velocity = legacy_point_velocity - collider_velocity;
+        const Vector3 legacy_world_normal = body_transform.basis.xform(contact_world_normal);
+        const Vector3 legacy_tangent = legacy_relative_velocity - legacy_world_normal * legacy_relative_velocity.dot(legacy_world_normal);
+
+        const Vector3 body_local_position = body_inverse_transform.xform(contact_world_position);
+        const Vector3 body_point_velocity = p_state->get_contact_local_velocity_at_position(contact_index);
+        const Vector3 relative_velocity = body_point_velocity - collider_velocity;
+        const Vector3 world_normal = contact_world_normal.is_finite() && contact_world_normal.length_squared() > 1e-12
+            ? contact_world_normal.normalized()
+            : Vector3(0.0, 1.0, 0.0);
         const Vector3 tangent = relative_velocity - world_normal * relative_velocity.dot(world_normal);
-        contact.local_position[0] = local_position.x;
-        contact.local_position[1] = local_position.y;
-        contact.local_position[2] = local_position.z;
-        contact.local_normal[0] = local_normal.x;
-        contact.local_normal[1] = local_normal.y;
-        contact.local_normal[2] = local_normal.z;
+
+        contact.local_position[0] = contact_world_position.x;
+        contact.local_position[1] = contact_world_position.y;
+        contact.local_position[2] = contact_world_position.z;
+        contact.local_normal[0] = contact_world_normal.x;
+        contact.local_normal[1] = contact_world_normal.y;
+        contact.local_normal[2] = contact_world_normal.z;
         contact.impulse_newton_seconds = p_state->get_contact_impulse(contact_index).length();
-        contact.tangential_speed_metres_per_second = tangent.length();
+        contact.tangential_speed_metres_per_second = legacy_tangent.length();
+        contact.body_local_position[0] = body_local_position.x;
+        contact.body_local_position[1] = body_local_position.y;
+        contact.body_local_position[2] = body_local_position.z;
+        contact.relative_tangential_speed_metres_per_second = tangent.length();
     }
 }
 
@@ -2156,7 +2264,20 @@ void F194RustVehicle::set_core_powertrain_telemetry(const F90CoreFrameOut &p_fra
 	total_vehicle_mass_kg_ = p_frame.total_vehicle_mass_kg;
 	effective_front_weight_distribution_ = p_frame.effective_front_weight_distribution;
 	fuel_telemetry_available_ = true;
-	if (total_vehicle_mass_kg_ > 0.0 && std::abs((double)get_mass() - total_vehicle_mass_kg_) > 0.01) {
+	if (p_frame.resolved_body_properties_authoritative > 0.5) {
+		const double resolved_mass_kilograms = p_frame.resolved_body_mass_kilograms;
+		if (std::isfinite(resolved_mass_kilograms) && resolved_mass_kilograms > 0.0 && std::abs((double)get_mass() - resolved_mass_kilograms) > 0.001) {
+			set_mass((float)resolved_mass_kilograms);
+		}
+		apply_resolved_center_of_mass(Vector3(
+			(float)p_frame.resolved_center_of_mass_local[0],
+			(float)p_frame.resolved_center_of_mass_local[1],
+			(float)p_frame.resolved_center_of_mass_local[2]));
+		apply_resolved_inertia_diagonal(Vector3(
+			(float)p_frame.resolved_inertia_diagonal[0],
+			(float)p_frame.resolved_inertia_diagonal[1],
+			(float)p_frame.resolved_inertia_diagonal[2]));
+	} else if (total_vehicle_mass_kg_ > 0.0 && std::abs((double)get_mass() - total_vehicle_mass_kg_) > 0.01) {
 		set_mass((float)total_vehicle_mass_kg_);
 		synchronize_rigid_body_mass_properties();
 	}

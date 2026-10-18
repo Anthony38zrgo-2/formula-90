@@ -247,6 +247,10 @@ pub struct CoreFrame {
     pub fuel_capacity_kg: f64,
     pub total_vehicle_mass_kg: f64,
     pub effective_front_weight_distribution: f64,
+    pub resolved_body_mass_kilograms: f64,
+    pub resolved_center_of_mass_local_metres: [f64; 3],
+    pub resolved_inertia_diagonal_kilogram_square_metres: [f64; 3],
+    pub resolved_body_properties_authoritative: bool,
     pub audio: AudioReadouts,
     pub modules: Vec<ModuleOutput>,
 }
@@ -397,6 +401,10 @@ impl Default for CoreFrame {
             fuel_capacity_kg: 0.0,
             total_vehicle_mass_kg: 0.0,
             effective_front_weight_distribution: 0.0,
+            resolved_body_mass_kilograms: 0.0,
+            resolved_center_of_mass_local_metres: [0.0; 3],
+            resolved_inertia_diagonal_kilogram_square_metres: [0.0; 3],
+            resolved_body_properties_authoritative: false,
             audio: AudioReadouts::default(),
             modules: Vec::new(),
         }

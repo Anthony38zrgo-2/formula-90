@@ -163,6 +163,14 @@ typedef struct F90CoreFrameOut {
     double aerodynamic_body_drag_newtons;
     double aerodynamic_wing_and_floor_drag_newtons;
     double aerodynamic_wheel_drag_newtons[4];
+    // Append-only ABI 20 authoritative body mass properties (Simplified route).
+    // Published from the same entity state that produced the force solve of this
+    // tick; consumers apply them to the Godot rigid body instead of querying a
+    // shadow simulator.
+    double resolved_body_mass_kilograms;
+    double resolved_center_of_mass_local[3];
+    double resolved_inertia_diagonal[3];
+    double resolved_body_properties_authoritative;
 } F90CoreFrameOut;
 
 typedef struct F90UnderfloorRayHit {
@@ -177,6 +185,12 @@ typedef struct F90UnderfloorRawContact {
     double local_normal[3];
     double impulse_newton_seconds;
     double tangential_speed_metres_per_second;
+    // Append-only ABI 21 simplified-route contact contract. The host keeps
+    // `local_position`/`local_normal` at their Godot API meaning (world position
+    // and world normal) so the standard route does not change, and appends the
+    // body-frame point plus the tangential speed of the relative point velocity.
+    double body_local_position[3];
+    double relative_tangential_speed_metres_per_second;
 } F90UnderfloorRawContact;
 
 typedef struct F90UnderfloorSample {

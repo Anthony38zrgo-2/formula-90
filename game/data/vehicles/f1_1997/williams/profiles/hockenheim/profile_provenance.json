@@ -16,7 +16,7 @@
     {
       "classification": "inherited",
       "domain": "suspension.json",
-      "fields": "arb_ratio, resting_ratio, spring_length, toe_gain, camber_gain, damper knee and fast factor",
+      "fields": "resting_ratio, spring_length, toe_gain, camber_gain, damper knee and fast factor",
       "source": "Tuning parameters of the base model; Q43 gives roll stiffness in N*m/rad, which the schema does not expose directly"
     },
     {
@@ -39,6 +39,12 @@
     }
   ],
   "overrides": [
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.front.arb_ratio and suspension.rear.arb_ratio",
+      "source": "Human-requested roll stiffness increase: three times the inherited base ratios, front 0.15 to 0.45 and rear 0.09 to 0.27"
+    },
     {
       "classification": "derived",
       "domain": "chassis.json",

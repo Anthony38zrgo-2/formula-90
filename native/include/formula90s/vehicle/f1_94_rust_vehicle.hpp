@@ -114,6 +114,8 @@ private:
 	// diffuser throat and diffuser exit.
 	RayCast3D *underfloor_raycasts_[5] = {};
 	bool simplified_aerodynamics_enabled = false;
+	bool simplified_suspension_enabled = false;
+	double measured_chassis_floor_local_y_ = 0.0;
 
 	// Player Inputs / Overrides
 	bool enable_player_input_ = true;
@@ -256,8 +258,11 @@ private:
 	bool load_rust_dll();
 	void unload_rust_dll();
 	void setup_raycasts();
+	void configure_simplified_underfloor_geometry();
 	void update_wheel_visuals(double delta);
 	uint32_t detect_surface_type(const RayCast3D *ray) const;
+	void apply_resolved_center_of_mass(const Vector3 &p_center_of_mass);
+	void apply_resolved_inertia_diagonal(const Vector3 &p_inertia_diagonal);
 
 protected:
 	static void _bind_methods();

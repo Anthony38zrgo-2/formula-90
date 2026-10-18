@@ -347,8 +347,9 @@ use game_sim::snapshot::{EntityTelemetry, Snapshot};
 use game_sim::world::{yaw_from_transform, World};
 use serde::{Deserialize, Serialize};
 use vehicle_physics_engine::{
-    AeroEnvironment, AeroProbeMode, AidsMask, BodyKinematics, Mat3, SurfaceType, Transform3D,
-    TriRaycastSample, Vec3, VehicleConfig, VehicleInput,
+    vehicle_mass_properties::resolve_vehicle_mass_properties_for_suspension_backend,
+    AeroEnvironment, AeroProbeMode, AidsMask, BodyKinematics, Mat3, SurfaceType,
+    SuspensionBackend, Transform3D, TriRaycastSample, Vec3, VehicleConfig, VehicleInput,
 };
 
 use crate::audio::AudioModule;
@@ -479,6 +480,66 @@ pub struct CoreFacade {
     spawned: bool,
     underfloor: underfloor::UnderfloorState,
     physical_world_entity_identifier: Option<u64>,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct AuthoritativeBodyProperties {
+    mass_kilograms: f64,
+    center_of_mass_local_metres: Vec3,
+    inertia_diagonal_kilogram_square_metres: Vec3,
+}
+
+impl AuthoritativeBodyProperties {
+    fn for_simplified_simulation(
+        simulator: &vehicle_physics_engine::VehicleSimulator,
+    ) -> Option<Self> {
+        let suspension_backend = simulator.state.suspension.backend;
+        if suspension_backend != SuspensionBackend::Simplified {
+            return None;
+        }
+        let resolved = resolve_vehicle_mass_properties_for_suspension_backend(
+            &simulator.config,
+            suspension_backend,
+        );
+        let mass_kilograms = resolved.total_mass_kilograms;
+        let center_of_mass_local_metres = resolved.center_of_mass_local_metres;
+        let moments = resolved.principal_moments();
+        if !mass_kilograms.is_finite() || mass_kilograms <= 0.0 {
+            return None;
+        }
+        if !center_of_mass_local_metres.x.is_finite()
+            || !center_of_mass_local_metres.y.is_finite()
+            || !center_of_mass_local_metres.z.is_finite()
+        {
+            return None;
+        }
+        if moments
+            .iter()
+            .any(|moment| !moment.is_finite() || *moment <= 0.0)
+        {
+            return None;
+        }
+        Some(Self {
+            mass_kilograms,
+            center_of_mass_local_metres,
+            inertia_diagonal_kilogram_square_metres: Vec3::new(moments[0], moments[1], moments[2]),
+        })
+    }
+
+    fn publish(self, frame: &mut CoreFrame) {
+        frame.resolved_body_mass_kilograms = self.mass_kilograms;
+        frame.resolved_center_of_mass_local_metres = [
+            self.center_of_mass_local_metres.x,
+            self.center_of_mass_local_metres.y,
+            self.center_of_mass_local_metres.z,
+        ];
+        frame.resolved_inertia_diagonal_kilogram_square_metres = [
+            self.inertia_diagonal_kilogram_square_metres.x,
+            self.inertia_diagonal_kilogram_square_metres.y,
+            self.inertia_diagonal_kilogram_square_metres.z,
+        ];
+        frame.resolved_body_properties_authoritative = true;
+    }
 }
 
 impl CoreFacade {
@@ -719,14 +780,35 @@ impl CoreFacade {
             ..CoreFrame::default()
         };
         let mut mechanical_audio = audio_telemetry::MechanicalAudioState::default();
-        let two_longitudinal_probes = self.world.entities.iter().find(|entity| entity.id == id)
-            .is_some_and(|entity| entity.sim.aerodynamics_backend == vehicle_physics_engine::aero::AerodynamicsBackend::Simplified);
-        self.underfloor.step_with_probe_layout(
+        let (two_longitudinal_probes, suspension_backend, centre_of_mass_world) = self
+            .world
+            .entities
+            .iter()
+            .find(|entity| entity.id == id)
+            .map(|entity| {
+                let backend = entity.sim.state.suspension.backend;
+                (
+                    entity.sim.aerodynamics_backend
+                        == vehicle_physics_engine::aero::AerodynamicsBackend::Simplified,
+                    backend,
+                    vehicle_physics_engine::center_of_mass_world_for_suspension_backend(
+                        &entity.sim.config,
+                        backend,
+                        &body.transform,
+                    ),
+                )
+            })
+            .unwrap_or((false, SuspensionBackend::Standard, Vec3::ZERO));
+        let centre_of_mass_world_metres =
+            (suspension_backend == SuspensionBackend::Simplified).then_some(centre_of_mass_world);
+        self.underfloor.step_with_contact_contract(
             underfloor_sample,
             Some(&body),
             &self.config.underfloor_contact,
             dt,
             two_longitudinal_probes,
+            suspension_backend,
+            centre_of_mass_world_metres,
         );
         let aero_environment = AeroEnvironment {
             clearance_m: self.underfloor.filtered_clearance_m,
@@ -737,6 +819,14 @@ impl CoreFacade {
             contact_confidence: self.underfloor.contact_confidence,
         };
 
+        let authoritative_body_properties = self
+            .world
+            .entities
+            .iter()
+            .find(|entity| entity.id == id)
+            .and_then(|entity| {
+                AuthoritativeBodyProperties::for_simplified_simulation(&entity.sim)
+            });
         if let Some(ent) = self.world.entities.iter_mut().find(|e| e.id == id) {
             // The CPU side (Godot / driving_aids) is the authority on the aids mask.
             // Apply the FULL 8-bit mask into the solver each step — no toggle pulse,
@@ -755,6 +845,9 @@ impl CoreFacade {
                     .solve_external_with_aero(body, input, samples, &aero_environment, dt);
             ent.last = Some(telem);
             Self::fill_frame_from_entity(&mut frame, ent, dt);
+            if let Some(properties) = authoritative_body_properties {
+                properties.publish(&mut frame);
+            }
             frame.force = [
                 forces.force_world.x,
                 forces.force_world.y,
@@ -821,6 +914,14 @@ impl CoreFacade {
     ) -> &CoreFrame {
         if self.physical_world_entity_identifier.is_some() { return &self.frame; }
         let dt = dt.clamp(1.0 / 1000.0, 1.0 / 20.0);
+        let authoritative_body_properties = self
+            .world
+            .entities
+            .iter()
+            .find(|entity| entity.id == id)
+            .and_then(|entity| {
+                AuthoritativeBodyProperties::for_simplified_simulation(&entity.sim)
+            });
         self.world.step_with_samples(id, input, samples, dt);
         let mut frame = CoreFrame {
             time_ms: (self.world.time * 1000.0).round() as i64,
@@ -829,6 +930,9 @@ impl CoreFacade {
         let mut mechanical_audio = audio_telemetry::MechanicalAudioState::default();
         if let Some(ent) = self.world.entities.iter().find(|e| e.id == id) {
             Self::fill_frame_from_entity(&mut frame, ent, dt);
+            if let Some(properties) = authoritative_body_properties {
+                properties.publish(&mut frame);
+            }
             mechanical_audio = audio_telemetry::MechanicalAudioState::from_physics(&ent.sim.state.powertrain, &ent.sim.config)
             .with_driven_wheel_angular_velocities_radians_per_second(ent.sim.state.tires.wheels.each_ref().map(|wheel| wheel.spin), &ent.sim.config);
         }
@@ -1372,5 +1476,171 @@ mod vehicle_profile_manifest_resolution_tests {
         let canonical = VehicleConfig::f1_2030_geometric_canonical();
         assert_eq!(entity.sim.config.to_json_value(), canonical.to_json_value());
         assert!(entity.sim.config.coupled_world.is_some());
+    }
+}
+
+#[cfg(test)]
+mod authoritative_body_properties_tests {
+    use super::*;
+
+    fn williams_facade() -> CoreFacade {
+        let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        CoreFacade::new(CoreConfig {
+            bank_dir: None,
+            config_json_path: Some(
+                repository.join("game/data/vehicles/f1_1997/williams/profiles/hockenheim/vehicle.json"),
+            ),
+            use_canonical: false,
+            enable_audio: false,
+            ..CoreConfig::default()
+        })
+        .unwrap()
+    }
+
+    fn select_suspension_backend(core: &mut CoreFacade, backend: SuspensionBackend) {
+        let entity = &mut core.world.entities[0];
+        let configuration = entity.sim.config.clone();
+        entity.sim.state.suspension.select_backend(&configuration, backend);
+    }
+
+    fn resolved_properties(
+        core: &CoreFacade,
+        suspension_backend: SuspensionBackend,
+    ) -> (f64, Vec3, Vec3) {
+        let properties = resolve_vehicle_mass_properties_for_suspension_backend(
+            &core.world.entities[0].sim.config,
+            suspension_backend,
+        );
+        let moments = properties.principal_moments();
+        (
+            properties.total_mass_kilograms,
+            properties.center_of_mass_local_metres,
+            Vec3::new(moments[0], moments[1], moments[2]),
+        )
+    }
+
+    fn step_and_read_frame(core: &mut CoreFacade, identifier: u32) -> (bool, f64, Vec3, Vec3) {
+        let samples = core.flat_samples(identifier);
+        let body = core.world.entities[0].sim.state.body_kinematics();
+        let frame = core.step(
+            identifier,
+            body,
+            &VehicleInput::default(),
+            0,
+            &samples,
+            1.0 / 120.0,
+        );
+        (
+            frame.resolved_body_properties_authoritative,
+            frame.resolved_body_mass_kilograms,
+            Vec3::new(
+                frame.resolved_center_of_mass_local_metres[0],
+                frame.resolved_center_of_mass_local_metres[1],
+                frame.resolved_center_of_mass_local_metres[2],
+            ),
+            Vec3::new(
+                frame.resolved_inertia_diagonal_kilogram_square_metres[0],
+                frame.resolved_inertia_diagonal_kilogram_square_metres[1],
+                frame.resolved_inertia_diagonal_kilogram_square_metres[2],
+            ),
+        )
+    }
+
+    #[test]
+    fn simplified_frames_publish_the_body_properties_used_by_the_force_solve() {
+        let mut core = williams_facade();
+        let identifier = core.ensure_spawned().unwrap();
+        select_suspension_backend(&mut core, SuspensionBackend::Simplified);
+        let mut published_masses = Vec::new();
+        let mut published_centers = Vec::new();
+        for fuel_kilograms in [0.0, 7.6, 105.0] {
+            assert!(core.set_fuel_kg(identifier, fuel_kilograms));
+            let (expected_mass, expected_center, expected_inertia) = resolved_properties(&core, SuspensionBackend::Simplified);
+            let (authoritative, mass, center, inertia) = step_and_read_frame(&mut core, identifier);
+            assert!(
+                authoritative,
+                "simplified frame must flag the authoritative body properties at {fuel_kilograms} kg"
+            );
+            assert_eq!(mass, expected_mass);
+            assert_eq!(center, expected_center);
+            assert_eq!(inertia, expected_inertia);
+            published_masses.push(mass);
+            published_centers.push(center);
+        }
+        assert!((published_masses[2] - published_masses[0] - 105.0).abs() < 1.0e-6);
+        assert!((published_masses[1] - published_masses[0] - 7.6).abs() < 1.0e-6);
+        assert!(published_centers[2].z > published_centers[0].z + 0.005);
+        assert!(published_centers[0].y.is_finite() && published_centers[2].y.is_finite());
+    }
+
+    #[test]
+    fn continuous_fuel_consumption_updates_the_published_body_properties() {
+        let mut core = williams_facade();
+        let identifier = core.ensure_spawned().unwrap();
+        select_suspension_backend(&mut core, SuspensionBackend::Simplified);
+        assert!(core.set_fuel_kg(identifier, 105.0));
+        let input = VehicleInput {
+            throttle: 0.9,
+            ..VehicleInput::default()
+        };
+        let mut first_mass = 0.0;
+        let mut previous_mass = 0.0;
+        for tick in 0..600 {
+            let (expected_mass, _, _) = resolved_properties(&core, SuspensionBackend::Simplified);
+            let samples = core.flat_samples(identifier);
+            let body = core.world.entities[0].sim.state.body_kinematics();
+            let (authoritative, published_mass) = {
+                let frame = core.step(identifier, body, &input, 0, &samples, 1.0 / 120.0);
+                (
+                    frame.resolved_body_properties_authoritative,
+                    frame.resolved_body_mass_kilograms,
+                )
+            };
+            assert!(
+                authoritative,
+                "continuous consumption tick {tick} must stay authoritative"
+            );
+            assert_eq!(published_mass, expected_mass);
+            if tick == 0 {
+                first_mass = published_mass;
+            } else {
+                assert!(
+                    published_mass <= previous_mass,
+                    "burned fuel must never increase the published mass"
+                );
+            }
+            previous_mass = published_mass;
+        }
+        assert!(first_mass - previous_mass > 0.01);
+    }
+
+    #[test]
+    fn reset_republishes_body_properties_from_the_restored_state() {
+        let mut core = williams_facade();
+        let identifier = core.ensure_spawned().unwrap();
+        select_suspension_backend(&mut core, SuspensionBackend::Simplified);
+        assert!(core.set_fuel_kg(identifier, 105.0));
+        let (_, heavy_mass, _, _) = step_and_read_frame(&mut core, identifier);
+        core.reset(0.0, 0.5, 0.0, 0.0);
+        select_suspension_backend(&mut core, SuspensionBackend::Simplified);
+        let (expected_mass, expected_center, expected_inertia) = resolved_properties(&core, SuspensionBackend::Simplified);
+        let (authoritative, mass, center, inertia) = step_and_read_frame(&mut core, identifier);
+        assert!(authoritative);
+        assert_eq!(mass, expected_mass);
+        assert_eq!(center, expected_center);
+        assert_eq!(inertia, expected_inertia);
+        assert!(mass < heavy_mass);
+    }
+
+    #[test]
+    fn standard_frames_keep_the_legacy_body_property_route() {
+        let mut core = williams_facade();
+        let identifier = core.ensure_spawned().unwrap();
+        select_suspension_backend(&mut core, SuspensionBackend::Standard);
+        let (authoritative, mass, center, inertia) = step_and_read_frame(&mut core, identifier);
+        assert!(!authoritative);
+        assert_eq!(mass, 0.0);
+        assert_eq!(center, Vec3::ZERO);
+        assert_eq!(inertia, Vec3::ZERO);
     }
 }

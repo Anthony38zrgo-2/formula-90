@@ -851,7 +851,10 @@ pub extern "C" fn f1_94_physics_get_center_of_mass_local(
     }
     // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
-    let cg = center_of_mass_local(&sim.config);
+    let cg = center_of_mass_local_for_suspension_backend(
+        &sim.config,
+        sim.state.suspension.backend,
+    );
     // SAFETY: `out_x`/`out_y`/`out_z` are non-null (checked above) and point to writable `f64`s.
     unsafe {
         *out_x = cg.x;
@@ -872,7 +875,11 @@ pub extern "C" fn f1_94_physics_get_inertia_diagonal(
     }
     // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
-    let moments = crate::vehicle_mass_properties::resolve_vehicle_mass_properties(&sim.config)
+    let moments =
+        crate::vehicle_mass_properties::resolve_vehicle_mass_properties_for_suspension_backend(
+            &sim.config,
+            sim.state.suspension.backend,
+        )
         .principal_moments();
     // SAFETY: `out_x`/`out_y`/`out_z` are non-null (checked above) and point to writable `f64`s.
     unsafe {

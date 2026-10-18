@@ -1,7 +1,7 @@
 //! Deterministic fusion of five underfloor clearance probes and rigid contacts.
 
 use serde::{Deserialize, Serialize};
-use vehicle_physics_engine::{BodyKinematics, Vec3};
+use vehicle_physics_engine::{BodyKinematics, SuspensionBackend, Vec3};
 
 pub const UNDERFLOOR_RAY_COUNT: usize = 5;
 
@@ -29,6 +29,8 @@ pub struct UnderfloorRawContact {
     pub local_normal: [f64; 3],
     pub impulse_newton_seconds: f64,
     pub tangential_speed_metres_per_second: f64,
+    pub body_local_position: [f64; 3],
+    pub relative_tangential_speed_metres_per_second: f64,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -158,8 +160,28 @@ impl UnderfloorState {
         dt: f64,
         two_longitudinal_probes: bool,
     ) {
-        const MAX_CLEARANCE: f64 = 0.35;
+        self.step_with_contact_contract(
+            sample,
+            body,
+            config,
+            dt,
+            two_longitudinal_probes,
+            SuspensionBackend::Standard,
+            None,
+        );
+    }
 
+    pub fn step_with_contact_contract(
+        &mut self,
+        sample: &UnderfloorSample,
+        body: Option<&BodyKinematics>,
+        config: &UnderfloorContactConfig,
+        dt: f64,
+        two_longitudinal_probes: bool,
+        suspension_backend: SuspensionBackend,
+        centre_of_mass_world_metres: Option<Vec3>,
+    ) {
+        const MAX_CLEARANCE: f64 = 0.35;
         if !config.enabled {
             self.hold_s = 0.0;
             self.rigid_hold_s = 0.0;
@@ -215,21 +237,54 @@ impl UnderfloorState {
         // the body rides a few millimetres off the ground. Latch them with a
         // hold so confidence, phase and scrape intensity stay stable instead of
         // pulsing at frame rate.
-        let strongest_contact = sample.raw_contacts[..sample.raw_contact_count.min(32)].iter()
-            .filter(|contact| config.enabled
-                && contact.local_position.iter().chain(contact.local_normal.iter()).all(|value| value.is_finite())
-                && contact.local_position[1] <= config.rigid_maximum_local_height_metres
-                && contact.local_normal[1] >= config.normal_min_y
+        let contact_is_finite = |contact: &UnderfloorRawContact| {
+            contact.local_position.iter().chain(contact.local_normal.iter()).all(|value| value.is_finite())
                 && contact.impulse_newton_seconds.is_finite()
-                && contact.impulse_newton_seconds >= config.rigid_minimum_impulse_newton_seconds
-                && contact.tangential_speed_metres_per_second.is_finite())
-            .max_by(|first, second| first.impulse_newton_seconds.total_cmp(&second.impulse_newton_seconds));
-        let rigid_contact = strongest_contact.map(|contact| UnderfloorRigidContact {
-            confirmed: true,
-            local_position: contact.local_position,
-            normal_impulse_ns: contact.impulse_newton_seconds,
-            tangential_speed_m_s: contact.tangential_speed_metres_per_second,
-        }).unwrap_or(sample.rigid_contact);
+                && contact.tangential_speed_metres_per_second.is_finite()
+        };
+        let contact_selection = |contact: &UnderfloorRawContact| {
+            let (local_position, tangential_speed) = match suspension_backend {
+                SuspensionBackend::Simplified => {
+                    if !contact.body_local_position.iter().all(|value| value.is_finite())
+                        || !contact.relative_tangential_speed_metres_per_second.is_finite()
+                    {
+                        return None;
+                    }
+                    (
+                        contact.body_local_position,
+                        contact.relative_tangential_speed_metres_per_second,
+                    )
+                }
+                SuspensionBackend::Standard => (
+                    contact.local_position,
+                    contact.tangential_speed_metres_per_second,
+                ),
+            };
+            (config.enabled
+                && local_position[1] <= config.rigid_maximum_local_height_metres
+                && contact.local_normal[1] >= config.normal_min_y
+                && contact.impulse_newton_seconds >= config.rigid_minimum_impulse_newton_seconds)
+                .then_some((local_position, tangential_speed))
+        };
+        let strongest_contact = sample.raw_contacts[..sample.raw_contact_count.min(32)]
+            .iter()
+            .filter(|contact| contact_is_finite(contact))
+            .filter_map(|contact| {
+                contact_selection(contact).map(|selection| (contact, selection))
+            })
+            .max_by(|(first, _), (second, _)| {
+                first
+                    .impulse_newton_seconds
+                    .total_cmp(&second.impulse_newton_seconds)
+            });
+        let rigid_contact = strongest_contact
+            .map(|(contact, (local_position, tangential_speed))| UnderfloorRigidContact {
+                confirmed: true,
+                local_position,
+                normal_impulse_ns: contact.impulse_newton_seconds,
+                tangential_speed_m_s: tangential_speed,
+            })
+            .unwrap_or(sample.rigid_contact);
         let rigid_confirmed = config.enabled && rigid_contact.confirmed;
         if rigid_confirmed {
             self.rigid_hold_s = config.rigid_hold_seconds;
@@ -245,8 +300,15 @@ impl UnderfloorState {
             self.rigid_tangential_speed_m_s = rigid_contact.tangential_speed_m_s;
         }
 
-        self.step_bottoming(sample, body, config, dt, rigid_latched, two_longitudinal_probes);
-
+        self.step_bottoming(
+            sample,
+            body,
+            config,
+            dt,
+            rigid_latched,
+            two_longitudinal_probes,
+            centre_of_mass_world_metres,
+        );
         let geometry_confidence: f64 = if self.active_probe_mask != 0 { 1.0 } else { 0.0 };
         self.contact_confidence = geometry_confidence.max(if rigid_latched { 1.0 } else { 0.0 });
         let previous_phase = self.scrape_phase;
@@ -325,6 +387,7 @@ impl UnderfloorState {
         dt: f64,
         rigid_latched: bool,
         two_longitudinal_probes: bool,
+        centre_of_mass_world_metres: Option<Vec3>,
     ) {
         let mut local_positions: [[f64; 3]; 5] = [
             [-0.45, -0.205, -0.90],
@@ -375,10 +438,14 @@ impl UnderfloorState {
             )
             .normalized();
             let point = Vec3::new(ray.point_world[0], ray.point_world[1], ray.point_world[2]);
-            let lever = body.map(|b| point - b.transform.origin).unwrap_or_else(|| {
-                let p = local_positions[i];
-                Vec3::new(p[0], p[1], p[2])
-            });
+            let lever = match (body, centre_of_mass_world_metres) {
+                (Some(_), Some(centre_of_mass_world)) => point - centre_of_mass_world,
+                (Some(kinematics), None) => point - kinematics.transform.origin,
+                (None, _) => {
+                    let p = local_positions[i];
+                    Vec3::new(p[0], p[1], p[2])
+                }
+            };
             let kinematic_closing = body
                 .map(|b| {
                     let point_velocity = b.linear_velocity + b.angular_velocity.cross(lever);
@@ -448,6 +515,7 @@ impl UnderfloorState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use vehicle_physics_engine::{Mat3, Quat, Transform3D};
     fn flat_sample(clearance: f64) -> UnderfloorSample {
         UnderfloorSample {
             rays: [UnderfloorRayHit {
@@ -645,10 +713,12 @@ mod tests {
         sample.raw_contacts[0] = UnderfloorRawContact {
             local_position: [0.0, 0.0, 0.0], local_normal: [1.0, 0.0, 0.0],
             impulse_newton_seconds: 500.0, tangential_speed_metres_per_second: 30.0,
+            ..Default::default()
         };
         sample.raw_contacts[1] = UnderfloorRawContact {
             local_position: [0.0, -0.18, 0.0], local_normal: [0.0, 1.0, 0.0],
             impulse_newton_seconds: 10.0, tangential_speed_metres_per_second: 30.0,
+            ..Default::default()
         };
         let mut state = UnderfloorState::default();
         state.step(&sample, None, &configuration, 1.0 / 120.0);
@@ -668,6 +738,7 @@ mod tests {
         sample.raw_contacts[0] = UnderfloorRawContact {
             local_position: [0.0, -0.18, 0.0], local_normal: [1.0, 0.0, 0.0],
             impulse_newton_seconds: 500.0, tangential_speed_metres_per_second: 30.0,
+            ..Default::default()
         };
         let mut state = UnderfloorState::default();
         let mut configuration = UnderfloorContactConfig::default();
@@ -689,6 +760,220 @@ mod tests {
         assert!(configuration.validate().is_err());
     }
 
+    fn probe_and_contact_sample(body_transform: &Transform3D) -> UnderfloorSample {
+        let mut sample = UnderfloorSample::default();
+        let probe_local = Vec3::new(-0.45, -0.205, -0.90);
+        let probe_world = body_transform.transform_point(probe_local);
+        sample.rays[0] = UnderfloorRayHit {
+            valid: true,
+            clearance_m: 0.008,
+            point_world: [probe_world.x, probe_world.y, probe_world.z],
+            normal_world: [0.0, 1.0, 0.0],
+            ..Default::default()
+        };
+        let contact_local = Vec3::new(-0.45, -0.18, -0.90);
+        let contact_world = body_transform.transform_point(contact_local);
+        sample.raw_contact_count = 1;
+        sample.raw_contacts[0] = UnderfloorRawContact {
+            local_position: [contact_world.x, contact_world.y, contact_world.z],
+            local_normal: [0.0, 1.0, 0.0],
+            impulse_newton_seconds: 800.0,
+            tangential_speed_metres_per_second: 11.0,
+            body_local_position: [contact_local.x, contact_local.y, contact_local.z],
+            relative_tangential_speed_metres_per_second: 22.0,
+        };
+        sample
+    }
+
+    fn body_at(
+        position: Vec3,
+        yaw_radians: f64,
+        velocity: Vec3,
+        angular_velocity: Vec3,
+    ) -> BodyKinematics {
+        let basis = Mat3::from_euler_yxz(yaw_radians, 0.0, 0.0);
+        BodyKinematics {
+            transform: Transform3D::new(position, basis),
+            orientation: Quat::from_mat3(&basis),
+            linear_velocity: velocity,
+            angular_velocity,
+        }
+    }
+
+    #[test]
+    fn simplified_contact_classification_uses_the_body_frame() {
+        let config = UnderfloorContactConfig::default();
+        let dt = 1.0 / 120.0;
+        let elevated_body = body_at(Vec3::new(100.0, 5.0, -50.0), 0.0, Vec3::ZERO, Vec3::ZERO);
+        let mut elevated_sample = probe_and_contact_sample(&elevated_body.transform);
+        let mut standard = UnderfloorState::default();
+        standard.step_with_contact_contract(
+            &elevated_sample,
+            Some(&elevated_body),
+            &config,
+            dt,
+            false,
+            SuspensionBackend::Standard,
+            None,
+        );
+        let mut simplified = UnderfloorState::default();
+        simplified.step_with_contact_contract(
+            &elevated_sample,
+            Some(&elevated_body),
+            &config,
+            dt,
+            false,
+            SuspensionBackend::Simplified,
+            None,
+        );
+        assert_eq!(standard.rigid_normal_impulse_ns, 0.0);
+        assert_eq!(simplified.rigid_normal_impulse_ns, 800.0);
+        assert_eq!(simplified.rigid_tangential_speed_m_s, 22.0);
+        assert!((simplified.rigid_local_position[1] + 0.18).abs() < 1e-12);
+
+        let ground_body = body_at(Vec3::ZERO, 0.0, Vec3::ZERO, Vec3::ZERO);
+        elevated_sample.raw_contacts[0].local_position = [0.0, -0.18, -0.90];
+        elevated_sample.raw_contacts[0].body_local_position = [0.0, 5.18, 0.0];
+        let mut high_in_body_standard = UnderfloorState::default();
+        high_in_body_standard.step_with_contact_contract(
+            &elevated_sample,
+            Some(&ground_body),
+            &config,
+            dt,
+            false,
+            SuspensionBackend::Standard,
+            None,
+        );
+        let mut high_in_body_simplified = UnderfloorState::default();
+        high_in_body_simplified.step_with_contact_contract(
+            &elevated_sample,
+            Some(&ground_body),
+            &config,
+            dt,
+            false,
+            SuspensionBackend::Simplified,
+            None,
+        );
+        assert_eq!(high_in_body_standard.rigid_normal_impulse_ns, 800.0);
+        assert_eq!(high_in_body_simplified.rigid_normal_impulse_ns, 0.0);
+    }
+
+    #[test]
+    fn translated_scene_preserves_the_simplified_underfloor_response() {
+        let config = UnderfloorContactConfig::default();
+        let dt = 1.0 / 120.0;
+        let velocity = Vec3::new(3.0, -0.5, -12.0);
+        let angular_velocity = Vec3::new(0.2, -0.4, 0.1);
+        let reference_body = body_at(Vec3::new(0.0, 0.3, 0.0), 0.0, velocity, angular_velocity);
+        let translation = Vec3::new(-250.0, 47.5, 980.0);
+        let translated_body = body_at(
+            reference_body.transform.origin + translation,
+            0.0,
+            velocity,
+            angular_velocity,
+        );
+        let reference_sample = probe_and_contact_sample(&reference_body.transform);
+        let translated_sample = probe_and_contact_sample(&translated_body.transform);
+        let mut reference_state = UnderfloorState::default();
+        reference_state.step_with_contact_contract(
+            &reference_sample,
+            Some(&reference_body),
+            &config,
+            dt,
+            false,
+            SuspensionBackend::Simplified,
+            None,
+        );
+        let mut translated_state = UnderfloorState::default();
+        translated_state.step_with_contact_contract(
+            &translated_sample,
+            Some(&translated_body),
+            &config,
+            dt,
+            false,
+            SuspensionBackend::Simplified,
+            None,
+        );
+        assert_eq!(reference_state.rigid_normal_impulse_ns, translated_state.rigid_normal_impulse_ns);
+        assert_eq!(reference_state.rigid_tangential_speed_m_s, translated_state.rigid_tangential_speed_m_s);
+        assert_eq!(reference_state.active_probe_mask, translated_state.active_probe_mask);
+        assert_eq!(reference_state.compression_m, translated_state.compression_m);
+        for index in 0..UNDERFLOOR_RAY_COUNT {
+            assert!((reference_state.closing_speed_m_s[index] - translated_state.closing_speed_m_s[index]).abs() < 1e-9);
+        }
+        for axis in 0..3 {
+            assert!((reference_state.force_world[axis] - translated_state.force_world[axis]).abs() < 1e-9);
+            assert!((reference_state.torque_world[axis] - translated_state.torque_world[axis]).abs() < 1e-9);
+        }
+        assert!((reference_state.total_normal_force_n - translated_state.total_normal_force_n).abs() < 1e-9);
+    }
+
+    #[test]
+    fn rotated_scene_preserves_classification_and_rotates_the_moment() {
+        let config = UnderfloorContactConfig::default();
+        let dt = 1.0 / 120.0;
+        let velocity = Vec3::new(2.0, -0.3, -9.0);
+        let angular_velocity = Vec3::new(0.1, 0.3, -0.2);
+        let reference_body = body_at(Vec3::new(12.0, 0.4, -7.0), 0.0, velocity, angular_velocity);
+        let rotation = Mat3::from_euler_yxz(std::f64::consts::FRAC_PI_2, 0.0, 0.0);
+        let rotated_body = BodyKinematics {
+            transform: Transform3D::new(
+                rotation.transform_vector(reference_body.transform.origin),
+                rotation,
+            ),
+            orientation: Quat::from_mat3(&rotation),
+            linear_velocity: rotation.transform_vector(velocity),
+            angular_velocity: rotation.transform_vector(angular_velocity),
+        };
+        let reference_sample = probe_and_contact_sample(&reference_body.transform);
+        let mut rotated_sample = probe_and_contact_sample(&rotated_body.transform);
+        rotated_sample.raw_contacts[0].body_local_position = [-0.45, -0.18, -0.90];
+        let mut reference_state = UnderfloorState::default();
+        reference_state.step_with_contact_contract(
+            &reference_sample,
+            Some(&reference_body),
+            &config,
+            dt,
+            false,
+            SuspensionBackend::Simplified,
+            None,
+        );
+        let mut rotated_state = UnderfloorState::default();
+        rotated_state.step_with_contact_contract(
+            &rotated_sample,
+            Some(&rotated_body),
+            &config,
+            dt,
+            false,
+            SuspensionBackend::Simplified,
+            None,
+        );
+        assert_eq!(reference_state.rigid_normal_impulse_ns, rotated_state.rigid_normal_impulse_ns);
+        assert_eq!(reference_state.rigid_tangential_speed_m_s, rotated_state.rigid_tangential_speed_m_s);
+        assert!((reference_state.total_normal_force_n - rotated_state.total_normal_force_n).abs() < 1e-9);
+        let reference_force = Vec3::new(
+            reference_state.force_world[0],
+            reference_state.force_world[1],
+            reference_state.force_world[2],
+        );
+        let rotated_force = Vec3::new(
+            rotated_state.force_world[0],
+            rotated_state.force_world[1],
+            rotated_state.force_world[2],
+        );
+        assert!((rotated_force - rotation.transform_vector(reference_force)).length() < 1e-9);
+        let reference_torque = Vec3::new(
+            reference_state.torque_world[0],
+            reference_state.torque_world[1],
+            reference_state.torque_world[2],
+        );
+        let rotated_torque = Vec3::new(
+            rotated_state.torque_world[0],
+            rotated_state.torque_world[1],
+            rotated_state.torque_world[2],
+        );
+        assert!((rotated_torque - rotation.transform_vector(reference_torque)).length() < 1e-9);
+    }
     #[test]
     fn one_frame_probe_contact_is_not_hidden_by_clearance_filter() {
         let configuration = UnderfloorContactConfig::default();
@@ -702,5 +987,197 @@ mod tests {
         assert_eq!(state.scrape_phase, ScrapePhase::Impact);
         assert!(state.scrape_intensity > 0.0);
     }
+    fn single_probe_sample(
+        point_world: Vec3,
+        normal_world: Vec3,
+        clearance_metres: f64,
+    ) -> UnderfloorSample {
+        let mut sample = UnderfloorSample::default();
+        sample.rays[0] = UnderfloorRayHit {
+            valid: true,
+            clearance_m: clearance_metres,
+            point_world: [point_world.x, point_world.y, point_world.z],
+            normal_world: [normal_world.x, normal_world.y, normal_world.z],
+            ..Default::default()
+        };
+        sample
+    }
+
+    fn settled_state(clearance_metres: f64) -> UnderfloorState {
+        let mut state = UnderfloorState::default();
+        state.raw_clearance_m = [clearance_metres; UNDERFLOOR_RAY_COUNT];
+        state.filtered_clearance_m = [clearance_metres; UNDERFLOOR_RAY_COUNT];
+        state
+    }
+
+    #[test]
+    fn simplified_underfloor_moment_is_about_the_centre_of_mass() {
+        let config = UnderfloorContactConfig::default();
+        let dt = 1.0 / 120.0;
+        let body = body_at(Vec3::ZERO, 0.0, Vec3::ZERO, Vec3::ZERO);
+        let centre_of_mass = Vec3::new(0.0, -0.24365, 0.457836);
+        let point = Vec3::new(0.0, -0.205, -0.90);
+        let sample = single_probe_sample(point, Vec3::UP, 0.008);
+
+        let mut simplified_state = settled_state(0.008);
+        simplified_state.step_with_contact_contract(
+            &sample,
+            Some(&body),
+            &config,
+            dt,
+            false,
+            SuspensionBackend::Simplified,
+            Some(centre_of_mass),
+        );
+        let mut standard_state = settled_state(0.008);
+        standard_state.step_with_contact_contract(
+            &sample,
+            Some(&body),
+            &config,
+            dt,
+            false,
+            SuspensionBackend::Standard,
+            None,
+        );
+
+        let force = simplified_state.total_normal_force_n;
+        assert!(force > 0.0);
+        let from_centre = point.z - centre_of_mass.z;
+        let from_origin = point.z;
+        assert!((simplified_state.torque_world[0] - (-from_centre) * force).abs() < 1e-9);
+        assert!((standard_state.torque_world[0] - (-from_origin) * force).abs() < 1e-9);
+        assert_eq!(simplified_state.torque_world[1], 0.0);
+        assert_eq!(simplified_state.torque_world[2], 0.0);
+        let pitch_correction = standard_state.torque_world[0] - simplified_state.torque_world[0];
+        assert!(
+            (pitch_correction + centre_of_mass.z * force).abs() < 1e-9,
+            "pitch correction {pitch_correction} must equal centre offset times force"
+        );
+        assert!((pitch_correction + 0.457836 * force).abs() < 1e-9);
+    }
+
+    #[test]
+    fn simplified_point_velocity_is_referenced_to_the_centre_of_mass() {
+        let config = UnderfloorContactConfig::default();
+        let dt = 1.0 / 120.0;
+        let velocity = Vec3::new(0.0, 0.0, -10.0);
+        let angular_velocity = Vec3::new(0.0, 0.5, 0.0);
+        let body = body_at(Vec3::ZERO, 0.0, velocity, angular_velocity);
+        let centre_of_mass = Vec3::new(0.0, -0.24365, 0.457836);
+        let point = Vec3::new(0.45, -0.205, -0.90);
+        let normal = Vec3::new(0.6, 0.8, 0.0);
+        let sample = single_probe_sample(point, normal, 0.030);
+
+        let centre_lever = point - centre_of_mass;
+        let expected_centre_closing =
+            (-((velocity + angular_velocity.cross(centre_lever)).dot(normal))).max(0.0);
+        let origin_lever = point - body.transform.origin;
+        let expected_origin_closing =
+            (-((velocity + angular_velocity.cross(origin_lever)).dot(normal))).max(0.0);
+        assert!((expected_centre_closing - expected_origin_closing).abs() > 0.05);
+
+        let mut simplified_state = settled_state(0.030);
+        simplified_state.step_with_contact_contract(
+            &sample,
+            Some(&body),
+            &config,
+            dt,
+            false,
+            SuspensionBackend::Simplified,
+            Some(centre_of_mass),
+        );
+        let mut standard_state = settled_state(0.030);
+        standard_state.step_with_contact_contract(
+            &sample,
+            Some(&body),
+            &config,
+            dt,
+            false,
+            SuspensionBackend::Standard,
+            None,
+        );
+        assert!((simplified_state.closing_speed_m_s[0] - expected_centre_closing).abs() < 1e-9);
+        assert!((standard_state.closing_speed_m_s[0] - expected_origin_closing).abs() < 1e-9);
+    }
+
+    #[test]
+    fn translated_representation_preserves_the_simplified_underfloor_moment() {
+        let config = UnderfloorContactConfig::default();
+        let dt = 1.0 / 120.0;
+        let velocity = Vec3::new(1.5, -0.4, -8.0);
+        let angular_velocity = Vec3::new(0.1, -0.2, 0.15);
+        let centre_of_mass_local = Vec3::new(0.0, -0.24365, 0.457836);
+        let reference_body = body_at(Vec3::new(0.0, 0.5, 0.0), 0.0, velocity, angular_velocity);
+        let reference_centre = reference_body.transform.transform_point(centre_of_mass_local);
+        let translation = Vec3::new(320.0, -85.0, 1240.0);
+        let translated_body = body_at(
+            reference_body.transform.origin + translation,
+            0.0,
+            velocity,
+            angular_velocity,
+        );
+        let translated_centre = reference_centre + translation;
+        let reference_sample = single_probe_sample(Vec3::new(0.0, 0.295, -0.90), Vec3::UP, 0.008);
+        let translated_sample = single_probe_sample(
+            Vec3::new(0.0, 0.295, -0.90) + translation,
+            Vec3::UP,
+            0.008,
+        );
+        let mut reference_state = settled_state(0.008);
+        reference_state.step_with_contact_contract(
+            &reference_sample,
+            Some(&reference_body),
+            &config,
+            dt,
+            false,
+            SuspensionBackend::Simplified,
+            Some(reference_centre),
+        );
+        let mut translated_state = settled_state(0.008);
+        translated_state.step_with_contact_contract(
+            &translated_sample,
+            Some(&translated_body),
+            &config,
+            dt,
+            false,
+            SuspensionBackend::Simplified,
+            Some(translated_centre),
+        );
+        for axis in 0..3 {
+            assert!((reference_state.force_world[axis] - translated_state.force_world[axis]).abs() < 1e-9);
+            assert!((reference_state.torque_world[axis] - translated_state.torque_world[axis]).abs() < 1e-9);
+        }
+        for index in 0..UNDERFLOOR_RAY_COUNT {
+            assert!((reference_state.closing_speed_m_s[index] - translated_state.closing_speed_m_s[index]).abs() < 1e-9);
+        }
+    }
+
+    #[test]
+    fn simplified_underfloor_damper_dissipates_energy() {
+        let config = UnderfloorContactConfig::default();
+        let dt = 1.0 / 120.0;
+        let body = body_at(Vec3::ZERO, 0.0, Vec3::new(0.0, -1.2, 0.0), Vec3::ZERO);
+        let centre_of_mass = Vec3::new(0.0, -0.24365, 0.457836);
+        let sample = single_probe_sample(Vec3::new(0.0, -0.205, -0.90), Vec3::UP, 0.008);
+        let mut state = settled_state(0.008);
+        state.step_with_contact_contract(
+            &sample,
+            Some(&body),
+            &config,
+            dt,
+            false,
+            SuspensionBackend::Simplified,
+            Some(centre_of_mass),
+        );
+        assert!(state.closing_speed_m_s[0] > 1.0);
+        assert!(state.dissipated_energy_j > 0.0);
+        let spring_only = config.linear_rate_n_m
+            * (config.activation_clearance_m - 0.008)
+            + config.progressive_rate_n_m2
+                * (config.activation_clearance_m - 0.008).powi(2);
+        assert!(state.normal_force_n[0] > spring_only);
+        assert!(state.dissipated_energy_j.is_finite());
+    }
+
 
 }

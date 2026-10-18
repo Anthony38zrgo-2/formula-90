@@ -23,6 +23,19 @@ impl SuspensionBackend {
             Ok(value) => panic!("Unsupported suspension backend: {value}"),
         }
     }
+
+    pub(super) fn contact_hub_offset_world_metres(
+        self,
+        body_orientation: Mat3,
+        hub_lateral_metres: f64,
+        hub_long_metres: f64,
+    ) -> Vec3 {
+        let hub_offset_local = Vec3::new(hub_lateral_metres, 0.0, hub_long_metres);
+        match self {
+            Self::Simplified => body_orientation.transform_vector(hub_offset_local),
+            Self::Standard => hub_offset_local,
+        }
+    }
 }
 
 const TRAVEL_SAMPLE_COUNT: usize = 129;
@@ -599,12 +612,14 @@ mod tests {
             });
             crate::suspension_kinematics::counters::reset();
             standard.step_with_integration_method(&configuration,
-                &[crate::tire_thermals::TireMechanicalModifiers::identity(); 4], &samples, 1.0 / 120.0, true);
+                &[crate::tire_thermals::TireMechanicalModifiers::identity(); 4], &samples, 1.0 / 120.0, true,
+                Mat3::IDENTITY);
             standard_geometry_solves +=
                 crate::suspension_kinematics::counters::solve_corner_calls();
             crate::suspension_kinematics::counters::reset();
             simplified.step_with_integration_method(&configuration,
-                &[crate::tire_thermals::TireMechanicalModifiers::identity(); 4], &samples, 1.0 / 120.0, true);
+                &[crate::tire_thermals::TireMechanicalModifiers::identity(); 4], &samples, 1.0 / 120.0, true,
+                Mat3::IDENTITY);
             simplified_geometry_solves +=
                 crate::suspension_kinematics::counters::solve_corner_calls();
             for index in 0..4 {

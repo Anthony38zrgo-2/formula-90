@@ -1,3 +1,4 @@
+use crate::suspension::SuspensionBackend;
 use crate::suspension_mass_properties::{
     composite_mass_properties, InertiaTensor, MassComponentAttachment,
 };
@@ -37,6 +38,13 @@ impl VehicleMassProperties {
 }
 
 pub fn resolve_vehicle_mass_properties(configuration: &VehicleConfig) -> VehicleMassProperties {
+    resolve_vehicle_mass_properties_for_suspension_backend(configuration, SuspensionBackend::Standard)
+}
+
+pub fn resolve_vehicle_mass_properties_for_suspension_backend(
+    configuration: &VehicleConfig,
+    suspension_backend: SuspensionBackend,
+) -> VehicleMassProperties {
     let total_mass = configuration
         .chassis
         .total_vehicle_mass(&configuration.tires, &configuration.fuel);
@@ -45,13 +53,18 @@ pub fn resolve_vehicle_mass_properties(configuration: &VehicleConfig) -> Vehicle
         .effective_front_weight_distribution(&configuration.tires, &configuration.fuel);
 
     if configuration.chassis.uses_authored_wheel_frame() {
-        if let Some((mass, center, inertia)) = inventory_mass_properties(configuration) {
+        if let Some((mass, center, inertia)) =
+            inventory_mass_properties_for_backend(configuration, suspension_backend)
+        {
             if (mass - total_mass).abs() <= 1e-6 * total_mass.max(1.0) {
-                let resolved_center = Vec3::new(
-                    0.0,
-                    configuration.chassis.center_of_gravity_height_offset,
-                    center.z,
-                );
+                let resolved_center = match suspension_backend {
+                    SuspensionBackend::Simplified => center,
+                    SuspensionBackend::Standard => Vec3::new(
+                        0.0,
+                        configuration.chassis.center_of_gravity_height_offset,
+                        center.z,
+                    ),
+                };
                 let rear_axle_z = configuration.chassis.axle_center_z(WheelIndex::RearLeft);
                 let resolved_front_share = ((rear_axle_z - resolved_center.z)
                     / configuration.chassis.wheelbase)
@@ -103,45 +116,74 @@ pub fn unsprung_mass(configuration: &VehicleConfig, wheel: WheelIndex) -> f64 {
     fallback_unsprung_mass(configuration)[wheel as usize]
 }
 
-fn inventory_mass_properties(configuration: &VehicleConfig) -> Option<(f64, Vec3, InertiaTensor)> {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ResolvedMassComponentKind {
+    Body,
+    CornerAttachment,
+    Wheel,
+    Fuel,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ResolvedMassComponent {
+    pub kind: ResolvedMassComponentKind,
+    pub mass_kilograms: f64,
+    pub center_of_mass_local_metres: Vec3,
+    pub inertia_about_center_of_mass: InertiaTensor,
+}
+
+pub fn resolved_mass_components(
+    configuration: &VehicleConfig,
+) -> Option<Vec<ResolvedMassComponent>> {
     let inventory = configuration.chassis.physical_mass_inventory.as_ref()?;
     inventory.validate(configuration).ok()?;
     let base_center = configuration.chassis.base_center_of_mass_local();
     let base_budget = inventory.base_budget_kilograms;
 
-    let mut body_components: Vec<(f64, Vec3, InertiaTensor)> = Vec::new();
-    let mut corner_base_components: Vec<(f64, Vec3, InertiaTensor)> = Vec::new();
-    let mut wheel_components: Vec<(f64, Vec3, InertiaTensor)> = Vec::new();
+    let resolved_component = |component: &crate::vehicle_mass_inventory::VehicleMassComponent,
+                              center: Vec3,
+                              kind: ResolvedMassComponentKind| {
+        ResolvedMassComponent {
+            kind,
+            mass_kilograms: component.properties.mass_kilograms,
+            center_of_mass_local_metres: center,
+            inertia_about_center_of_mass: component.properties.inertia_about_center_of_mass,
+        }
+    };
+    let mut body_components: Vec<ResolvedMassComponent> = Vec::new();
+    let mut corner_base_components: Vec<ResolvedMassComponent> = Vec::new();
+    let mut wheel_components: Vec<ResolvedMassComponent> = Vec::new();
     for component in &inventory.components {
         let properties = &component.properties;
+        let center_of_mass_in_attachment = properties.center_of_mass_in_attachment_metres;
         match component.budget {
             crate::vehicle_mass_inventory::VehicleMassBudget::RimAndTire => {
                 let wheel = component.rotating_wheel?;
-                let center = configuration.chassis.wheel_center_local(wheel)
-                    + properties.center_of_mass_in_attachment_metres;
-                wheel_components.push((
-                    properties.mass_kilograms,
+                let center =
+                    configuration.chassis.wheel_center_local(wheel) + center_of_mass_in_attachment;
+                wheel_components.push(resolved_component(
+                    component,
                     center,
-                    properties.inertia_about_center_of_mass,
+                    ResolvedMassComponentKind::Wheel,
                 ));
             }
             crate::vehicle_mass_inventory::VehicleMassBudget::VehicleAndDriver => {
-                match &component.properties.attachment {
+                match &properties.attachment {
                     MassComponentAttachment::Body | MassComponentAttachment::SteeringRack => {
-                        body_components.push((
-                            properties.mass_kilograms,
-                            properties.center_of_mass_in_attachment_metres,
-                            properties.inertia_about_center_of_mass,
+                        body_components.push(resolved_component(
+                            component,
+                            center_of_mass_in_attachment,
+                            ResolvedMassComponentKind::Body,
                         ));
                     }
                     other => {
                         let wheel = other.wheel()?;
                         let center = configuration.chassis.wheel_center_local(wheel)
-                            + properties.center_of_mass_in_attachment_metres;
-                        corner_base_components.push((
-                            properties.mass_kilograms,
+                            + center_of_mass_in_attachment;
+                        corner_base_components.push(resolved_component(
+                            component,
                             center,
-                            properties.inertia_about_center_of_mass,
+                            ResolvedMassComponentKind::CornerAttachment,
                         ));
                     }
                 }
@@ -149,17 +191,22 @@ fn inventory_mass_properties(configuration: &VehicleConfig) -> Option<(f64, Vec3
         }
     }
 
-    let body_mass = body_components.iter().map(|(mass, _, _)| *mass).sum::<f64>();
+    let body_mass = body_components
+        .iter()
+        .map(|component| component.mass_kilograms)
+        .sum::<f64>();
     if body_mass <= 0.0 {
         return None;
     }
-    let (_, body_center, _) = composite_mass_properties(&body_components).ok()?;
+    let (_, body_center, _) =
+        composite_mass_properties(&mass_component_tuples(&body_components)).ok()?;
     let corner_base_mass = corner_base_components
         .iter()
-        .map(|(mass, _, _)| *mass)
+        .map(|component| component.mass_kilograms)
         .sum::<f64>();
     let corner_base_center = if corner_base_mass > 0.0 {
-        let (_, center, _) = composite_mass_properties(&corner_base_components).ok()?;
+        let (_, center, _) =
+            composite_mass_properties(&mass_component_tuples(&corner_base_components)).ok()?;
         center
     } else {
         Vec3::ZERO
@@ -168,24 +215,114 @@ fn inventory_mass_properties(configuration: &VehicleConfig) -> Option<(f64, Vec3
         / body_mass
         - body_center;
 
-    let mut components: Vec<(f64, Vec3, InertiaTensor)> = body_components
+    let mut components: Vec<ResolvedMassComponent> = body_components
         .into_iter()
-        .map(|(mass, center, inertia)| (mass, center + translation, inertia))
+        .map(|component| ResolvedMassComponent {
+            center_of_mass_local_metres: component.center_of_mass_local_metres + translation,
+            ..component
+        })
         .collect();
     components.extend(corner_base_components);
     components.extend(wheel_components);
     let fuel_mass = configuration.fuel.effective_current_kg();
     if fuel_mass > 0.0 {
-        components.push((
-            fuel_mass,
-            configuration.fuel.tank_position_local_m,
-            InertiaTensor {
+        components.push(ResolvedMassComponent {
+            kind: ResolvedMassComponentKind::Fuel,
+            mass_kilograms: fuel_mass,
+            center_of_mass_local_metres: configuration.fuel.tank_position_local_m,
+            inertia_about_center_of_mass: InertiaTensor {
                 entries_kilogram_square_metres: [[0.0; 3]; 3],
             },
-        ));
+        });
     }
-    let (mass, center, inertia) = composite_mass_properties(&components).ok()?;
-    Some((mass, center, inertia))
+    Some(components)
+}
+
+pub fn resolved_mass_components_for_suspension_backend(
+    configuration: &VehicleConfig,
+    suspension_backend: SuspensionBackend,
+) -> Option<Vec<ResolvedMassComponent>> {
+    let mut components = resolved_mass_components(configuration)?;
+    if suspension_backend == SuspensionBackend::Simplified {
+        apply_reference_load_height_calibration(configuration, &mut components)?;
+    }
+    Some(components)
+}
+
+fn apply_reference_load_height_calibration(
+    configuration: &VehicleConfig,
+    components: &mut [ResolvedMassComponent],
+) -> Option<()> {
+    let target_height = configuration.chassis.center_of_gravity_height_offset;
+    let reference_load = configuration.fuel.initial_kg;
+    let tank_height = configuration.fuel.tank_position_local_m.y;
+    if !target_height.is_finite()
+        || !reference_load.is_finite()
+        || reference_load < 0.0
+        || !tank_height.is_finite()
+    {
+        return None;
+    }
+    let mut body_mass_kilograms = 0.0;
+    let mut total_mass_kilograms = 0.0;
+    let mut total_height_moment = 0.0;
+    let mut fuel_mass_kilograms = 0.0;
+    for component in components.iter() {
+        total_mass_kilograms += component.mass_kilograms;
+        total_height_moment += component.mass_kilograms * component.center_of_mass_local_metres.y;
+        match component.kind {
+            ResolvedMassComponentKind::Body => body_mass_kilograms += component.mass_kilograms,
+            ResolvedMassComponentKind::Fuel => fuel_mass_kilograms += component.mass_kilograms,
+            ResolvedMassComponentKind::CornerAttachment | ResolvedMassComponentKind::Wheel => {}
+        }
+    }
+    if body_mass_kilograms <= 0.0 || total_mass_kilograms <= 0.0 {
+        return None;
+    }
+    let non_fuel_mass_kilograms = total_mass_kilograms - fuel_mass_kilograms;
+    let non_fuel_height_moment = total_height_moment - fuel_mass_kilograms * tank_height;
+    let reference_total_mass_kilograms = non_fuel_mass_kilograms + reference_load;
+    if reference_total_mass_kilograms <= 0.0 {
+        return None;
+    }
+    let reference_composite_height =
+        (non_fuel_height_moment + reference_load * tank_height) / reference_total_mass_kilograms;
+    let needed_composite_shift = target_height - reference_composite_height;
+    let body_height_shift =
+        needed_composite_shift * reference_total_mass_kilograms / body_mass_kilograms;
+    if !body_height_shift.is_finite() {
+        return None;
+    }
+    for component in components.iter_mut() {
+        if component.kind == ResolvedMassComponentKind::Body {
+            component.center_of_mass_local_metres.y += body_height_shift;
+        }
+    }
+    Some(())
+}
+
+fn mass_component_tuples(
+    components: &[ResolvedMassComponent],
+) -> Vec<(f64, Vec3, InertiaTensor)> {
+    components
+        .iter()
+        .map(|component| {
+            (
+                component.mass_kilograms,
+                component.center_of_mass_local_metres,
+                component.inertia_about_center_of_mass,
+            )
+        })
+        .collect()
+}
+
+fn inventory_mass_properties_for_backend(
+    configuration: &VehicleConfig,
+    suspension_backend: SuspensionBackend,
+) -> Option<(f64, Vec3, InertiaTensor)> {
+    let components =
+        resolved_mass_components_for_suspension_backend(configuration, suspension_backend)?;
+    composite_mass_properties(&mass_component_tuples(&components)).ok()
 }
 
 fn inventory_wheel_spin_inertia(configuration: &VehicleConfig) -> Option<[f64; 4]> {
