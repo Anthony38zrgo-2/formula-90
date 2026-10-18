@@ -1,5 +1,22 @@
 {
   "powertrain": {
+    "automatic_shift": {
+      "downshift_coast_normalized_rpm": 0.3,
+      "downshift_normalized_rpm_full_throttle": 0.58,
+      "downshift_normalized_rpm_low_throttle": 0.42,
+      "downshift_target_rpm_margin_high": 0.82,
+      "downshift_throttle_aggression_factor": 0.35,
+      "kickdown_delay_factor": 0.75,
+      "parked_resume_speed_ms": 1.0,
+      "reverse_max_speed_ms": 6.0,
+      "road_spin_weight": 0.4,
+      "upshift_coast_normalized_rpm": 0.42,
+      "upshift_normalized_rpm_full_throttle": 0.9714285714285714,
+      "upshift_normalized_rpm_low_throttle": 0.72,
+      "upshift_target_rpm_margin_high": 0.94,
+      "wheel_road_spin_blend_threshold_rads": 10.0,
+      "wheel_spin_weight": 0.6
+    },
     "automatic_transmission": false,
     "clutch_out_rpm_offset": 1100.0,
     "constant_brake_ratio": 0.015,
@@ -20,18 +37,18 @@
     "front_torque_split": 0.0,
     "gear_inertia": 0.014,
     "gear_ratios": [
-      3.1,
-      2.4,
-      1.92,
-      1.57,
-      1.31,
-      1.12
+      3.41,
+      2.64,
+      2.112,
+      1.727,
+      1.441,
+      1.232
     ],
     "handbrake_torque_fraction": 0.0,
     "idle_disengagement_hysteresis_rpm": 150.0,
     "idle_rpm": 3500.0,
     "max_clutch_torque_ratio": 1.1,
-    "max_rpm": 15800.0,
+    "max_rpm": 17500.0,
     "max_torque": 390.0,
     "motor_moment": 0.1,
     "reverse_ratio": 3.0,
@@ -92,52 +109,52 @@
         0.4230769230769231
       ],
       [
-        0.221519,
+        0.2,
         0.423077
       ],
       [
-        0.28481,
+        0.257142857143,
         0.507692
       ],
       [
-        0.379747,
+        0.342857142857,
         0.630769
       ],
       [
-        0.474684,
+        0.428571428571,
         0.751282
       ],
       [
-        0.56962,
+        0.514285714286,
         0.846154
       ],
       [
-        0.664557,
+        0.6,
         0.923077
       ],
       [
-        0.759494,
+        0.685714285714,
         0.982051
       ],
       [
-        0.835443,
+        0.754285714286,
         1.0
       ],
       [
-        0.886076,
-        0.976923
+        0.914285714286,
+        0.859074711322
       ],
       [
-        0.924051,
-        0.944359
+        0.971428571429,
+        0.824375415229
       ],
       [
-        0.962025,
-        0.884615
+        0.988571428571,
+        0.787982762934
       ],
       [
         1.0,
-        0.815385
+        0.743461885714
       ]
     ],
     "variable_drag_ratio": 0.075

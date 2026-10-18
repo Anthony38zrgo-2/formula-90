@@ -127,7 +127,7 @@
       "classification": "estimated",
       "domain": "powertrain.json",
       "path": "powertrain.max_rpm",
-      "source": "Q12"
+      "source": "User requested estimated Renault RS9 limiter at 17500 revolutions per minute"
     },
     {
       "classification": "estimated",
@@ -139,13 +139,13 @@
       "classification": "estimated",
       "domain": "powertrain.json",
       "path": "powertrain.torque_curve",
-      "source": "Q17 normalized to max_rpm and max_torque"
+      "source": "Estimated setup revision: net full-throttle power peak moved to 17000 revolutions per minute, preserving the previous peak net power and 390 Nm torque normalization; includes variable engine drag"
     },
     {
       "classification": "estimated",
       "domain": "powertrain.json",
       "path": "powertrain.gear_ratios",
-      "source": "Q18"
+      "source": "Q18; user requested all six forward ratios increased by 10 percent for shorter gearing"
     },
     {
       "classification": "estimated",
@@ -289,61 +289,79 @@
       "classification": "estimated",
       "domain": "suspension.json",
       "path": "suspension.front.camber",
-      "source": "Q44"
+      "source": "Q44; setup adjustment requested by user to -4.0 degrees per wheel"
     },
     {
       "classification": "estimated",
       "domain": "suspension.json",
       "path": "suspension.rear.camber",
-      "source": "Q44"
+      "source": "Q44; setup adjustment requested by user to -1.5 degrees per wheel"
     },
     {
       "classification": "estimated",
       "domain": "suspension.json",
       "path": "suspension.front.toe",
-      "source": "Q45 half of total toe-out"
+      "source": "Q45; setup adjustment requested by user to -0.1 degrees per wheel"
     },
     {
       "classification": "estimated",
       "domain": "suspension.json",
       "path": "suspension.rear.toe",
-      "source": "Q45 half of total toe-in"
+      "source": "Q45; setup adjustment requested by user to 0.0 degrees per wheel"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.front/rear.spring_length and resting_ratio",
+      "source": "Virtual ray coordinate range extended by 50 mm while keeping the ray origins fixed; physical ride height is set by geometric spring preload, not these virtual lengths"
+    },
+    {
+      "classification": "estimated",
+      "domain": "aerodynamics.json",
+      "path": "aero.model.front_wing.incidence_deg",
+      "source": "User setup adjustment to 18 degrees"
+    },
+    {
+      "classification": "estimated",
+      "domain": "aerodynamics.json",
+      "path": "aero.model.rear_wing.incidence_deg",
+      "source": "User setup adjustment to 16 degrees"
     },
     {
       "classification": "estimated",
       "domain": "suspension.json",
       "path": "suspension.geometry_physical.front.spring_rate_N_per_m",
-      "source": "Q39 actuator rate"
+      "source": "Q39 actuator rate reduced by 15 percent at user request"
     },
     {
       "classification": "estimated",
       "domain": "suspension.json",
       "path": "suspension.geometry_physical.rear.spring_rate_N_per_m",
-      "source": "Q39 actuator rate"
+      "source": "Q39 actuator rate reduced by 15 percent at user request"
     },
     {
       "classification": "estimated",
       "domain": "suspension.json",
       "path": "suspension.geometry_physical.front.damper_bump_Ns_per_m",
-      "source": "Q41"
+      "source": "Q41 damper coefficient reduced by 15 percent at user request"
     },
     {
       "classification": "estimated",
       "domain": "suspension.json",
       "path": "suspension.geometry_physical.front.damper_rebound_Ns_per_m",
-      "source": "Q41"
+      "source": "Q41 damper coefficient reduced by 15 percent at user request"
     },
     {
       "classification": "estimated",
       "domain": "suspension.json",
       "path": "suspension.geometry_physical.rear.damper_bump_Ns_per_m",
-      "source": "Q41"
+      "source": "Q41 damper coefficient reduced by 15 percent at user request"
     },
     {
       "classification": "estimated",
       "domain": "suspension.json",
       "path": "suspension.geometry_physical.rear.damper_rebound_Ns_per_m",
-      "source": "Q41"
+      "source": "Q41 damper coefficient reduced by 15 percent at user request"
     },
     {
       "classification": "estimated",
@@ -355,7 +373,7 @@
       "classification": "estimated",
       "domain": "suspension.json",
       "path": "suspension.geometry_physical.front.wheel_droop_m",
-      "source": "Q42"
+      "source": "Original extension range enlarged by 50 mm to support the user requested ride-height increase; reachable linkage poses verified numerically"
     },
     {
       "classification": "estimated",
@@ -367,7 +385,7 @@
       "classification": "estimated",
       "domain": "suspension.json",
       "path": "suspension.geometry_physical.rear.wheel_droop_m",
-      "source": "Q42"
+      "source": "Original extension range enlarged by 50 mm to support the user requested ride-height increase; reachable linkage poses verified numerically"
     },
     {
       "classification": "derived",
@@ -656,24 +674,48 @@
       "domain": "suspension_presentation.json",
       "path": "*",
       "source": "Q27, Q59-Q61, Q75, Q80-Q86: model coefficients inherited from the project base profile"
+    },
+    {
+      "classification": "inherited",
+      "domain": "powertrain.json",
+      "path": "powertrain.automatic_shift",
+      "source": "Existing resolved shift calibration made explicit; full-throttle upshift target is overridden separately"
+    },
+    {
+      "classification": "estimated",
+      "domain": "powertrain.json",
+      "path": "powertrain.automatic_shift.upshift_normalized_rpm_full_throttle",
+      "source": "User requested estimated optimal shift window 16800-17200 revolutions per minute; full-throttle target set to midpoint 17000. Manual transmission selection remains as configured"
+    },
+    {
+      "classification": "derived",
+      "domain": "suspension.json",
+      "path": "suspension.geometry_physical.front.spring_free_length_m",
+      "source": "Preload calculated for 50 mm additional ride height relative to the measured Godot baseline, with spring and damper coefficients reduced by 15 percent; evidence scratch/williams_ride_and_acceleration_20261018"
+    },
+    {
+      "classification": "derived",
+      "domain": "suspension.json",
+      "path": "suspension.geometry_physical.rear.spring_free_length_m",
+      "source": "Preload calculated for 50 mm additional ride height relative to the measured Godot baseline, with spring and damper coefficients reduced by 15 percent; evidence scratch/williams_ride_and_acceleration_20261018"
     }
   ],
   "questionnaire": "docs/f1_1997_williams_physical_profile_questionnaire.md",
   "resolution": {
     "domain_digests": {
-      "aerodynamics": "b8c2b16b08d89ab357afb65c936b9bc758fb156f3974ff9813d15092b96bdb14",
+      "aerodynamics": "77844ac2c8a0a8a6826b4350aa434676d2f81f0c35b1c23b1ea265073dcc713d",
       "brakes": "42fc0593846d009dc8bf1f03f703b6ebebea5c3e5a0572060e4521eed5e8e100",
       "chassis": "504b41b070156bffc27360b57623bdcc5c1fbe96a614d3079723e59eab0004b5",
       "coupled_world": "079546b5cc16578ea90615ce6fd3a5a560739331c1ee0e9cd7cf30aed236f175",
       "driving_assistance": "fbf2e5298355e4e6da4727a29ee75d6bf4317c9c57401e0213bf1be7f5e394a1",
       "fuel": "788169efbcafcfd722283e6c21da608a5dc1c27a2ede6caccb88a70feaa8acad",
-      "powertrain": "1d9a276f29c74c2da009c74db2b115f1598e6b4f5a97123a0b941ac610e6be49",
+      "powertrain": "cdecb4cfac3feca3fbc9c4e9c734f65722caab2bf8af144d89e4d6e05f79e54e",
       "steering": "16a83857b2159b22c4e73510e3afdd7a2ab322dd34b5246a43b044b1c228097d",
-      "suspension": "674514710094be2719a6e0d5a5afa6e70d42f970906569ea3088f5b4a3182c4c",
+      "suspension": "401cc43a34e7707cff1805f6fceab44e8f61b17031731a563b9b64166578c7bd",
       "tires": "34a6ea49aecb60201d8c7150fad89a69699d1c20593fc2824628f6bfc00cf3e9",
       "underfloor_contact": "6b6f9c4bb82f0e1067e3213f82def931e648bdcd5350ddeab3b204c697c5b557"
     },
-    "global_digest_sha256": "a44787eebbd0ed08591f98ec38be951dc8a295c9f09cc2dd260923ce28fd6ef8",
+    "global_digest_sha256": "8be0daa00e8bbed83c2f267d15eb36da534c07cc2b3129ce6b6b4589fdf92ab6",
     "manifest_digest_sha256": "33af96f7e95c02ef2d95a13f3288d00eb7772ae87e77b1cd6c311395a019638f",
     "resolved_domains": 18
   },
