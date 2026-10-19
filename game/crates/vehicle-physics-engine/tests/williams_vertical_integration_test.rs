@@ -245,7 +245,7 @@ fn invalid_linkage_keeps_the_external_contact_impulse_and_moment() {
             body,
             center_of_gravity_local,
         );
-        assert!(wrench.paths.singular);
+        assert!(!wrench.paths.singular);
         let expected_force_world = if grounded {
             contact_force_world
         } else {
@@ -260,5 +260,58 @@ fn invalid_linkage_keeps_the_external_contact_impulse_and_moment() {
         };
         assert!((wrench.force_world - expected_force_world).length() < 1e-10);
         assert!((wrench.torque_world - expected_torque_world).length() < 1e-10);
+    }
+}
+
+#[test]
+fn equivalent_suspension_preserves_all_six_chassis_velocities() {
+    let configuration = williams_configuration();
+    let mut simulator = VehicleSimulator::new(configuration, Vec3::new(2.0, 10.0, -3.0), 0.0);
+    simulator.state.suspension.select_backend(&simulator.config, SuspensionBackend::Simplified);
+    let linear_velocity = Vec3::new(2.0, 3.0, -4.0);
+    let angular_velocity = Vec3::new(0.2, -0.3, 0.4);
+    simulator.state.linear_velocity = linear_velocity;
+    simulator.state.angular_velocity = angular_velocity;
+    let body = simulator.state.body_kinematics();
+    let samples = [TriRaycastSample::default(); 4];
+    simulator.solve_external(body, &VehicleInput::default(), &samples, 1.0 / 120.0);
+    assert_eq!(simulator.state.linear_velocity, linear_velocity);
+    assert_eq!(simulator.state.angular_velocity, angular_velocity);
+    assert_eq!(simulator.state.transform.origin, body.transform.origin);
+    simulator.step(&VehicleInput::default(), &samples, 1.0 / 120.0);
+    let displacement = simulator.state.transform.origin - body.transform.origin;
+    assert!(displacement.x > 0.0 && displacement.y > 0.0 && displacement.z < 0.0);
+    assert!(simulator.state.angular_velocity.x > 0.0);
+    assert!(simulator.state.angular_velocity.y < 0.0);
+    assert!(simulator.state.angular_velocity.z > 0.0);
+    let basis = simulator.state.transform.basis;
+    assert!(basis.x.y.abs() > 1e-5 && basis.y.z.abs() > 1e-5 && basis.z.x.abs() > 1e-5);
+}
+
+#[test]
+fn equivalent_suspension_uses_constant_wheel_rates_without_internal_link_forces() {
+    let configuration = williams_configuration();
+    let mut suspension = SuspensionSystem::new(&configuration);
+    suspension.select_backend(&configuration, SuspensionBackend::Simplified);
+    assert!(!suspension.resolves_internal_link_forces());
+    let simulator = VehicleSimulator::new(configuration.clone(),
+        Vec3::new(0.0, default_spawn_height(&configuration), 0.0), 0.0);
+    let samples = planar_samples(&simulator);
+    let mut reference_ratios = [0.0; 4];
+    for tick in 0..120 {
+        suspension.step(&configuration, &samples, 1.0 / 120.0);
+        for (index, state) in suspension.wheels.iter().enumerate() {
+            if tick == 0 { reference_ratios[index] = state.motion_ratio; }
+            assert!(reference_ratios[index] > 0.0);
+            assert_eq!(state.motion_ratio, reference_ratios[index]);
+            assert_eq!(state.motion_ratio_rate_per_m, 0.0);
+            assert_eq!(state.rod_axial_force_n, 0.0);
+            assert_eq!(state.load_path_element_n, 0.0);
+            assert_eq!(state.load_path_wishbone_n, 0.0);
+            assert_eq!(state.load_path_other_n, 0.0);
+            assert_eq!(state.hub_lateral_m, 0.0);
+            assert_eq!(state.hub_long_m, 0.0);
+            assert!(state.total_normal_force.is_finite());
+        }
     }
 }

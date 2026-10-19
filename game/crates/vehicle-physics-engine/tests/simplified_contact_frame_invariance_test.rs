@@ -8,7 +8,6 @@ const REAR_LEFT_ROAD_BUMP_METRES: f64 = 0.015;
 const CONTACT_FRAME_FORCE_TOLERANCE_NEWTONS: f64 = 1.0e-6;
 const CONTACT_FRAME_TORQUE_TOLERANCE_NEWTON_METRES: f64 = 1.0e-6;
 const REFERENCE_TOLERANCE_RELATIVE: f64 = 1.0e-9;
-const REAR_HUB_OFFSET_ASYMMETRY_MINIMUM_METRES: f64 = 1.0e-4;
 
 const STANDARD_REFERENCE_FORCE_WORLD: Vec3 =
     Vec3::new(-2.3576611103981833, 4564.5060203667545, 13906.706151102593);
@@ -19,9 +18,9 @@ const STANDARD_REFERENCE_YAW_QUARTER_TURN_FORCE_WORLD: Vec3 =
 const STANDARD_REFERENCE_YAW_QUARTER_TURN_TORQUE_WORLD: Vec3 =
     Vec3::new(13.492229137931417, -1681.6492534120462, 4224.368375912697);
 const SIMPLIFIED_REFERENCE_FORCE_WORLD: Vec3 =
-    Vec3::new(-2.3253507068261, 4564.413259416311, 13906.538403592538);
+    Vec3::new(90.83958702655487, 4435.425285030558, 13650.775945107878);
 const SIMPLIFIED_REFERENCE_TORQUE_WORLD: Vec3 =
-    Vec3::new(-4220.146887134046, -1664.8817450913089, 8.201238122244376);
+    Vec3::new(-5552.554412194038, -2302.25057507589, 370.04376605292964);
 
 fn williams_configuration() -> VehicleConfig {
     let repository_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
@@ -114,7 +113,9 @@ struct ContactFrameScenario {
 }
 
 fn contact_frame_scenario(suspension_backend: SuspensionBackend) -> ContactFrameScenario {
-    let configuration = williams_configuration();
+    let mut configuration = williams_configuration();
+    configuration.suspension.front_arb_ratio = 0.15;
+    configuration.suspension.rear_arb_ratio = 0.09;
     let spawn_position_metres = Vec3::new(0.0, default_spawn_height(&configuration), 0.0);
     let mut warm_simulator = VehicleSimulator::new(configuration, spawn_position_metres, 0.0);
     warm_simulator.aerodynamics_backend = AerodynamicsBackend::Simplified;
@@ -174,21 +175,13 @@ fn assert_matches_reference(actual: Vec3, expected: Vec3, label: &str) {
     );
 }
 
-fn assert_rear_hub_offsets_are_asymmetric(scenario: &ContactFrameScenario) {
-    let rear_left = scenario.warm_simulator.state.suspension.wheels[WheelIndex::RearLeft as usize];
-    let rear_right =
-        scenario.warm_simulator.state.suspension.wheels[WheelIndex::RearRight as usize];
-    let lateral_asymmetry = (rear_left.hub_lateral_m - rear_right.hub_lateral_m).abs();
-    assert!(
-        lateral_asymmetry > REAR_HUB_OFFSET_ASYMMETRY_MINIMUM_METRES,
-        "rear hub lateral offsets are symmetric ({lateral_asymmetry}); the scenario cannot expose a contact frame error"
-    );
-}
-
 #[test]
 fn simplified_contact_rotates_with_the_body_frame() {
     let scenario = contact_frame_scenario(SuspensionBackend::Simplified);
-    assert_rear_hub_offsets_are_asymmetric(&scenario);
+    for wheel in scenario.warm_simulator.state.suspension.wheels {
+        assert_eq!(wheel.hub_lateral_m, 0.0);
+        assert_eq!(wheel.hub_long_m, 0.0);
+    }
     let mut outputs = Vec::new();
     for yaw_radians in [0.0, FRAC_PI_2, PI] {
         let rotation = Mat3::from_axis_angle(Vec3::UP, yaw_radians);

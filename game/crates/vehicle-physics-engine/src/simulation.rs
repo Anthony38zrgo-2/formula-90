@@ -479,8 +479,9 @@ impl VehicleSimulator {
                 } else { 0.0 };
             }
         } else {
-            st.suspension.step_with_modifiers_and_body_orientation(
-                cfg, &thermal_modifiers, samples, dt, basis,
+            st.suspension.step_with_modifiers_and_body_kinematics(
+                cfg, &thermal_modifiers, samples, dt, BodyKinematics { transform: st.transform, orientation: st.orientation,
+                    linear_velocity: st.linear_velocity, angular_velocity: st.angular_velocity },
             );
         }
 
@@ -604,7 +605,7 @@ impl VehicleSimulator {
                         st.powertrain.brake_torques[i],
                     );
                 }
-                if is_geo && coupled_context.is_none() {
+                if is_geo && st.suspension.resolves_internal_link_forces() && coupled_context.is_none() {
                     if let Some(geo) = cfg.suspension.geometric_suspension.as_ref() {
                         let ws = &st.suspension.wheels[i];
                         let q = ws.suspension_compression_m
@@ -741,7 +742,7 @@ impl VehicleSimulator {
 
             if coupled_context.is_some() { continue; }
 
-            if is_geo {
+            if is_geo && st.suspension.resolves_internal_link_forces() {
                 // SUS-GEO-05: same tyre/contact load, transmitted through the
                 // linkage anchors (moments from hardpoints, not the patch).
                 if let Some(geo) = cfg.suspension.geometric_suspension.as_ref() {

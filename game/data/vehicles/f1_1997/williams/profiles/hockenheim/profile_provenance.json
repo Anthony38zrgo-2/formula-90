@@ -43,7 +43,7 @@
       "classification": "estimated",
       "domain": "suspension.json",
       "path": "suspension.front.arb_ratio and suspension.rear.arb_ratio",
-      "source": "Human-requested roll stiffness increase: three times the inherited base ratios, front 0.15 to 0.45 and rear 0.09 to 0.27"
+      "source": "Human-requested roll stiffness increase over the inherited base ratios: front 0.15 to 1.00 and rear 0.09 to 0.80"
     },
     {
       "classification": "derived",

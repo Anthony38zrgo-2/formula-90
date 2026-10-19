@@ -379,7 +379,7 @@
   ],
   "physics_digest_contract": "vehicle_profile_provenance_v1",
   "physics_profile": "res://data/vehicles/f1_1997/williams/profiles/hockenheim/vehicle.json",
-  "physics_sha256": "2ddcd61b575b92893012dfb560e895e5bed4aaf05981467ef896ebe06349dbeb",
+  "physics_sha256": "20b74e5a6d896006e1cd82f296a609744b849e6b3f04f51545aa302e2722c17b",
   "physics_state": "resolved by the native profile resolver",
   "profile_provenance": {
     "domain_count": 18,

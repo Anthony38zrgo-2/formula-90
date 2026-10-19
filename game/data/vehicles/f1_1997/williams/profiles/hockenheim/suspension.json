@@ -2,7 +2,7 @@
   "suspension": {
     "use_authored_wheel_centers": true,
     "front": {
-      "arb_ratio": 0.45,
+      "arb_ratio": 1.00,
       "bump_damp_multiplier": 1.0,
       "bump_stop_multiplier": 2.6,
       "camber": -0.06981317008,
@@ -266,7 +266,7 @@
     "model": "geometric",
     "model_version": 1,
     "rear": {
-      "arb_ratio": 0.27,
+      "arb_ratio": 0.80,
       "bump_damp_multiplier": 0.9,
       "bump_stop_multiplier": 2.8,
       "camber": -0.02617993878,
