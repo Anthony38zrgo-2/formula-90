@@ -21,6 +21,11 @@ var braking_ticks := 0
 var control_ticks := 0
 var failure_reason := ""
 var finished := false
+var session_scene_path := "res://scenes/runtime/vehicle_test_session.tscn"
+var target_laps := 2
+var driver_port := 39194
+var maximum_simulated_seconds := 600.0
+var diagnostic_file: FileAccess
 var start_milliseconds := 0
 var steering_mapping: Array = []
 var observation_mode := false
@@ -37,6 +42,14 @@ func _initialize() -> void:
 
 func initialize_validation() -> void:
 	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--port="):
+			driver_port = int(argument.trim_prefix("--port="))
+		if argument.begins_with("--scene="):
+			session_scene_path = argument.trim_prefix("--scene=")
+		if argument.begins_with("--laps="):
+			target_laps = int(argument.trim_prefix("--laps="))
+		if argument.begins_with("--maximum-seconds="):
+			maximum_simulated_seconds = float(argument.trim_prefix("--maximum-seconds="))
 		if argument == "--observe":
 			observation_mode = true
 		if argument.begins_with("--output="):
@@ -55,7 +68,7 @@ func initialize_validation() -> void:
 		push_error("Driver control frequency exceeds the mechanical frequency")
 		quit(1)
 		return
-	connection.connect_to_host("127.0.0.1", 39194)
+	connection.connect_to_host("127.0.0.1", driver_port)
 	var connection_deadline := Time.get_ticks_msec() + 10000
 	while connection.get_status() != StreamPeerTCP.STATUS_CONNECTED:
 		connection.poll()
@@ -65,7 +78,7 @@ func initialize_validation() -> void:
 			return
 		await process_frame
 	connection.set_no_delay(true)
-	var session: Node = load("res://scenes/runtime/vehicle_test_session.tscn").instantiate()
+	var session: Node = load(session_scene_path).instantiate()
 	root.add_child(session)
 	current_scene = session
 	for settling_frame in 10:
@@ -85,7 +98,7 @@ func initialize_validation() -> void:
 	var second: Array = racing_line["waypoints"][1]["pos"]
 	var origin := track.to_global(Vector3(float(first[0]), float(first[1]), float(first[2])))
 	var next := track.to_global(Vector3(float(second[0]), float(second[1]), float(second[2])))
-	vehicle.call("reset_vehicle", origin + Vector3.UP * 0.35, atan2(-(next.x - origin.x), -(next.z - origin.z)))
+	vehicle.call("reset_vehicle", origin + Vector3.UP * float(vehicle.call("get_default_spawn_height")), atan2(-(next.x - origin.x), -(next.z - origin.z)))
 	vehicle.set("automatic_transmission", true)
 	vehicle.call("set_throttle_amount", 0.0)
 	vehicle.call("set_brake_amount", 0.2)
@@ -95,9 +108,11 @@ func initialize_validation() -> void:
 	telemetry_file.store_csv_line(["time_seconds", "arc_metres", "travelled_metres", "lateral_metres", "speed_metres_per_second", "target_speed_metres_per_second", "steering", "throttle", "brake", "gear", "engine_revolutions_per_minute", "height_metres", "tilt_degrees", "recovery_speed_fraction", "available_half_width_metres", "canonical_steering", "position_x_metres", "position_z_metres", "heading_radians", "planned_acceleration_metres_per_second_squared", "regularized_acceleration_metres_per_second_squared", "longitudinal_demand_fraction", "front_capacity_scale", "rear_capacity_scale", "front_peak_utilization", "rear_peak_utilization", "understeer_detected", "critical_grip_state", "capacity_updates", "planning_updates", "slow_state_updates"])
 	if bool(driver_configuration["live_grip_control"]["record_observations"]):
 		observations_file = FileAccess.open(output_directory.path_join("driver_observations.jsonl"), FileAccess.WRITE)
+	if "--diagnostics" in OS.get_cmdline_user_args():
+		diagnostic_file = FileAccess.open(output_directory.path_join("physical_diagnostics.jsonl"), FileAccess.WRITE)
 	start_milliseconds = Time.get_ticks_msec()
 	physics_frame.connect(advance_validation)
-	print("FUJI_SIMPLIFIED_DRIVER_READY physics_hertz=%d control_hertz=%s maximum_speed=null target_laps=2" % [Engine.physics_ticks_per_second, driver_configuration["live_grip_control"]["control_hertz"]])
+	print("FUJI_SIMPLIFIED_DRIVER_READY physics_hertz=%d control_hertz=%s maximum_speed=null target_laps=%d" % [Engine.physics_ticks_per_second, driver_configuration["live_grip_control"]["control_hertz"], target_laps])
 
 func disable_player_input(node: Node) -> void:
 	var script: Script = node.get_script()
@@ -175,6 +190,10 @@ func advance_validation() -> void:
 	if command.is_empty():
 		finish_validation()
 		return
+	if diagnostic_file != null:
+		var local_velocity := vehicle.global_basis.inverse() * vehicle.linear_velocity
+		var local_angular_velocity := vehicle.global_basis.inverse() * vehicle.angular_velocity
+		diagnostic_file.store_line(JSON.stringify({"time_seconds": elapsed_seconds, "position": vehicle.global_position, "body_basis": vehicle.global_basis, "local_velocity": local_velocity, "local_angular_velocity": local_angular_velocity, "steer_angle_radians": vehicle.call("get_steer_angle_rad"), "normal_forces": Array(vehicle.call("get_normal_forces")), "compressions": Array(vehicle.call("get_wheel_compressions")), "tire_state": vehicle.call("get_tire_state_snapshot"), "brake_state": vehicle.call("get_brake_state_snapshot"), "command": command, "input": vehicle.get("steering_input")}))
 	var arc := float(command["arc_length_metres"])
 	var progress := arc - previous_arc_metres
 	if progress < -lap_length_metres * 0.5:
@@ -198,8 +217,8 @@ func advance_validation() -> void:
 		failure_reason = "Invalid or overturned physical state"
 	if elapsed_seconds - last_progress_seconds > 15.0:
 		failure_reason = "Vehicle stalled"
-	if elapsed_seconds >= 600.0:
-		if observation_mode and lap_crossing_seconds.size() >= 2:
+	if elapsed_seconds >= maximum_simulated_seconds:
+		if observation_mode and lap_crossing_seconds.size() >= target_laps:
 			finish_validation()
 			return
 		failure_reason = "Time limit reached"
@@ -227,7 +246,7 @@ func advance_validation() -> void:
 	if observation_mode and not controls_capture_requested and elapsed_seconds >= 2.0:
 		controls_capture_requested = true
 		call_deferred("capture_controls_overlay")
-	if not failure_reason.is_empty() or (lap_crossing_seconds.size() >= 2 and not observation_mode):
+	if not failure_reason.is_empty() or (lap_crossing_seconds.size() >= target_laps and not observation_mode):
 		finish_validation()
 
 func capture_controls_overlay() -> void:
@@ -238,11 +257,13 @@ func finish_validation() -> void:
 	finished = true
 	vehicle.call("set_throttle_amount", 0.0)
 	vehicle.call("set_brake_amount", 1.0)
+	if diagnostic_file != null:
+		diagnostic_file.close()
 	if observations_file != null:
 		observations_file.close()
 	telemetry_file.close()
 	connection.disconnect_from_host()
-	var passed := failure_reason.is_empty() and lap_crossing_seconds.size() >= 2
+	var passed := failure_reason.is_empty() and lap_crossing_seconds.size() >= target_laps
 	var report := {"passed": passed, "failure_reason": failure_reason, "completed_laps": lap_crossing_seconds.size(), "lap_crossing_seconds": lap_crossing_seconds, "flying_lap_seconds": lap_crossing_seconds[1] - lap_crossing_seconds[0] if lap_crossing_seconds.size() >= 2 else null, "simulated_seconds": elapsed_seconds, "travelled_metres": travelled_metres, "lap_length_metres": lap_length_metres, "maximum_speed_kilometres_per_hour": maximum_speed_metres_per_second * 3.6, "maximum_lateral_metres": maximum_lateral_metres, "maximum_tilt_degrees": maximum_tilt_degrees, "full_throttle_ticks": full_throttle_ticks, "braking_ticks": braking_ticks, "control_ticks": control_ticks, "physical_frequency_hertz": Engine.physics_ticks_per_second, "control_frequency_hertz": driver_configuration["live_grip_control"]["control_hertz"], "maximum_speed_metres_per_second": null, "automatic_transmission": vehicle.get("automatic_transmission"), "driving_aids_mask": vehicle.get("aids_enabled_mask"), "wall_seconds": float(Time.get_ticks_msec() - start_milliseconds) / 1000.0, "build_source": FileAccess.get_file_as_string("res://BUILD_SOURCE").strip_edges(), "physics_source": "Canonical Godot rigid body with Rust force evaluation", "backend_selection": {"aerodynamics": OS.get_environment("FORMULA90_AERODYNAMICS_BACKEND"), "suspension": OS.get_environment("FORMULA90_SUSPENSION_BACKEND"), "tires": OS.get_environment("FORMULA90_TIRE_BACKEND"), "slow_states": OS.get_environment("FORMULA90_SLOW_STATE_BACKEND")}}
 	FileAccess.open(output_directory.path_join("fuji_report.json"), FileAccess.WRITE).store_string(JSON.stringify(report, "\t"))
 	print("FUJI_SIMPLIFIED_DRIVER_RESULT ", JSON.stringify(report))

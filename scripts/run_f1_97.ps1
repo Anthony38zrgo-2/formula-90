@@ -1,10 +1,15 @@
 [CmdletBinding()]
 param(
     [string]$GodotPath,
-    [switch]$ValidateRuntimeOnly
+    [switch]$ValidateRuntimeOnly,
+    [string]$AutonomousDriverOutputDirectory,
+    [ValidateRange(1, 10)][int]$AutonomousDriverLaps = 1,
+    [ValidateRange(30, 7200)][int]$AutonomousDriverMaximumSeconds = 180,
+    [ValidateRange(1024, 65535)][int]$AutonomousDriverPort = 39194
 )
 
 $ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $false
 $root = Split-Path -Parent $PSScriptRoot
 $game = Join-Path $root 'game'
 $scene = 'res://scenes/runtime/williams_hockenheim_villenueve_fuji_test_session.tscn'
@@ -116,6 +121,12 @@ $env:APPDATA = (Resolve-Path -LiteralPath $runtimeAppData).Path
 $env:LOCALAPPDATA = (Resolve-Path -LiteralPath $runtimeLocalAppData).Path
 $godot = Resolve-Godot $GodotPath
 
+$env:FORMULA90_AERODYNAMICS_BACKEND = 'simplified'
+$env:FORMULA90_SUSPENSION_BACKEND = 'simplified'
+$env:FORMULA90_TIRE_BACKEND = 'simplified'
+$env:FORMULA90_SLOW_STATE_BACKEND = 'simplified'
+Write-Host 'Fisicas simplificadas activas: aerodinamica, suspension, neumaticos y estados termicos.' -ForegroundColor Cyan
+
 Write-Host "Importando y validando $variantLabel..." -ForegroundColor Cyan
 & $godot --headless --path $game --import
 if ($LASTEXITCODE -ne 0) { throw "Godot no pudo importar el runtime $variantLabel ($LASTEXITCODE)." }
@@ -125,6 +136,20 @@ if ($ValidateRuntimeOnly) {
     return
 }
 
+if ($AutonomousDriverOutputDirectory) {
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    & $godot --headless --fixed-fps 120 --path $game --script 'res://tests/test_simplified_autonomous_driver_fuji.gd' -- "--output=$AutonomousDriverOutputDirectory" "--scene=$scene" "--laps=$AutonomousDriverLaps" "--maximum-seconds=$AutonomousDriverMaximumSeconds" "--port=$AutonomousDriverPort" '--diagnostics' *> (Join-Path $AutonomousDriverOutputDirectory 'godot_console.log')
+    $godotExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $previousErrorActionPreference
+    Write-Host "Godot autonomous run finished with exit code $godotExitCode"
+    exit $godotExitCode
+}
+
 Write-Host "Iniciando $variantLabel con $scene" -ForegroundColor Green
+$previousErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 & $godot --path $game $scene
-exit $LASTEXITCODE
+$godotExitCode = $LASTEXITCODE
+$ErrorActionPreference = $previousErrorActionPreference
+exit $godotExitCode
