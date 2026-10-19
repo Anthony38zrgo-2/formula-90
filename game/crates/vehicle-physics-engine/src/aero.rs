@@ -191,6 +191,14 @@ pub struct UnderfloorAeroConfig {
     /// Reattachment occurs above choke_height_m * this multiplier.
     pub choke_recovery_ratio: f64,
     pub separated_flow_factor: f64,
+    /// Physical floor clearance above the design contact plane at the front axle (m).
+    /// `None` keeps the native absolute probe layout for profiles without a
+    /// vehicle-local floor reference.
+    pub floor_clearance_front_m: Option<f64>,
+    /// Physical floor clearance above the design contact plane at the rear axle (m).
+    pub floor_clearance_rear_m: Option<f64>,
+    /// Probe mounting offset removed from the diffuser-throat reading (m).
+    pub throat_probe_offset_m: f64,
 }
 impl Default for UnderfloorAeroConfig {
     fn default() -> Self {
@@ -218,8 +226,15 @@ impl Default for UnderfloorAeroConfig {
             probe_recovery_tau_s: 0.100,
             choke_recovery_ratio: 1.5,
             separated_flow_factor: 0.20,
+            floor_clearance_front_m: None,
+            floor_clearance_rear_m: None,
+            throat_probe_offset_m: default_throat_probe_offset_m(),
         }
     }
+}
+
+fn default_throat_probe_offset_m() -> f64 {
+    0.040
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -559,8 +574,8 @@ impl AeroEnvironment {
                 (h + 0.90 * slope).max(0.0),
                 (h + 0.90 * slope).max(0.0),
                 h,
-                (h - 0.85 * slope + 0.040).max(0.0),
-                (h - 1.65 * slope + 0.040).max(0.0),
+                (h - 0.85 * slope + config.throat_probe_offset_m).max(0.0),
+                (h - 1.65 * slope + config.throat_probe_offset_m).max(0.0),
             ],
             valid_mask: 0x1f,
             rake_rad: config.optimal_rake_deg.to_radians(),
@@ -570,7 +585,7 @@ impl AeroEnvironment {
         }
     }
 
-    fn geometry(&self, mode: AeroProbeMode) -> GroundGeometry {
+    fn geometry(&self, mode: AeroProbeMode, throat_probe_offset_m: f64) -> GroundGeometry {
         if mode == AeroProbeMode::Disabled {
             return GroundGeometry {
                 status: AeroGroundStatus::Disabled,
@@ -610,9 +625,9 @@ impl AeroEnvironment {
             None
         };
         let (rear_measured, rear_z) = if valid(3) {
-            (Some((self.clearance_m[3] - 0.040).max(0.0)), 0.85)
+            (Some((self.clearance_m[3] - throat_probe_offset_m).max(0.0)), 0.85)
         } else if valid(4) {
-            (Some((self.clearance_m[4] - 0.040).max(0.0)), 1.65)
+            (Some((self.clearance_m[4] - throat_probe_offset_m).max(0.0)), 1.65)
         } else {
             (None, 0.85)
         };
@@ -928,9 +943,10 @@ impl AeroForces {
         };
         let axle_load = -force.y;
         let moment_at_origin = torque + k.center_of_mass_m.cross(force);
-        self.front_axle_downforce =
-            (0.5 * config.chassis.wheelbase * axle_load - moment_at_origin.x) / config.chassis.wheelbase;
-        self.rear_axle_downforce = axle_load - self.front_axle_downforce;
+        let (front_axle_downforce, rear_axle_downforce) =
+            aero_axle_load_split(config, axle_load, moment_at_origin.x);
+        self.front_axle_downforce = front_axle_downforce;
+        self.rear_axle_downforce = rear_axle_downforce;
         self.balance_front = if axle_load > 1e-8 {
             self.front_axle_downforce / axle_load
         } else {
@@ -983,7 +999,7 @@ impl AeroForces {
         floor: &UnderfloorAeroConfig,
         dt: f64,
     ) -> GroundFactors {
-        let mut measured = env.geometry(k.probe_mode);
+        let mut measured = env.geometry(k.probe_mode, floor.throat_probe_offset_m);
         if self.state.has_ground_sample && measured.valid_probe_mask & 3 != 3 {
             // Missing one side must not instantly restore a previously lost seal.
             measured.roll_rad = self.state.last_ground.roll_rad;
@@ -1207,8 +1223,29 @@ fn wing_polar_at(c: &WingAeroConfig, angle: f64) -> (f64, f64) {
         endpoint.cd + fade * (c.stalled_drag_coefficient - endpoint.cd),
     )
 }
-fn height_efficiency(h: f64, c: &UnderfloorAeroConfig) -> f64 {
-    if h <= 0.0 {
+/// Front/rear axle split of the aerodynamic load resolved at the real axle
+/// stations. Symmetric profiles whose axles sit at +/- wheelbase/2 reduce to the
+/// classic midpoint formula exactly.
+pub fn aero_axle_load_split(
+    config: &VehicleConfig,
+    downforce_newtons: f64,
+    moment_about_origin_x: f64,
+) -> (f64, f64) {
+    let front_z = config.chassis.axle_center_z(WheelIndex::FrontLeft);
+    let rear_z = config.chassis.axle_center_z(WheelIndex::RearLeft);
+    let span = rear_z - front_z;
+    if !downforce_newtons.is_finite()
+        || !moment_about_origin_x.is_finite()
+        || !span.is_finite()
+        || span.abs() <= 1e-6
+    {
+        return (0.5 * downforce_newtons, 0.5 * downforce_newtons);
+    }
+    let front = (rear_z * downforce_newtons - moment_about_origin_x) / span;
+    (front, downforce_newtons - front)
+}
+
+fn height_efficiency(h: f64, c: &UnderfloorAeroConfig) -> f64 {    if h <= 0.0 {
         return 0.0;
     }
     if h < c.choke_height_m {
@@ -1456,6 +1493,25 @@ impl AeroModelConfig {
                 "aero.underfloor: inconsistent heights, recovery threshold, rake or position"
                     .into(),
             );
+        }
+        if f.floor_clearance_front_m.is_some() != f.floor_clearance_rear_m.is_some() {
+            return Err(
+                "aero.underfloor: floor clearances must be declared together or not at all".into(),
+            );
+        }
+        for clearance in [f.floor_clearance_front_m, f.floor_clearance_rear_m]
+            .into_iter()
+            .flatten()
+        {
+            if !clearance.is_finite() || clearance <= 0.0 || clearance > f.high_height_m {
+                return Err(
+                    "aero.underfloor: declared floor clearances must be positive and within the height range"
+                        .into(),
+                );
+            }
+        }
+        if !f.throat_probe_offset_m.is_finite() || f.throat_probe_offset_m < 0.0 {
+            return Err("aero.underfloor: throat probe offset must be finite and nonnegative".into());
         }
         for value in [f.bottoming_factor, f.separated_flow_factor] {
             if !value.is_finite() || !(0.0..=1.0).contains(&value) {

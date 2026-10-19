@@ -4,14 +4,10 @@
 
 
 #include <godot_cpp/core/class_db.hpp>
-#include <godot_cpp/classes/box_shape3d.hpp>
-#include <godot_cpp/classes/collision_shape3d.hpp>
 #include <godot_cpp/classes/file_access.hpp>
-#include <godot_cpp/classes/mesh_instance3d.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/os.hpp>
-#include <godot_cpp/variant/typed_array.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include <cmath>
@@ -299,6 +295,7 @@ bool F194RustVehicle::load_rust_dll() {
 	fn_get_ray_length_ = reinterpret_cast<FnPhysicsGetRayLength>(GetProcAddress(hDll, "f1_94_physics_get_ray_length"));
 	fn_get_vehicle_mass_ = reinterpret_cast<FnPhysicsGetVehicleMass>(GetProcAddress(hDll, "f1_94_physics_get_vehicle_mass"));
 	fn_get_default_spawn_height_ = reinterpret_cast<FnPhysicsGetDefaultSpawnHeight>(GetProcAddress(hDll, "f1_94_physics_get_default_spawn_height"));
+	fn_get_underfloor_probe_reference_ = reinterpret_cast<FnPhysicsGetUnderfloorProbeReference>(GetProcAddress(hDll, "f1_94_physics_get_underfloor_probe_reference"));
 	fn_get_center_of_mass_local_ = reinterpret_cast<FnPhysicsGetCenterOfMassLocal>(GetProcAddress(hDll, "f1_94_physics_get_center_of_mass_local"));
 	fn_get_inertia_diagonal_ = reinterpret_cast<FnPhysicsGetInertiaDiagonal>(GetProcAddress(hDll, "f1_94_physics_get_inertia_diagonal"));
 	fn_destroy_ = reinterpret_cast<FnPhysicsDestroy>(GetProcAddress(hDll, "f1_94_physics_destroy"));
@@ -434,82 +431,48 @@ void F194RustVehicle::setup_raycasts() {
 	}
 }
 
-void F194RustVehicle::configure_simplified_underfloor_geometry() {
-	if (!simplified_suspension_enabled || chassis_node_ == nullptr) {
+void F194RustVehicle::apply_declared_underfloor_geometry() {
+	if (!simplified_aerodynamics_enabled
+		|| sim_ptr_ == nullptr
+		|| fn_get_underfloor_probe_reference_ == nullptr
+		|| fn_get_default_spawn_height_ == nullptr
+		|| fn_get_anchor_ == nullptr) {
 		return;
 	}
-	const Transform3D inverse_body = get_global_transform().affine_inverse();
-	TypedArray<Node> meshes = chassis_node_->find_children("*", "MeshInstance3D", true, false);
-	Vector<AABB> mesh_bounds;
-	double floor_minimum = 1.0e9;
-	for (int index = 0; index < meshes.size(); ++index) {
-		MeshInstance3D *mesh = Object::cast_to<MeshInstance3D>(meshes[index]);
-		if (mesh == nullptr || mesh->get_mesh().is_null()) {
-			continue;
-		}
-		const Transform3D relative = inverse_body * mesh->get_global_transform();
-		const AABB bounds = relative.xform(mesh->get_aabb());
-		mesh_bounds.push_back(bounds);
-		floor_minimum = MIN(floor_minimum, bounds.position.y);
-	}
-	if (mesh_bounds.is_empty() || floor_minimum > 1.0e8) {
+	double front_clearance_m = 0.0;
+	double rear_clearance_m = 0.0;
+	double throat_probe_offset_m = 0.0;
+	if (fn_get_underfloor_probe_reference_(sim_ptr_, &front_clearance_m, &rear_clearance_m, &throat_probe_offset_m) == 0) {
 		return;
 	}
-	measured_chassis_floor_local_y_ = floor_minimum;
-
+	const double design_contact_plane_local_y = -fn_get_default_spawn_height_(sim_ptr_);
+	double front_anchor_x = 0.0;
+	double front_anchor_y = 0.0;
+	double front_anchor_z = 0.0;
+	double rear_anchor_x = 0.0;
+	double rear_anchor_y = 0.0;
+	double rear_anchor_z = 0.0;
+	fn_get_anchor_(sim_ptr_, 0, &front_anchor_x, &front_anchor_y, &front_anchor_z);
+	fn_get_anchor_(sim_ptr_, 2, &rear_anchor_x, &rear_anchor_y, &rear_anchor_z);
+	const double axle_span_m = rear_anchor_z - front_anchor_z;
 	for (int probe_index = 0; probe_index < 5; ++probe_index) {
 		RayCast3D *probe = underfloor_raycasts_[probe_index];
 		if (probe == nullptr) {
 			continue;
 		}
 		const Vector3 probe_position = probe->get_position();
-		double station_floor = 1.0e9;
-		for (int bound_index = 0; bound_index < mesh_bounds.size(); ++bound_index) {
-			const AABB &bounds = mesh_bounds[bound_index];
-			const bool covers_x = probe_position.x >= bounds.position.x - 0.05 && probe_position.x <= bounds.position.x + bounds.size.x + 0.05;
-			const bool covers_z = probe_position.z >= bounds.position.z - 0.05 && probe_position.z <= bounds.position.z + bounds.size.z + 0.05;
-			if (covers_x && covers_z) {
-				station_floor = MIN(station_floor, bounds.position.y);
-			}
+		double axle_fraction = axle_span_m > 1e-6 ? (probe_position.z - front_anchor_z) / axle_span_m : 0.0;
+		axle_fraction = CLAMP(axle_fraction, 0.0, 1.0);
+		double station_clearance_m = front_clearance_m + (rear_clearance_m - front_clearance_m) * axle_fraction;
+		if (probe_index == 3 || probe_index == 4) {
+			station_clearance_m += throat_probe_offset_m;
 		}
-		if (station_floor > 1.0e8) {
-			station_floor = floor_minimum;
-		}
-		probe->set_position(Vector3(probe_position.x, station_floor, probe_position.z));
+		probe->set_position(Vector3(
+			probe_position.x,
+			design_contact_plane_local_y + station_clearance_m,
+			probe_position.z));
+		probe->set_target_position(Vector3(0.0, -(station_clearance_m + 0.15), 0.0));
 	}
-
-	AABB floor_footprint;
-	bool has_footprint = false;
-	for (int bound_index = 0; bound_index < mesh_bounds.size(); ++bound_index) {
-		const AABB &bounds = mesh_bounds[bound_index];
-		if (bounds.position.y > floor_minimum + 0.005) {
-			continue;
-		}
-		if (!has_footprint) {
-			floor_footprint = bounds;
-			has_footprint = true;
-		} else {
-			floor_footprint = floor_footprint.merge(bounds);
-		}
-	}
-	if (!has_footprint) {
-		return;
-	}
-	const double floor_thickness = 0.03;
-	CollisionShape3D *floor_collision = Object::cast_to<CollisionShape3D>(find_child("SimplifiedFloorCollision", true, false));
-	if (floor_collision == nullptr) {
-		floor_collision = memnew(CollisionShape3D);
-		floor_collision->set_name("SimplifiedFloorCollision");
-		add_child(floor_collision);
-	}
-	Ref<BoxShape3D> floor_shape;
-	floor_shape.instantiate();
-	floor_shape->set_size(Vector3(floor_footprint.size.x, floor_thickness, floor_footprint.size.z));
-	floor_collision->set_shape(floor_shape);
-	floor_collision->set_position(Vector3(
-		floor_footprint.position.x + floor_footprint.size.x * 0.5,
-		floor_minimum + floor_thickness * 0.5,
-		floor_footprint.position.z + floor_footprint.size.z * 0.5));
 }
 
 void F194RustVehicle::_notification(int p_what) {
@@ -605,9 +568,6 @@ void F194RustVehicle::_ready() {
 	setup_raycasts();
 
 	// Resolve visual wheel and chassis nodes from NodePaths
-	if (!chassis_node_path_.is_empty()) {
-		chassis_node_ = Object::cast_to<Node3D>(get_node_or_null(chassis_node_path_));
-	}
 	if (!front_left_wheel_node_path_.is_empty()) {
 		wheel_nodes_[0] = Object::cast_to<Node3D>(get_node_or_null(front_left_wheel_node_path_));
 	}
@@ -621,7 +581,7 @@ void F194RustVehicle::_ready() {
 		wheel_nodes_[3] = Object::cast_to<Node3D>(get_node_or_null(rear_right_wheel_node_path_));
 	}
 
-	configure_simplified_underfloor_geometry();
+	apply_declared_underfloor_geometry();
 
 	UtilityFunctions::print("[F194RustVehicle] Black-box Rust Physics Core GDExtension ready!");
 }

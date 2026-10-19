@@ -56,7 +56,8 @@ impl AeroForces {
         let mut pressure_shift = 0.0;
         if front_valid && throat_valid {
             let front_height = environment.clearance_m[0];
-            let throat_height = (environment.clearance_m[3] - 0.040).max(0.0);
+            let throat_height =
+                (environment.clearance_m[3] - floor_configuration.throat_probe_offset_m).max(0.0);
             let rake_radians = ((front_height - throat_height) / 1.75).atan();
             if let Some(map) = &floor_configuration.map {
                 let sample = map.sample(front_height, throat_height);
@@ -209,10 +210,10 @@ impl AeroForces {
         };
         let axle_load = -total_force.y;
         let moment_at_origin = total_torque + kinematics.center_of_mass_m.cross(total_force);
-        self.front_axle_downforce = (0.5 * configuration.chassis.wheelbase * axle_load
-            - moment_at_origin.x)
-            / configuration.chassis.wheelbase;
-        self.rear_axle_downforce = axle_load - self.front_axle_downforce;
+        let (front_axle_downforce, rear_axle_downforce) =
+            aero_axle_load_split(configuration, axle_load, moment_at_origin.x);
+        self.front_axle_downforce = front_axle_downforce;
+        self.rear_axle_downforce = rear_axle_downforce;
         self.balance_front = if axle_load > 1e-8 {
             self.front_axle_downforce / axle_load
         } else {

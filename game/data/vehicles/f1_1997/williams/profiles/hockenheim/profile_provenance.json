@@ -722,12 +722,42 @@
       "domain": "suspension.json",
       "path": "suspension.geometry_physical.rear.spring_free_length_m",
       "source": "Preload calculated for 50 mm additional ride height relative to the measured Godot baseline, with spring and damper coefficients reduced by 15 percent; evidence scratch/williams_ride_and_acceleration_20261018"
+    },
+    {
+      "classification": "derived",
+      "domain": "aerodynamics.json",
+      "path": "aero.model.front_wing.area_m2 and aero.model.rear_wing.area_m2",
+      "source": "ClA target 2.070 (Q71) and 47/53 split (Q72) solved against the model equations including the height, rake and floor pressure-shift terms at the nominal 0.030/0.045 m floor clearances; front 0.5347 and rear 0.7122 square metres, verified by the native golden test"
+    },
+    {
+      "classification": "measured",
+      "domain": "aerodynamics.json",
+      "path": "aero.model.front_wing.position_m and aero.model.rear_wing.position_m",
+      "source": "Mean AABB centre of the measured runtime wing elements in the corrected chassis mesh: front wing main elements (0.0, -0.375, -1.749) and rear wing beam plus upper element (0.0, 0.085, 2.192)"
+    },
+    {
+      "classification": "derived",
+      "domain": "aerodynamics.json",
+      "path": "aero.model.underfloor.lift_area_m2 and aero.model.underfloor.position_m",
+      "source": "Underfloor keeps the inherited load share at 1.5949 square metres; pressure centre at the wheelbase midpoint (0.0, -0.501, 0.298008)"
+    },
+    {
+      "classification": "measured",
+      "domain": "aerodynamics.json",
+      "path": "aero.model.underfloor.floor_clearance_front_m, floor_clearance_rear_m and throat_probe_offset_m",
+      "source": "Q38 static floor clearance 0.030 m front and 0.045 m rear above the design contact plane; probes sit on the floor plane so the diffuser-throat mounting offset is zero (Q36 mesh measurement 0.031852 m)"
+    },
+    {
+      "classification": "derived",
+      "domain": "aerodynamics.json",
+      "path": "aero.model.body.drag_coefficient_scope",
+      "source": "Q70 documents Cd 0.83 with A 1.15 square metres as a whole-vehicle reference, so element drag is subtracted from the body reference area"
     }
   ],
   "questionnaire": "docs/f1_1997_williams_physical_profile_questionnaire.md",
   "resolution": {
     "domain_digests": {
-      "aerodynamics": "77844ac2c8a0a8a6826b4350aa434676d2f81f0c35b1c23b1ea265073dcc713d",
+      "aerodynamics": "b63892829c61142a4a449efa8d91c8fbba38f76d87bc4eb3d349e4bbe9530953",
       "brakes": "42fc0593846d009dc8bf1f03f703b6ebebea5c3e5a0572060e4521eed5e8e100",
       "chassis": "504b41b070156bffc27360b57623bdcc5c1fbe96a614d3079723e59eab0004b5",
       "coupled_world": "079546b5cc16578ea90615ce6fd3a5a560739331c1ee0e9cd7cf30aed236f175",
@@ -735,11 +765,11 @@
       "fuel": "788169efbcafcfd722283e6c21da608a5dc1c27a2ede6caccb88a70feaa8acad",
       "powertrain": "cdecb4cfac3feca3fbc9c4e9c734f65722caab2bf8af144d89e4d6e05f79e54e",
       "steering": "16a83857b2159b22c4e73510e3afdd7a2ab322dd34b5246a43b044b1c228097d",
-      "suspension": "401cc43a34e7707cff1805f6fceab44e8f61b17031731a563b9b64166578c7bd",
-      "tires": "34a6ea49aecb60201d8c7150fad89a69699d1c20593fc2824628f6bfc00cf3e9",
+      "suspension": "324c4c167053a4f548ac439f4de2f1aadd4439ce65f7783018364cc9ccfcbf1e",
+      "tires": "783aa938f874cfc791dbc02b688c273869935b8d76d7fc9858d09465f0acb281",
       "underfloor_contact": "6b6f9c4bb82f0e1067e3213f82def931e648bdcd5350ddeab3b204c697c5b557"
     },
-    "global_digest_sha256": "8be0daa00e8bbed83c2f267d15eb36da534c07cc2b3129ce6b6b4589fdf92ab6",
+    "global_digest_sha256": "e8c4141d722d4e9853f3739d7ecfd2bfee89aab3a5b170739a679347078c49ab",
     "manifest_digest_sha256": "33af96f7e95c02ef2d95a13f3288d00eb7772ae87e77b1cd6c311395a019638f",
     "resolved_domains": 18
   },

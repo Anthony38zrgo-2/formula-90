@@ -839,6 +839,42 @@ pub extern "C" fn f1_94_physics_get_default_spawn_height(sim_ptr: *const c_void)
     default_spawn_height(&sim.config)
 }
 
+/// Vehicle-local underfloor probe reference. Returns 1 when the profile declares
+/// the floor clearances and 0 when the legacy absolute probe layout applies.
+#[no_mangle]
+pub extern "C" fn f1_94_physics_get_underfloor_probe_reference(
+    sim_ptr: *const c_void,
+    out_front_clearance_m: *mut f64,
+    out_rear_clearance_m: *mut f64,
+    out_throat_probe_offset_m: *mut f64,
+) -> u32 {
+    if sim_ptr.is_null()
+        || out_front_clearance_m.is_null()
+        || out_rear_clearance_m.is_null()
+        || out_throat_probe_offset_m.is_null()
+    {
+        return 0;
+    }
+    // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
+    let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
+    let floor = &sim.config.aerodynamics.aero_model.underfloor;
+    // SAFETY: the three outputs are non-null (checked above) and writable.
+    unsafe {
+        *out_throat_probe_offset_m = floor.throat_probe_offset_m;
+    }
+    match (floor.floor_clearance_front_m, floor.floor_clearance_rear_m) {
+        (Some(front), Some(rear)) => {
+            // SAFETY: both outputs are non-null (checked above) and writable.
+            unsafe {
+                *out_front_clearance_m = front;
+                *out_rear_clearance_m = rear;
+            }
+            1
+        }
+        _ => 0,
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn f1_94_physics_get_center_of_mass_local(
     sim_ptr: *const c_void,

@@ -379,21 +379,21 @@
   ],
   "physics_digest_contract": "vehicle_profile_provenance_v1",
   "physics_profile": "res://data/vehicles/f1_1997/williams/profiles/hockenheim/vehicle.json",
-  "physics_sha256": "0e86747453e28fef3e24a9f0de784434f5aa1b7e9597fed60932da91a0816e30",
+  "physics_sha256": "e8c4141d722d4e9853f3739d7ecfd2bfee89aab3a5b170739a679347078c49ab",
   "physics_state": "resolved by the native profile resolver",
   "profile_provenance": {
     "domain_count": 18,
     "domain_digests": {
-      "aerodynamics": "b8c2b16b08d89ab357afb65c936b9bc758fb156f3974ff9813d15092b96bdb14",
+      "aerodynamics": "b63892829c61142a4a449efa8d91c8fbba38f76d87bc4eb3d349e4bbe9530953",
       "brakes": "42fc0593846d009dc8bf1f03f703b6ebebea5c3e5a0572060e4521eed5e8e100",
-      "chassis": "4e720eca8fdced65b408dc41ae575690d231d928956e8fd037fa563a2ac66274",
+      "chassis": "504b41b070156bffc27360b57623bdcc5c1fbe96a614d3079723e59eab0004b5",
       "coupled_world": "079546b5cc16578ea90615ce6fd3a5a560739331c1ee0e9cd7cf30aed236f175",
       "driving_assistance": "fbf2e5298355e4e6da4727a29ee75d6bf4317c9c57401e0213bf1be7f5e394a1",
       "fuel": "788169efbcafcfd722283e6c21da608a5dc1c27a2ede6caccb88a70feaa8acad",
-      "powertrain": "1d9a276f29c74c2da009c74db2b115f1598e6b4f5a97123a0b941ac610e6be49",
+      "powertrain": "cdecb4cfac3feca3fbc9c4e9c734f65722caab2bf8af144d89e4d6e05f79e54e",
       "steering": "16a83857b2159b22c4e73510e3afdd7a2ab322dd34b5246a43b044b1c228097d",
-      "suspension": "674514710094be2719a6e0d5a5afa6e70d42f970906569ea3088f5b4a3182c4c",
-      "tires": "34a6ea49aecb60201d8c7150fad89a69699d1c20593fc2824628f6bfc00cf3e9",
+      "suspension": "324c4c167053a4f548ac439f4de2f1aadd4439ce65f7783018364cc9ccfcbf1e",
+      "tires": "783aa938f874cfc791dbc02b688c273869935b8d76d7fc9858d09465f0acb281",
       "underfloor_contact": "6b6f9c4bb82f0e1067e3213f82def931e648bdcd5350ddeab3b204c697c5b557"
     },
     "manually_authored_domains": [
@@ -401,7 +401,7 @@
       "suspension_presentation"
     ],
     "path": "game/data/vehicles/f1_1997/williams/profiles/hockenheim/profile_provenance.json",
-    "sha256": "a5f0c16936e4eaf4b26156922d92b9ff9466af3d1c8d756bf97ad849df412942",
+    "sha256": "09ef66a0227f301da69fd6e74ba2d8aa882728ed17c65fe2e6c71959d25b4083",
     "suspension_presentation_path": "res://data/vehicles/f1_1997/williams/profiles/hockenheim/suspension_presentation.json"
   },
   "provenance": {

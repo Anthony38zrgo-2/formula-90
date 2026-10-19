@@ -8,10 +8,11 @@
     "lag_tau_s": 0.03,
     "model": {
       "body": {
+        "drag_coefficient_scope": "whole_vehicle_reference",
         "wheel_reference_drag_area_m2": 0.0792
       },
       "front_wing": {
-        "area_m2": 0.58,
+        "area_m2": 0.5347,
         "incidence_deg": 18.0,
         "max_angle_deg": 20.0,
         "min_angle_deg": 4.0,
@@ -42,6 +43,11 @@
             "cl": 0.88
           }
         ],
+        "position_m": [
+          0.0,
+          -0.375,
+          -1.749
+        ],
         "yaw_decay_exponent": 1.1
       },
       "limits": {
@@ -51,7 +57,7 @@
         "soft_max_load_ratio": 1.65
       },
       "rear_wing": {
-        "area_m2": 0.95,
+        "area_m2": 0.7122,
         "incidence_deg": 16.0,
         "max_angle_deg": 26.0,
         "min_angle_deg": 6.0,
@@ -82,21 +88,34 @@
             "cl": 1.05
           }
         ],
+        "position_m": [
+          0.0,
+          0.085,
+          2.192
+        ],
         "yaw_decay_exponent": 1.05
       },
       "underfloor": {
         "bottoming_factor": 0.35,
         "choke_height_m": 0.014,
+        "floor_clearance_front_m": 0.03,
+        "floor_clearance_rear_m": 0.045,
         "high_height_m": 0.165,
         "induced_drag_ratio": 0.13,
-        "lift_area_m2": 2.15,
+        "lift_area_m2": 1.5949,
         "optimal_height_m": 0.052,
         "optimal_rake_deg": 0.6,
+        "position_m": [
+          0.0,
+          -0.501,
+          0.298008
+        ],
         "rake_window_deg": 3.25,
         "seal_asymmetry_m": 0.1,
         "seal_roll_rad": 0.15,
         "stall_attack_tau_s": 0.065,
         "stall_recovery_tau_s": 0.105,
+        "throat_probe_offset_m": 0.0,
         "yaw_decay_exponent": 1.2
       },
       "wheels": {

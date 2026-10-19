@@ -58,6 +58,7 @@ typedef double (*FnPhysicsGetTriRaySpan)(void *sim, uint32_t wheel_idx);
 typedef double (*FnPhysicsGetRayLength)(void *sim, uint32_t wheel_idx);
 typedef double (*FnPhysicsGetVehicleMass)(void *sim);
 typedef double (*FnPhysicsGetDefaultSpawnHeight)(void *sim);
+typedef uint32_t (*FnPhysicsGetUnderfloorProbeReference)(void *sim, double *front_clearance_m, double *rear_clearance_m, double *throat_probe_offset_m);
 typedef void (*FnPhysicsGetCenterOfMassLocal)(void *sim, double *x, double *y, double *z);
 typedef void (*FnPhysicsGetInertiaDiagonal)(void *sim, double *x, double *y, double *z);
 typedef void (*FnPhysicsDestroy)(void *sim);
@@ -65,7 +66,6 @@ typedef uint32_t (*FnPhysicsAbiVersion)(void);
 typedef const char *(*FnPhysicsBuildSha)(void);
 typedef bool (*FnPhysicsGetRuntimeConfig)(void *sim, F90RuntimeConfig *out_config);
 typedef bool (*FnPhysicsApplyRuntimeConfig)(void *sim, const F90RuntimeConfig *config);
-
 class F194RustVehicle : public RigidBody3D {
 	GDCLASS(F194RustVehicle, RigidBody3D)
 
@@ -93,6 +93,7 @@ private:
 	FnPhysicsGetRayLength fn_get_ray_length_ = nullptr;
 	FnPhysicsGetVehicleMass fn_get_vehicle_mass_ = nullptr;
 	FnPhysicsGetDefaultSpawnHeight fn_get_default_spawn_height_ = nullptr;
+	FnPhysicsGetUnderfloorProbeReference fn_get_underfloor_probe_reference_ = nullptr;
 	FnPhysicsGetCenterOfMassLocal fn_get_center_of_mass_local_ = nullptr;
 	FnPhysicsGetInertiaDiagonal fn_get_inertia_diagonal_ = nullptr;
 	FnPhysicsDestroy fn_destroy_ = nullptr;
@@ -104,7 +105,6 @@ private:
 	NodePath rear_left_wheel_node_path_;
 	NodePath rear_right_wheel_node_path_;
 
-	Node3D *chassis_node_ = nullptr;
 	Node3D *wheel_nodes_[4] = { nullptr, nullptr, nullptr, nullptr }; // FL, FR, RL, RR
 	Vector3 wheel_base_positions_[4];
 
@@ -115,7 +115,6 @@ private:
 	RayCast3D *underfloor_raycasts_[5] = {};
 	bool simplified_aerodynamics_enabled = false;
 	bool simplified_suspension_enabled = false;
-	double measured_chassis_floor_local_y_ = 0.0;
 
 	// Player Inputs / Overrides
 	bool enable_player_input_ = true;
@@ -258,7 +257,7 @@ private:
 	bool load_rust_dll();
 	void unload_rust_dll();
 	void setup_raycasts();
-	void configure_simplified_underfloor_geometry();
+	void apply_declared_underfloor_geometry();
 	void update_wheel_visuals(double delta);
 	uint32_t detect_surface_type(const RayCast3D *ray) const;
 	void apply_resolved_center_of_mass(const Vector3 &p_center_of_mass);
@@ -280,21 +279,45 @@ public:
 	void solve_forces_for_state(PhysicsDirectBodyState3D *p_state);
 	void _exit_tree() override;
 
-	// NodePath Getters/Setters
-	void set_chassis_node(const NodePath &p_path) { chassis_node_path_ = p_path; }
+	// NodePath Getters/Setters. Scene instantiation may hand the property either
+	// a NodePath or the already-resolved Node, so both references are accepted.
+	void set_chassis_node(const Variant &p_reference) {
+		chassis_node_path_ = node_path_from_reference(p_reference);
+	}
 	NodePath get_chassis_node() const { return chassis_node_path_; }
 
-	void set_front_left_wheel_node(const NodePath &p_path) { front_left_wheel_node_path_ = p_path; }
+	void set_front_left_wheel_node(const Variant &p_reference) {
+		front_left_wheel_node_path_ = node_path_from_reference(p_reference);
+	}
 	NodePath get_front_left_wheel_node() const { return front_left_wheel_node_path_; }
 
-	void set_front_right_wheel_node(const NodePath &p_path) { front_right_wheel_node_path_ = p_path; }
+	void set_front_right_wheel_node(const Variant &p_reference) {
+		front_right_wheel_node_path_ = node_path_from_reference(p_reference);
+	}
 	NodePath get_front_right_wheel_node() const { return front_right_wheel_node_path_; }
 
-	void set_rear_left_wheel_node(const NodePath &p_path) { rear_left_wheel_node_path_ = p_path; }
+	void set_rear_left_wheel_node(const Variant &p_reference) {
+		rear_left_wheel_node_path_ = node_path_from_reference(p_reference);
+	}
 	NodePath get_rear_left_wheel_node() const { return rear_left_wheel_node_path_; }
 
-	void set_rear_right_wheel_node(const NodePath &p_path) { rear_right_wheel_node_path_ = p_path; }
+	void set_rear_right_wheel_node(const Variant &p_reference) {
+		rear_right_wheel_node_path_ = node_path_from_reference(p_reference);
+	}
 	NodePath get_rear_right_wheel_node() const { return rear_right_wheel_node_path_; }
+
+	NodePath node_path_from_reference(const Variant &p_reference) const {
+		switch (p_reference.get_type()) {
+			case Variant::NODE_PATH:
+				return p_reference;
+			case Variant::OBJECT: {
+				Node *node = Object::cast_to<Node>((Object *)p_reference);
+				return (node != nullptr && is_inside_tree() && node->is_inside_tree()) ? get_path_to(node) : NodePath();
+			}
+			default:
+				return NodePath();
+		}
+	}
 
 	// Input / Control Getters/Setters
 	void set_enable_player_input(bool p_enable) { enable_player_input_ = p_enable; }
