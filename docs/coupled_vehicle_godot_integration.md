@@ -10,6 +10,8 @@ This continuation implements an explicit Godot integration candidate. It does no
 
 `PhysicalVehicleWorldController` requires explicit vehicle, presentation-core, profile and physical-package bindings. Every vehicle has its own presentation core. It checks profile agreement and rejects unregistered moving Godot collision bodies.
 
+The Rust world interface can also own supported track-marker cones and portable barriers as dynamic objects: it registers them in the same entity identity space, advances them in the same fixed step and solves their contact impulses with the same generalized solver. Supported objects sleep after a low-motion delay and wake on moving contact; vehicle suspension never sleeps. The Godot controller does not yet spawn or present these objects, and legacy Godot-owned vehicles or unknown moving-body classes remain explicitly unsupported for mixed physical contact.
+
 At physics priority 1000, it queues each vehicle's current input at physical time plus the unconsumed host fraction, then advances the shared Rust world exactly once. Gear requests below -1 mean no change; accepted requests are consumed once. Tree pause pauses the world without consuming physical time.
 
 Native vehicle proxies have zero collision layer/mask and gravity, use a custom integrator, and remain frozen. Their previous Godot force callback and the legacy core force callback return immediately under Rust ownership. A failed candidate stops scheduling and freezes its explicitly bound bodies.

@@ -1,5 +1,5 @@
 use crate::suspension_mass_properties::{vector_is_finite, InertiaTensor};
-use crate::types::Vec3;
+use crate::types::{Mat3, Vec3};
 
 pub const SUSPENSION_GENERALIZED_VELOCITY_COUNT: usize = 10;
 pub type GeneralizedSuspensionVector = [f64; SUSPENSION_GENERALIZED_VELOCITY_COUNT];
@@ -11,6 +11,8 @@ pub struct MovingSuspensionComponent {
     pub mass_kilograms: f64,
     pub inertia_world: InertiaTensor,
     pub center_of_mass_world_metres: Vec3,
+    pub attachment_origin_world_metres: Vec3,
+    pub attachment_orientation_world: Mat3,
     pub linear_velocity_jacobian: [Vec3; SUSPENSION_GENERALIZED_VELOCITY_COUNT],
     pub angular_velocity_jacobian: [Vec3; SUSPENSION_GENERALIZED_VELOCITY_COUNT],
     pub prescribed_linear_velocity_metres_per_second: Vec3,
@@ -216,6 +218,10 @@ impl MovingSuspensionComponent {
             .chain(self.angular_velocity_jacobian.iter())
             .any(|vector| !vector_is_finite(*vector))
             || !vector_is_finite(self.center_of_mass_world_metres)
+            || !vector_is_finite(self.attachment_origin_world_metres)
+            || !vector_is_finite(self.attachment_orientation_world.x)
+            || !vector_is_finite(self.attachment_orientation_world.y)
+            || !vector_is_finite(self.attachment_orientation_world.z)
             || !vector_is_finite(self.prescribed_linear_velocity_metres_per_second)
             || !vector_is_finite(self.prescribed_angular_velocity_radians_per_second)
             || !vector_is_finite(self.linear_acceleration_bias_metres_per_second_squared)

@@ -100,7 +100,10 @@ pub fn apply_generalized_wheel_braking(matrix: &GeneralizedVehicleMatrix, veloci
 pub struct CoupledVehicleEvaluation {
     pub mass_matrix: GeneralizedVehicleMatrix,
     pub generalized_force: GeneralizedVehicleVelocity,
+    pub generalized_acceleration: GeneralizedVehicleVelocity,
     pub suspension_diagnostics: CoupledSuspensionDiagnostics,
+    pub components: Vec<crate::suspension_multibody::MovingSuspensionComponent>,
+    pub wheel_axes_world: [Vec3; 4],
     pub kinetic_energy_joules: f64,
     pub prescribed_generalized_momentum: GeneralizedVehicleVelocity,
     pub damping_elements: Vec<crate::suspension_damping::SuspensionDampingElement>,
@@ -313,8 +316,10 @@ impl CoupledVehicleModel {
         diagnostics.kinetic_energy_joules = kinetic_energy_joules;
         diagnostics.total_energy_joules = kinetic_energy_joules + diagnostics.gravitational_potential_energy_joules
             + diagnostics.elastic_potential_energy_joules;
-        Ok(CoupledVehicleEvaluation { mass_matrix, generalized_force: force, suspension_diagnostics: diagnostics, kinetic_energy_joules,
-            prescribed_generalized_momentum, damping_elements: reference.damping_elements })
+        let crate::suspension_coupled_solver::CoupledSuspensionEvaluation { components, damping_elements, .. } = reference;
+        Ok(CoupledVehicleEvaluation { mass_matrix, generalized_force: force, generalized_acceleration: acceleration,
+            suspension_diagnostics: diagnostics, components, wheel_axes_world, kinetic_energy_joules,
+            prescribed_generalized_momentum, damping_elements })
     }
 
     pub fn prescribed_contact_velocity(&self, state: &CoupledVehicleState, input: &CoupledSuspensionInput,

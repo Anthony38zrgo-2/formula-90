@@ -407,6 +407,8 @@ impl CoupledSuspensionModel {
                     ],
                 },
                 center_of_mass_world_metres: state.body_origin_world_metres + fuel_offset,
+                attachment_origin_world_metres: state.body_origin_world_metres + fuel_offset,
+                attachment_orientation_world: kinematic_input.body_orientation_world,
                 linear_velocity_jacobian: linear_jacobian,
                 angular_velocity_jacobian: [Vec3::ZERO; SUSPENSION_GENERALIZED_VELOCITY_COUNT],
                 prescribed_linear_velocity_metres_per_second: Vec3::ZERO,

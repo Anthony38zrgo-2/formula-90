@@ -108,6 +108,8 @@ impl<'configuration> SuspensionGeometryEvaluationCache<'configuration> {
 pub struct SuspensionComponentPose {
     pub center_of_mass_local_metres: Vec3,
     pub orientation_local: Mat3,
+    pub attachment_origin_local_metres: Vec3,
+    pub attachment_orientation_local: Mat3,
 }
 
 fn multiply_rotations(first: Mat3, second: Mat3) -> Mat3 {
@@ -239,6 +241,8 @@ fn component_pose_with_geometry_cache(
         center_of_mass_local_metres: origin
             + orientation_local.transform_vector(component.center_of_mass_in_attachment_metres),
         orientation_local,
+        attachment_origin_local_metres: origin,
+        attachment_orientation_local: orientation_local,
     })
 }
 
@@ -469,6 +473,12 @@ pub fn moving_component_with_geometry_cache(
             .inertia_about_center_of_mass
             .rotated(orientation_world),
         center_of_mass_world_metres: input.body_origin_world_metres + offset_world,
+        attachment_origin_world_metres: input.body_origin_world_metres
+            + rotation.transform_vector(center.attachment_origin_local_metres),
+        attachment_orientation_world: multiply_rotations(
+            rotation,
+            center.attachment_orientation_local,
+        ),
         linear_velocity_jacobian,
         angular_velocity_jacobian,
         prescribed_linear_velocity_metres_per_second: rotation.transform_vector(

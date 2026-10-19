@@ -1,7 +1,8 @@
 use crate::suspension_mass_properties::vector_is_finite;
 use crate::types::{Mat3, Vec3};
 use parry3d_f64::na::{Isometry3, Matrix3, Point3, Rotation3, Translation3, UnitQuaternion, Vector3};
-use parry3d_f64::query::{contact, cast_shapes, Ray, ShapeCastOptions};
+use parry3d_f64::query::{contact, cast_shapes, DefaultQueryDispatcher, PersistentQueryDispatcher, Ray, ShapeCastOptions};
+use parry3d_f64::query::{ContactManifold, ContactManifoldsWorkspace};
 use parry3d_f64::bounding_volume::BoundingVolume;
 use parry3d_f64::shape::{SharedShape, TriMesh};
 use serde::{Deserialize, Serialize};
@@ -67,6 +68,80 @@ pub struct PhysicalShapeContact {
 
 pub fn physical_vector(vector: Vec3) -> Vector3<f64> { Vector3::new(vector.x, vector.y, vector.z) }
 pub fn vehicle_vector(vector: Vector3<f64>) -> Vec3 { Vec3::new(vector.x, vector.y, vector.z) }
+
+#[derive(Debug, Clone, Serialize)]
+pub struct PhysicalShapeContactPoint {
+    pub point_on_first_local_metres: Vec3,
+    pub point_on_second_local_metres: Vec3,
+    pub point_on_first_world_metres: Vec3,
+    pub point_on_second_world_metres: Vec3,
+    pub separation_metres: f64,
+    pub first_feature_identifier: u32,
+    pub second_feature_identifier: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct PhysicalShapeContactManifold {
+    pub normal_toward_first_world: Vec3,
+    pub points: Vec<PhysicalShapeContactPoint>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct PhysicalWorldShapeManifold {
+    pub shape_index: usize,
+    pub surface_code: u32,
+    pub manifold: PhysicalShapeContactManifold,
+}
+
+pub fn shape_pair_contact_manifolds(
+    first_pose: &Isometry3<f64>,
+    first_shape: &SharedShape,
+    second_pose: &Isometry3<f64>,
+    second_shape: &SharedShape,
+    prediction_metres: f64,
+) -> Result<Vec<PhysicalShapeContactManifold>, String> {
+    if !prediction_metres.is_finite() || prediction_metres <= 0.0 {
+        return Err("Persistent manifold queries require a finite positive prediction distance".into());
+    }
+    let dispatcher = DefaultQueryDispatcher;
+    let relative_pose = first_pose.inv_mul(second_pose);
+    let mut generated: Vec<ContactManifold<(), ()>> = Vec::new();
+    let mut workspace: Option<ContactManifoldsWorkspace> = None;
+    dispatcher
+        .contact_manifolds(
+            &relative_pose,
+            first_shape.as_ref(),
+            second_shape.as_ref(),
+            prediction_metres,
+            &mut generated,
+            &mut workspace,
+        )
+        .map_err(|error| format!("Unsupported persistent manifold query: {error:?}"))?;
+    let mut manifolds = Vec::with_capacity(generated.len());
+    for manifold in generated {
+        let normal_toward_first = first_pose.rotation.transform_vector(&manifold.local_n1);
+        let mut points = Vec::with_capacity(manifold.points.len());
+        for tracked in manifold.points {
+            points.push(PhysicalShapeContactPoint {
+                point_on_first_local_metres: vehicle_vector(tracked.local_p1.coords),
+                point_on_second_local_metres: vehicle_vector(tracked.local_p2.coords),
+                point_on_first_world_metres: vehicle_vector((first_pose * tracked.local_p1).coords),
+                point_on_second_world_metres: vehicle_vector((second_pose * tracked.local_p2).coords),
+                separation_metres: tracked.dist,
+                first_feature_identifier: tracked.fid1.0,
+                second_feature_identifier: tracked.fid2.0,
+            });
+        }
+        if points.is_empty() {
+            continue;
+        }
+        manifolds.push(PhysicalShapeContactManifold {
+            normal_toward_first_world: vehicle_vector(normal_toward_first),
+            points,
+        });
+    }
+    Ok(manifolds)
+}
 
 pub fn physical_pose(position: Vec3, rotation: Mat3) -> Isometry3<f64> {
     let matrix = Matrix3::from_columns(&[physical_vector(rotation.x), physical_vector(rotation.y), physical_vector(rotation.z)]);
@@ -177,6 +252,24 @@ impl PhysicalCollisionWorld {
             }
         }
         Ok(contacts)
+    }
+
+    pub fn world_contact_manifolds(&self, vehicle_pose: &Isometry3<f64>, vehicle_shape: &SharedShape,
+        prediction_metres: f64, wheel_tread: bool) -> Result<Vec<PhysicalWorldShapeManifold>, String> {
+        let mut manifolds = Vec::new();
+        let bounds = vehicle_shape.compute_aabb(vehicle_pose).loosened(prediction_metres);
+        for (shape_index, shape) in self.shapes.iter().enumerate() {
+            if !bounds.intersects(&shape.shape.compute_aabb(&Isometry3::identity())) { continue; }
+            let collision_shape = if wheel_tread && shape.driveable {
+                let Some(impact_shape) = &shape.wheel_impact_shape else { continue; };
+                impact_shape
+            } else { &shape.shape };
+            for manifold in shape_pair_contact_manifolds(&Isometry3::identity(), collision_shape, vehicle_pose, vehicle_shape, prediction_metres)
+                .map_err(|error| format!("{error} with world shape {}", shape.identifier))? {
+                manifolds.push(PhysicalWorldShapeManifold { shape_index, surface_code: shape.surface_code, manifold });
+            }
+        }
+        Ok(manifolds)
     }
 
     pub fn earliest_translation_impact(&self, vehicle_pose: &Isometry3<f64>, vehicle_shape: &SharedShape,

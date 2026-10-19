@@ -107,6 +107,8 @@ fn synthetic_components() -> Vec<MovingSuspensionComponent> {
         mass_kilograms: 600.0,
         inertia_world: diagonal_inertia(300.0, 450.0, 250.0),
         center_of_mass_world_metres: Vec3::ZERO,
+        attachment_origin_world_metres: Vec3::ZERO,
+        attachment_orientation_world: Mat3::IDENTITY,
         linear_velocity_jacobian: body_linear,
         angular_velocity_jacobian: body_angular,
         prescribed_linear_velocity_metres_per_second: Vec3::ZERO,

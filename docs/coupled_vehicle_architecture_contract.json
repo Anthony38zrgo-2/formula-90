@@ -141,6 +141,11 @@
       "responsibility": "audio_playback_and_surface_effects",
       "target_owner": "godot_presentation_consumers",
       "current_owner": "existing_presentation_consumers"
+    },
+    {
+      "responsibility": "supported_dynamic_world_object_state_contact_response_and_lifecycle",
+      "target_owner": "rust_world",
+      "current_owner": "rust_world_candidate"
     }
   ],
   "geometry_library": {

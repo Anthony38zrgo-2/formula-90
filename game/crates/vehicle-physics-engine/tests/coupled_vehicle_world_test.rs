@@ -41,6 +41,7 @@ fn normal_constraint(second: Option<usize>) -> GeneralizedContactConstraint {
     GeneralizedContactConstraint { identifier: "analytical_contact".into(), first_entity: 0, second_entity: second,
         first_jacobians: first, second_jacobians: other, normal_impulse_newton_seconds: 0.0,
         first_prescribed_velocity_metres_per_second: [0.0; 3], second_prescribed_velocity_metres_per_second: [0.0; 3],
+        surface_code: 0,
         tangential_impulse_newton_seconds: [0.0; 2] }
 }
 
@@ -320,7 +321,7 @@ fn profile_resolver_validates_flat_documents_and_preserves_their_powertrain() {
 }
 
 #[test]
-fn unconverged_contact_does_not_commit_partial_impulses_or_velocity() {
+fn rejected_contact_does_not_commit_partial_impulses_or_velocity() {
     let mut matrix = diagonal_mass(100.0);
     matrix[1][1] = 2.0;
     matrix[2][2] = 10.0;
@@ -329,9 +330,11 @@ fn unconverged_contact_does_not_commit_partial_impulses_or_velocity() {
     let mut velocity = [0.0; VEHICLE_GENERALIZED_VELOCITY_COUNT];
     velocity[..3].copy_from_slice(&[-10.0, 3.0, -4.0]);
     let mut velocities = [velocity];
-    let mut constraints = [normal_constraint(None)];
-    let mut settings = actual_configuration().coupled_world.unwrap().contacts;
-    settings.maximum_iterations = 1;
+    let mut constraint = normal_constraint(None);
+    constraint.first_jacobians[1] = [0.0; VEHICLE_GENERALIZED_VELOCITY_COUNT];
+    constraint.first_jacobians[2] = [0.0; VEHICLE_GENERALIZED_VELOCITY_COUNT];
+    let mut constraints = [constraint];
+    let settings = actual_configuration().coupled_world.unwrap().contacts;
     assert!(solve_generalized_vehicle_contacts(&[matrix], &mut velocities, &mut constraints, &settings).is_err());
     assert_eq!(velocities[0], velocity);
     assert_eq!(constraints[0].normal_impulse_newton_seconds, 0.0);

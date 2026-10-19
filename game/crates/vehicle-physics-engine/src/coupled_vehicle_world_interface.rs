@@ -1,6 +1,7 @@
 use crate::coupled_vehicle_world::{CoupledVehicleWorld, CoupledVehicleWorldConfiguration, TimestampedVehicleInput};
+use crate::dynamic_world_objects::DynamicWorldObjectDefinition;
 use crate::physical_collision_world::{PhysicalCollisionWorld, PhysicalWorldPackage};
-use crate::types::Vec3;
+use crate::types::{Quat, Vec3};
 use crate::vehicle_config::VehicleConfig;
 use crate::vehicle_configuration::{
     load_physical_configuration, load_vehicle_configuration_from_authorized_root,
@@ -23,6 +24,10 @@ pub enum CoupledVehicleWorldRequest {
     DestroyWorld { world_identifier: u64 },
     RegisterVehicle { world_identifier: u64, vehicle_profile: String, position_world_metres: Vec3, yaw_radians: f64 },
     RemoveVehicle { world_identifier: u64, entity_identifier: u64 },
+    RegisterDynamicObject { world_identifier: u64, definition: DynamicWorldObjectDefinition, position_world_metres: Vec3, orientation: Quat },
+    RemoveDynamicObject { world_identifier: u64, entity_identifier: u64 },
+    ResetDynamicObject { world_identifier: u64, entity_identifier: u64 },
+    DynamicObjectSnapshots { world_identifier: u64 },
     SubmitInput { world_identifier: u64, entity_identifier: u64, sample: TimestampedVehicleInput },
     Advance { world_identifier: u64, duration_seconds: f64 },
     Snapshots { world_identifier: u64 },
@@ -103,6 +108,22 @@ impl CoupledVehicleWorldRegistry {
                 self.world(world_identifier)?.remove_vehicle(entity_identifier)?;
                 Ok(serde_json::json!({"removed": entity_identifier}))
             }
+            CoupledVehicleWorldRequest::RegisterDynamicObject { world_identifier, definition, position_world_metres, orientation } => {
+                let identifier = self.world(world_identifier)?.register_dynamic_object(definition, position_world_metres, orientation)?;
+                Ok(serde_json::json!({"entity_identifier": identifier}))
+            }
+            CoupledVehicleWorldRequest::RemoveDynamicObject { world_identifier, entity_identifier } => {
+                self.world(world_identifier)?.remove_dynamic_object(entity_identifier)?;
+                Ok(serde_json::json!({"removed": entity_identifier}))
+            }
+            CoupledVehicleWorldRequest::ResetDynamicObject { world_identifier, entity_identifier } => {
+                self.world(world_identifier)?.reset_dynamic_object(entity_identifier)?;
+                Ok(serde_json::json!({"reset": entity_identifier}))
+            }
+            CoupledVehicleWorldRequest::DynamicObjectSnapshots { world_identifier } => {
+                let world = self.world(world_identifier)?;
+                Ok(serde_json::json!({"time_seconds": world.time_seconds, "dynamic_object_snapshots": world.dynamic_object_snapshots()}))
+            }
             CoupledVehicleWorldRequest::SubmitInput { world_identifier, entity_identifier, sample } => {
                 self.world(world_identifier)?.enqueue_input(entity_identifier, sample)?;
                 Ok(serde_json::json!({"queued": entity_identifier}))
@@ -111,11 +132,13 @@ impl CoupledVehicleWorldRegistry {
                 let world = self.world(world_identifier)?;
                 world.advance_host_interval(duration_seconds)?;
                 Ok(serde_json::json!({"time_seconds": world.time_seconds, "snapshots": world.snapshots()?, "events": world.collision_events,
+                    "dynamic_object_snapshots": world.dynamic_object_snapshots(),
                     "unconsumed_host_time_seconds": world.accumulated_host_time_seconds}))
             }
             CoupledVehicleWorldRequest::Snapshots { world_identifier } => {
                 let world = self.world(world_identifier)?;
-                Ok(serde_json::json!({"time_seconds": world.time_seconds, "snapshots": world.snapshots()?}))
+                Ok(serde_json::json!({"time_seconds": world.time_seconds, "snapshots": world.snapshots()?,
+                    "dynamic_object_snapshots": world.dynamic_object_snapshots()}))
             }
             CoupledVehicleWorldRequest::ResetVehicle { world_identifier, entity_identifier, position_world_metres, yaw_radians } => {
                 let world = self.world(world_identifier)?;

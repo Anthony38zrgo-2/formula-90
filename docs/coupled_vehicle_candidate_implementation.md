@@ -38,6 +38,65 @@ Physical kinetic energy includes prescribed rack motion and its cross terms. Fue
 
 Suspension advancement uses semi-implicit force reevaluation, localized travel crossings and simultaneous generalized velocity projection. Quaternion normalization and unsupported-domain errors are explicit. This integrator and the provisional 960 hertz frequency have not passed the required full convergence and performance selection gates.
 
+## M1/M2 continuation
+
+- Item 17: `coupled_vehicle_loads.rs` recovers per-component inertial, contact and
+  attachment wrenches from the solved coupled acceleration, with local axial and
+  couple components, front/rear summaries, visible residuals and a mass-matrix
+  pivot-ratio estimate. Five validation scenarios pass. Loads are model outputs,
+  not structural certification.
+- Item 28: `PhysicalCollisionWorld` uses Parry's persistent manifold dispatcher and
+  returns feature ids and local anchors. `CoupledVehicleWorld` owns a manifold
+  cache with warm starts, per-normal/per-pair reductions, seam deduplication,
+  explicit reset/removal/rotation/stale invalidation and active/retained/age
+  counters. Ten manifold tests pass, including a full resting multi-contact world
+  step with the profile's 100-iteration budget.
+- Item 29: normal contact impulses are solved with a dense active-set LCP over the
+  generalized contact-space effective mass, with a regularization fallback for
+  redundant support sets, restitution targets, warm normal impulses and a
+  projected friction subproblem reconciled over up to forty passes. The redundant
+  four-support and off-center wheel/body response tests pass. A full impact matrix
+  and duplicate-response ownership remain later items.
+- Item 30: the tangential block is an exact 2x2 effective-mass solve per contact
+  with a friction cone and stick/slip projection. Impact material pairing is a
+  per-surface map kept separate from the tire brush grip map, wheel spin enters
+  through the actual contact Jacobian, and tangential warm starts are remapped to
+  the new tangent basis and cone when the normal rotates. The production profile
+  keeps the map empty and uses the global coefficient until calibration; duplicate
+  response ownership remains item 32.
+- Item 31: nonlinear swept shape casts localize the earliest impact with the shape
+  and entity identity; diagnostics record impact time, interval, subdivisions and
+  geometric misses, and budget exhaustion reports the time and shape. Straight and
+  rotating thin-wall tests show no tunneling.
+- Item 32: response ownership is partitioned between compliant tire tread hits
+  (upward driveable normals), rigid impact manifolds (steep driveable and solid
+  surfaces) and internal travel stops. Events carry the owner and the diagnostics
+  count rejected steep tire hits, rigid contacts and wheels at travel limits.
+  Composite curb and bottoming continuity remain for the item 43 matrix.
+- Item 33: pair contacts are assembled by entity identity (fixing spurious
+  first/second-position coupling in chains), solved for all vehicles in one world
+  step and reported through contact-island diagnostics. Three-car chain momentum
+  and middle-car transmission, two-vehicle one-step events and mirrored
+  registration determinism pass. Full restitution/friction multi-contact pair
+  convergence and the complete impact matrix remain open.
+- Item 34: track-marker cones and portable barriers are Rust-owned dynamic world
+  objects with a shared stable identity, shared fixed step, gravity, free-body
+  mass matrices, contact Jacobians, momentum exchange, persistent-contact keys and
+  reset/removal lifecycle. Vehicle/object and object/object contacts enter the same
+  generalized solver and island diagnostics. Legacy Godot-owned vehicles and
+  unknown moving-body classes are explicitly rejected. Seven tests pass. Godot-side
+  object spawning and presentation, proxy-shape fidelity, material pairing and rest
+  stability remain open.
+- Item 35: persistent manifolds track resting steps and use full warm starting once
+  a contact is stable. The solver reports static-friction and sliding constraints,
+  and static contacts receive a bounded tangential position correction that removes
+  the drift caused by pre-solve tangential velocity without freezing suspension.
+  Dynamic objects sleep after a supported low-motion delay and wake on moving
+  contact or support loss; vehicles never sleep. Resting seam contact preserves
+  triangle features, and CCD skips persistent/resting pairs to avoid micro-impact
+  event storms. Five rest-stability tests pass. Stack/pile-up, long-duration
+  friction, curb rest and material calibration remain open.
+
 ## Implemented candidate world and contacts
 
 `coupled_vehicle_world.rs` provides a shared clock, stable entity identities, timestamped inputs applied at their physical times, pause, reset, atomic rejected steps and simultaneous vehicle contact solving. An unsuccessful trial rolls back fuel, thermal, drivetrain and physical state together. No elapsed host time is intentionally discarded.
@@ -48,7 +107,7 @@ The Fuji extraction retains 74 source meshes, 13,696 triangles, transformations,
 
 Configured body boxes and solved wheel cylinders generate contacts. Normal constraints use generalized effective mass. Tangential impulses converge against a projected friction disk with coupled effective masses. Restitution thresholds, iteration budgets, passivity checks and prescribed-actuator work are explicit. Rejected solves do not commit partial impulses or velocities.
 
-Swept bounding volumes reduce candidate pairs. Translation and rotation casts localize candidate impacts, with rollback and re-advancement to the event. Vertical curb faces remain detectable for wheels; tread support is provisionally distinguished from rigid impacts. Articulated-path error bounds, material pairing, persistent feature manifolds, warm starting, mesh-seam stability and dynamic object interoperability are not complete.
+Swept bounding volumes reduce candidate pairs. Translation and rotation casts localize candidate impacts, with rollback and re-advancement to the event. Vertical curb faces remain detectable for wheels; tread support is provisionally distinguished from rigid impacts. Articulated-path error bounds, material pairing, mesh-seam stability, broad dynamic-object class coverage and Godot-side object presentation remain incomplete; supported Rust-owned cones and barriers are implemented under item 34.
 
 ## Native boundary
 
@@ -74,7 +133,9 @@ The reference model now reuses exact geometric solutions across evaluations thro
 
 1. Profile component trajectory differentiation and matrix evaluation; replace repeated runtime geometry solves only with a mathematically equivalent, quantitatively validated approach. Preserve reference comparison and configuration invalidation.
 2. Close complete geometry/derivative envelopes, mechanical joint loads and powertrain/tire work accounting.
-3. Implement persistent contact manifolds, material pairing, articulated continuous-detection bounds and supported dynamic object ownership.
+3. Review the supported dynamic-object ownership candidate, material pairing and
+   articulated continuous-detection bounds; add Godot-side object spawning and
+   presentation before runtime acceptance.
 4. Finish smooth/impact timestep convergence, full contact benches and the configured race-cost gate before selecting the production integrator and frequency.
 5. Implement the single Godot world scheduler, physically inert proxies, authoritative visual snapshots, existing audio/telemetry/gameplay consumers and explicit owner selection.
 6. Produce a clean source-matched build through the canonical launcher, complete standalone/runtime parity and integrated driving/visual review, then prepare the reviewed atomic publication scope.

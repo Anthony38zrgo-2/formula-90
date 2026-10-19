@@ -2,7 +2,8 @@
   "schema_version": 1,
   "authorized_scope": "All 50 items in instrucciones.md",
   "source_branch": "main-clean",
-  "source_head": "001cfc9e6ba0f77a9a9fd0759e82a995228021a9",
+  "source_head": "29d9fc521f28814a7b35e896201971b50614ba18",
+  "source_head_note": "Candidate items 17 and 28-35 were developed on top of this HEAD and are included in the atomic candidate commit; game/BUILD_SOURCE is still awaiting a resealing rebuild.",
   "complete_backlog_delivered": false,
   "runtime_activated": false,
   "human_approved": false,
@@ -207,10 +208,10 @@
         "15",
         "16"
       ],
-      "status": "pending",
+      "status": "implemented_awaiting_review",
       "human_approved": false,
-      "candidate_progress": "Legacy filtered reaction outputs still exist.",
-      "remaining_acceptance": "Recover physical joint and mount forces from dynamic component acceleration and constraint reactions."
+      "candidate_progress": "Coupled component free-body load recovery implemented: effective inertial and contact wrenches, attachment reactions with local axial and couple components, front/rear axle summaries, visible free-body and action/reaction residuals, and a mass-matrix pivot ratio estimate. Static loading, braking, roll, one-wheel bump and travel-stop impact validations pass.",
+      "remaining_acceptance": "Human review of the front/rear load report, the documented hub-radius contact approximation and the step-average closure tolerance; confirm the report shape before runtime telemetry transport."
     },
     {
       "identifier": "18",
@@ -355,10 +356,10 @@
       "dependencies": [
         "27"
       ],
-      "status": "pending",
+      "status": "implemented_awaiting_review",
       "human_approved": false,
-      "candidate_progress": "Candidate constraints are rebuilt cold each solve; entity-based contact identities are stable.",
-      "remaining_acceptance": "Implement feature-based persistent manifolds, cache lifecycle and warm starting."
+      "candidate_progress": "Feature-tracked persistent manifolds implemented on Parry's PersistentQueryDispatcher: local anchors, normals, separation, surface code, feature ids, age, last-seen step and solved impulses; warm-start seeding; per-normal and per-pair reductions with spacing, non-collinearity and seam deduplication; explicit reset, removal, normal-rotation and stale-entry invalidation; active/retained/age and per-reason diagnostics. Ten manifold tests pass, including the full resting pad world step; the coupled world suite remains 28/28.",
+      "remaining_acceptance": "Human review of the manifold policy constants and seam rule. The full resting multi-contact world step still exceeds the profile's 100-iteration solver budget (normal residual around 1e-5 m/s); simultaneous contact convergence must close under item 29 before the resting-contact gate is claimed."
     },
     {
       "identifier": "29",
@@ -369,10 +370,10 @@
         "22",
         "28"
       ],
-      "status": "implementing",
+      "status": "implemented_awaiting_review",
       "human_approved": false,
-      "candidate_progress": "Generalized effective-mass normal response and restitution tests pass.",
-      "remaining_acceptance": "Complete persistent simultaneous-contact, travel and brake response gates."
+      "candidate_progress": "Simultaneous normal constraints are solved with a dense active-set LCP over the generalized contact-space effective mass, with a singular-set regularization fallback, warm normal impulses, restitution targets, non-negative impulses and complementarity; friction remains a projected cone subproblem reconciled with normals for up to forty passes. The full-world resting pad converges with the profile's 100-iteration budget, and the redundant four-support and off-center wheel/body response validations pass.",
+      "remaining_acceptance": "Human review of the active-set regularization fallback, the eight-pass reconciliation budget and the reported iteration accounting; the complete contact/impact matrix remains item 43."
     },
     {
       "identifier": "30",
@@ -382,10 +383,10 @@
         "19",
         "29"
       ],
-      "status": "implementing",
+      "status": "implemented_awaiting_review",
       "human_approved": false,
-      "candidate_progress": "Projected friction disk with coupled tangential effective masses and passivity checks implemented.",
-      "remaining_acceptance": "Complete material pairing, rotating impacts, resting friction and full passivity matrix."
+      "candidate_progress": "Tangential impulses are solved as the exact 2x2 effective-mass block per contact with friction-cone and stick/slip projection, coupled to the normal active-set solve. Impact material pairing is a per-surface-code map separate from the tire brush grip map, wheel-spin leverage comes from the actual contact Jacobian, and tangential warm starts are remapped onto the new tangent basis and re-projected into the new cone. Five solver tests pass, including a spinning wheel against a barrier; the full resting pad keeps every active impulse inside its per-surface cone.",
+      "remaining_acceptance": "Human review of the impact material map policy; the production profile keeps the map empty and falls back to the global 0.5 coefficient until calibration (item 47). Duplicate-response classification between tire brush traction and impact friction remains item 32."
     },
     {
       "identifier": "31",
@@ -395,10 +396,10 @@
         "27",
         "29"
       ],
-      "status": "implementing",
+      "status": "implemented_awaiting_review",
       "human_approved": false,
-      "candidate_progress": "Translation/rotation casts and atomic impact re-advancement implemented.",
-      "remaining_acceptance": "Bound articulated trajectory error and validate tunneling and simultaneous event convergence."
+      "candidate_progress": "Nonlinear swept shape casts localize the earliest impact and re-advance atomically; diagnostics record impact time, shape/entity, event interval, subdivision count and geometric misses; event-budget exhaustion reports the time and shape without committing the step. Straight 50 m/s and rotating wall tests show no tunneling, with wheel travel included in the swept pose.",
+      "remaining_acceptance": "Human review of the conservative articulated trajectory bound and the complete impact matrix (item 43); event-budget exhaustion coverage beyond the single-impact scenarios."
     },
     {
       "identifier": "32",
@@ -409,10 +410,10 @@
         "30",
         "31"
       ],
-      "status": "implementing",
+      "status": "implemented_awaiting_review",
       "human_approved": false,
-      "candidate_progress": "Wheel tread support excludes selected vertical curb triangles from compliant support handling.",
-      "remaining_acceptance": "Validate composite curb meshes, feature remapping, slopes and duplicate response classification."
+      "candidate_progress": "Contact response ownership is partitioned: upward driveable tread hits (normal.y >= 0.5) go to compliant tire support; steep driveable triangles are rejected from the tire path and owned by the rigid manifold solver; body and solid contacts are rigid; travel stops remain internal and are counted as wheel-at-limit diagnostics. Collision events carry a response owner and classification counters report duplicate preventions.",
+      "remaining_acceptance": "Human review of composite curb mesh transitions, sidewall/curb climb, bottoming force continuity and the complete contact matrix (item 43); travel-stop events remain internal."
     },
     {
       "identifier": "33",
@@ -424,10 +425,10 @@
         "31",
         "32"
       ],
-      "status": "implementing",
+      "status": "implemented_awaiting_review",
       "human_approved": false,
-      "candidate_progress": "All candidate vehicles solve shared contact constraints in one Rust world.",
-      "remaining_acceptance": "Complete multi-car impact, pileup, identity/removal and energy benchmarks."
+      "candidate_progress": "Pair contacts are assembled by entity identity and solved for all vehicles in one world step with stable sorted identities; contact-island diagnostics report connected groups, largest island entity/constraint counts, total constraints and solver iterations. The three-car analytical chain closes momentum and transmits through the middle car; the two-vehicle world step produces a pair event for both identities, changes both velocities and reports a two-entity island; mirrored registration produces mirrored velocities.",
+      "remaining_acceptance": "Human review. The world one-step test isolates the impact with zero restitution and negligible friction; with full production restitution/friction on a four-contact face pair the alternating solver stalls around 2e-4 m/s. Complete frontal/rear/oblique/wheel-to-wheel/three-car/pileup matrix and performance evidence remain items 43 and 46."
     },
     {
       "identifier": "34",
@@ -436,10 +437,10 @@
         "25",
         "33"
       ],
-      "status": "pending",
+      "status": "implemented_awaiting_review",
       "human_approved": false,
-      "candidate_progress": "Unsupported moving nonvehicle prescribed contact motion is rejected.",
-      "remaining_acceptance": "Define and implement ownership, momentum exchange and lifecycle for supported dynamic world objects."
+      "candidate_progress": "Supported Rust-owned track-marker cones and portable barriers share the world identity space, are advanced by the single world step and exchange contact impulses with vehicles and other dynamic objects through the same generalized solver. Registration, removal, reset, snapshots and native request routes exist. Legacy Godot-owned vehicles and unknown moving-body classes are explicitly rejected instead of silently interpenetrating. Seven dynamic-object tests pass.",
+      "remaining_acceptance": "Human review of the supported class set, proxy shapes, mass properties and material pairing. Godot-side spawning/presentation for dynamic objects, object-versus-curb/sidewall fidelity, full restitution/friction multi-contact convergence, rest stability (item 35) and the complete impact matrix (item 43) remain open."
     },
     {
       "identifier": "35",
@@ -451,10 +452,10 @@
         "33",
         "34"
       ],
-      "status": "pending",
+      "status": "implemented_awaiting_review",
       "human_approved": false,
-      "candidate_progress": "Bounded position correction has a separate energy ledger.",
-      "remaining_acceptance": "Implement stable resting manifolds, warm starts, static friction and mesh-seam validation."
+      "candidate_progress": "Persistent contacts now accumulate resting steps and switch to full warm starting at rest. The solver classifies static-friction and sliding constraints, and persistent static contacts receive a bounded tangential position correction that cancels pre-solve drift without freezing vehicle suspension. Dynamic objects sleep after a supported low-motion delay and wake on moving contact or support loss; vehicles never sleep. Resting seam contacts retain triangle features and bounded correction energy. Five rest-stability tests pass.",
+      "remaining_acceptance": "Human review of sleep/wake thresholds, the CCD persistent-contact skip, static-friction correction bounds and the candidate constants. Full stack/pile-up coverage, long-duration static friction, curb/sidewall rest, material calibration (item 47) and the complete impact matrix (item 43) remain open. Godot-side object presentation and sleep visualization are still absent."
     },
     {
       "identifier": "36",

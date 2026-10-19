@@ -33,6 +33,8 @@ pub mod vehicle_configuration;
 pub mod vehicle_mass_inventory;
 pub mod vehicle_mass_properties;
 pub mod coupled_vehicle_dynamics;
+pub mod coupled_vehicle_loads;
+pub mod dynamic_world_objects;
 pub mod physical_collision_world;
 pub mod generalized_vehicle_contacts;
 pub mod coupled_vehicle_world;
