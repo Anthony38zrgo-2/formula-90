@@ -251,13 +251,20 @@ func _refresh_physics_anchors() -> void:
 					var rest_hub: Vector3 = queried_anchor - Vector3.UP * (_spring_length(wheel_index) - _resting_ratio(wheel_index) * _spring_length(wheel_index))
 					_suspension_geometry.align_hub(wheel_index, rest_hub)
 
+func load_suspension_geometry(presentation_path: String) -> SuspensionGeometry:
+	var configuration: Dictionary = preload("res://scripts/vehicle/vehicle_profile_configuration.gd").load_configuration(physics_config_path)
+	var suspension: Dictionary = configuration.get("suspension", {})
+	if suspension.get("use_authored_wheel_centers", false):
+		return SuspensionGeometry.from_json_dict(configuration)
+	return SuspensionGeometry.from_json_path(presentation_path)
+
 func _setup_suspension_geometry() -> void:
 	if not enable_suspension_geometry:
 		return
 	var geometry_path := _suspension_geometry_path()
 	if vehicle == null or geometry_path.is_empty() or not FileAccess.file_exists(geometry_path):
 		return
-	var geometry := SuspensionGeometry.from_json_path(geometry_path)
+	var geometry := load_suspension_geometry(geometry_path)
 	if geometry == null:
 		return
 	for wheel_index in range(4):
@@ -710,7 +717,7 @@ func update_authoritative_suspension_visuals() -> void:
 	if snapshot.is_empty() or _suspension_geometry == null or _suspension_links == null:
 		return
 	if not physical_geometry_selected:
-		_suspension_geometry = SuspensionGeometry.from_json_path(_suspension_geometry_path())
+		_suspension_geometry = load_suspension_geometry(_suspension_geometry_path())
 		_suspension_links.setup(_suspension_geometry, true)
 		physical_geometry_selected = true
 	var corners: Array = snapshot["solved_suspension_corners"]
