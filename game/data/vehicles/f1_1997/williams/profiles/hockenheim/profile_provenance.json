@@ -46,6 +46,24 @@
       "source": "Human-requested roll stiffness increase over the inherited base ratios: front 0.15 to 1.00 and rear 0.09 to 0.80"
     },
     {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.virtual_unsprung_mass_multiplier",
+      "source": "Virtual unsprung mass scaled by 1.25 over the resolved corner mass to settle the contact load after the simplified contact work correction"
+    },
+    {
+      "classification": "estimated",
+      "domain": "suspension.json",
+      "path": "suspension.geometry_physical.rear.damper_bump_Ns_per_m and suspension.geometry_physical.rear.damper_rebound_Ns_per_m",
+      "source": "Rear damper coefficients increased from 7395/11305 to 14000/22000 to match the front damping ratio at the local rear motion ratio after the travel-dependent transmission correction"
+    },
+    {
+      "classification": "estimated",
+      "domain": "tires.json",
+      "path": "tires.radial_damping_ratio",
+      "source": "Radial carcass damping ratio raised from the inherited 0.28 to 0.45 to settle the contact load after the simplified contact work correction"
+    },
+    {
       "classification": "derived",
       "domain": "chassis.json",
       "path": "physical_mass_inventory.components[wheel_rotor].center_of_mass_in_attachment_metres",

@@ -10,17 +10,17 @@ const CONTACT_FRAME_TORQUE_TOLERANCE_NEWTON_METRES: f64 = 1.0e-6;
 const REFERENCE_TOLERANCE_RELATIVE: f64 = 1.0e-9;
 
 const STANDARD_REFERENCE_FORCE_WORLD: Vec3 =
-    Vec3::new(-2.3576611103981833, 4564.5060203667545, 13906.706151102593);
+    Vec3::new(-1.9381879271183777, 4564.495341967745, 13906.652476086985);
 const STANDARD_REFERENCE_TORQUE_WORLD: Vec3 =
-    Vec3::new(-4219.925358788979, -1665.3482539306692, 8.202390601999241);
+    Vec3::new(-4220.050209489664, -1664.9879003031183, 8.337791924479916);
 const STANDARD_REFERENCE_YAW_QUARTER_TURN_FORCE_WORLD: Vec3 =
-    Vec3::new(13906.6734363815, 4564.50602036006, 2.868232595065308);
+    Vec3::new(13906.61975421577, 4564.495341961043, 2.4488016249520967);
 const STANDARD_REFERENCE_YAW_QUARTER_TURN_TORQUE_WORLD: Vec3 =
-    Vec3::new(13.492229137931417, -1681.6492534120462, 4224.368375912697);
+    Vec3::new(13.627663176032456, -1681.2881887470216, 4224.493321098267);
 const SIMPLIFIED_REFERENCE_FORCE_WORLD: Vec3 =
-    Vec3::new(90.83958702655487, 4435.425285030558, 13650.775945107878);
+    Vec3::new(38.59780997859917, 4556.4130420540705, 13860.901379212957);
 const SIMPLIFIED_REFERENCE_TORQUE_WORLD: Vec3 =
-    Vec3::new(-5552.554412194038, -2302.25057507589, 370.04376605292964);
+    Vec3::new(-6204.157054424261, -2564.2648684534115, 459.3152818524188);
 
 fn williams_configuration() -> VehicleConfig {
     let repository_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
@@ -73,7 +73,11 @@ fn planar_samples(simulator: &VehicleSimulator) -> [TriRaycastSample; 4] {
 fn asymmetric_rear_samples(simulator: &VehicleSimulator) -> [TriRaycastSample; 4] {
     let mut samples = planar_samples(simulator);
     let rear_left = &mut samples[WheelIndex::RearLeft as usize];
-    for hit in [&mut rear_left.inner, &mut rear_left.center, &mut rear_left.outer] {
+    for hit in [
+        &mut rear_left.inner,
+        &mut rear_left.center,
+        &mut rear_left.outer,
+    ] {
         hit.distance -= REAR_LEFT_ROAD_BUMP_METRES;
         hit.point = hit.point + Vec3::UP * REAR_LEFT_ROAD_BUMP_METRES;
     }
@@ -227,13 +231,17 @@ fn simplified_contact_rotates_with_the_body_frame() {
 }
 
 #[test]
-fn standard_contact_reference_is_unchanged() {
+fn standard_contact_reference_matches_recorded_goldens() {
     let scenario = contact_frame_scenario(SuspensionBackend::Standard);
     let aligned_output = solve_with_rotated_scene(&scenario, 0.0);
     let quarter_turn_output = solve_with_rotated_scene(&scenario, FRAC_PI_2);
     println!(
         "STANDARD_CONTACT_REFERENCE force={:?} torque={:?}",
         aligned_output.force_world, aligned_output.torque_world
+    );
+    println!(
+        "STANDARD_CONTACT_REFERENCE_YAW_QUARTER_TURN force={:?} torque={:?}",
+        quarter_turn_output.force_world, quarter_turn_output.torque_world
     );
     assert_matches_reference(
         aligned_output.force_world,

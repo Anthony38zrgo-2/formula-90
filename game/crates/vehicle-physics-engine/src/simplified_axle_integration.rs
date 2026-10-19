@@ -1,6 +1,7 @@
 use super::vertical_suspension_integration::{
     integrate_vertical_suspension, VerticalSuspensionStep, VerticalTireContact,
 };
+use super::SimplifiedSuspension;
 use super::*;
 
 #[derive(Clone, Copy)]
@@ -20,6 +21,7 @@ pub(super) struct GeometricAxleCornerIntegration {
     pub final_tire_deflection_metres: f64,
     pub final_tire_velocity_metres_per_second: f64,
     pub force_application_compression_metres: f64,
+    pub motion_ratio_rate_per_m: f64,
 }
 
 struct PreparedAxleCorner {
@@ -33,6 +35,7 @@ struct PreparedAxleCorner {
     envelope: PreparedWheelEnvelope,
     tuning: WheelMechanicalTuning,
     contact: SimplifiedNormalContact,
+    simplified: std::sync::Arc<SimplifiedSuspension>,
 }
 
 impl PreparedAxleCorner {
@@ -41,24 +44,35 @@ impl PreparedAxleCorner {
         geometry: &GeometricSuspensionConfig,
         compression_metres: f64,
         velocity_metres_per_second: f64,
-    ) -> (f64, f64, f64) {
-        let spring_compression_metres = self.spring_compression_metres
-            + self.motion_ratio * (compression_metres - self.initial_compression_metres);
+    ) -> (f64, f64, f64, f64, f64) {
+        let travel_metres = compression_metres - self.reference_compression_metres;
+        let (spring_compression_metres, motion_ratio, motion_ratio_rate_per_m) = self
+            .simplified
+            .vertical_reference_with_rate_at(self.wheel, travel_metres)
+            .unwrap_or((self.spring_compression_metres, self.motion_ratio, 0.0));
         if self.geometry_invalid {
-            return (0.0, 0.0, self.spring_compression_metres);
+            return (
+                0.0,
+                0.0,
+                spring_compression_metres,
+                motion_ratio,
+                motion_ratio_rate_per_m,
+            );
         }
         let axle = geometry.axle(self.wheel);
         let total_deflection_metres =
             axle.spring_free_length_m - axle.spring_installed_length_m + spring_compression_metres;
         let spring_force_newtons =
-            axle.spring_rate_N_per_m * total_deflection_metres.max(0.0) * self.motion_ratio;
+            axle.spring_rate_N_per_m * total_deflection_metres.max(0.0) * motion_ratio;
         let damping_force_newtons =
-            geometric_damper_element(axle, self.motion_ratio * velocity_metres_per_second)
-                * self.motion_ratio;
+            geometric_damper_element(axle, motion_ratio * velocity_metres_per_second)
+                * motion_ratio;
         (
             spring_force_newtons,
             damping_force_newtons,
             spring_compression_metres,
+            motion_ratio,
+            motion_ratio_rate_per_m,
         )
     }
 
@@ -67,6 +81,7 @@ impl PreparedAxleCorner {
         geometry: &GeometricSuspensionConfig,
         compression_metres: f64,
         spring_compression_metres: f64,
+        motion_ratio: f64,
     ) -> (f64, bool) {
         geometric_stop_force(
             geometry,
@@ -75,7 +90,7 @@ impl PreparedAxleCorner {
             self.reference_compression_metres,
             self.envelope,
             spring_compression_metres,
-            self.motion_ratio,
+            motion_ratio,
             self.tuning,
         )
     }
@@ -241,18 +256,20 @@ impl SuspensionSystem {
         let state = &self.wheels[wheel as usize];
         let reference_compression_metres = rest_compression_m(configuration, wheel);
         let travel_metres = state.suspension_compression_m - reference_compression_metres;
-        let prepared_pose = self
+        let simplified = self
             .simplified_prepared
             .as_ref()
-            .and_then(|prepared| prepared.vertical_reference_at(wheel, travel_metres));
+            .expect("Equivalent suspension parameters must be prepared")
+            .clone();
+        let prepared_pose = simplified.vertical_reference_with_rate_at(wheel, travel_metres);
         if let Some(counts) = &self.benchmark_evaluation_counts {
             counts[0].fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             if prepared_pose.is_some() {
                 counts[1].fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             }
         }
-        let (spring_compression_metres, motion_ratio) = prepared_pose
-            .expect("Equivalent suspension parameters and travel must be valid");
+        let (spring_compression_metres, motion_ratio, _) =
+            prepared_pose.expect("Equivalent suspension parameters and travel must be valid");
         let geometry_invalid = false;
         let tuning = WheelMechanicalTuning::for_wheel(configuration, wheel);
         PreparedAxleCorner {
@@ -274,6 +291,7 @@ impl SuspensionSystem {
                 initial_normal_projection: state.normal_contact_projection,
                 normal_projection_rate_per_second: state.normal_contact_projection_rate_per_second,
             },
+            simplified,
         }
     }
 
@@ -348,6 +366,7 @@ impl SuspensionSystem {
             final_tire_deflection_metres: 0.0,
             final_tire_velocity_metres_per_second: 0.0,
             force_application_compression_metres: 0.0,
+            motion_ratio_rate_per_m: 0.0,
         });
         for substep_index in 0..substeps {
             let elapsed_seconds = (substep_index + 1) as f64 * substep_duration_seconds;
@@ -361,20 +380,27 @@ impl SuspensionSystem {
                 antiroll_stiffness,
                 |index, compression_metres, velocity_metres_per_second| {
                     let corner = &corners[index];
-                    let (spring_force, damping_force, spring_compression) = corner.element_forces(
-                        geometry,
-                        compression_metres,
-                        velocity_metres_per_second,
-                    );
+                    let (spring_force, damping_force, spring_compression, motion_ratio, _) = corner
+                        .element_forces(geometry, compression_metres, velocity_metres_per_second);
                     (
                         corner
                             .contact
-                            .evaluate(compression_metres, velocity_metres_per_second, elapsed_seconds)
-                            .force_newtons * corner.contact.projection_at(elapsed_seconds),
+                            .evaluate(
+                                compression_metres,
+                                velocity_metres_per_second,
+                                elapsed_seconds,
+                            )
+                            .force_newtons
+                            * corner.contact.projection_at(elapsed_seconds),
                         spring_force
                             + damping_force
                             + corner
-                                .stop_force(geometry, compression_metres, spring_compression)
+                                .stop_force(
+                                    geometry,
+                                    compression_metres,
+                                    spring_compression,
+                                    motion_ratio,
+                                )
                                 .0,
                     )
                 },
@@ -384,27 +410,39 @@ impl SuspensionSystem {
                 let corner = &corners[index];
                 result.compression_metres = step.compression_metres;
                 result.velocity_metres_per_second = step.velocity_metres_per_second;
-                let response = corner.contact.evaluate(step.compression_metres,
-                    step.velocity_metres_per_second, elapsed_seconds);
+                let response = corner.contact.evaluate(
+                    step.compression_metres,
+                    step.velocity_metres_per_second,
+                    elapsed_seconds,
+                );
                 let normal_impulse = response.force_newtons * substep_duration_seconds;
                 result.normal_impulse_newton_seconds += normal_impulse;
-                result.force_application_compression_metres += step.compression_metres * normal_impulse;
+                result.force_application_compression_metres +=
+                    step.compression_metres * normal_impulse;
                 result.final_normal_force_newtons = response.force_newtons;
                 result.final_tire_deflection_metres = response.deflection_metres;
-                result.final_tire_velocity_metres_per_second = response.deflection_velocity_metres_per_second;
+                result.final_tire_velocity_metres_per_second =
+                    response.deflection_velocity_metres_per_second;
                 result.suspension_impulse_newton_seconds += step.suspension_impulse_newton_seconds;
                 result.travel_limit_impulse_newton_seconds +=
                     step.travel_limit_impulse_newton_seconds;
-                let (_, damping_force, spring_compression) = corner.element_forces(
-                    geometry,
-                    step.compression_metres,
-                    step.velocity_metres_per_second,
-                );
+                let (_, damping_force, spring_compression, motion_ratio, motion_ratio_rate) =
+                    corner.element_forces(
+                        geometry,
+                        step.compression_metres,
+                        step.velocity_metres_per_second,
+                    );
                 result.damper_dissipated_joules +=
                     (damping_force * step.velocity_metres_per_second * substep_duration_seconds)
                         .max(0.0);
+                result.motion_ratio_rate_per_m = motion_ratio_rate;
                 result.clamped |= corner
-                    .stop_force(geometry, step.compression_metres, spring_compression)
+                    .stop_force(
+                        geometry,
+                        step.compression_metres,
+                        spring_compression,
+                        motion_ratio,
+                    )
                     .1;
             }
         }
@@ -416,9 +454,13 @@ impl SuspensionSystem {
         results[0].antiroll_force_newtons = antiroll_force;
         results[1].antiroll_force_newtons = -antiroll_force;
         for index in 0..2 {
-            results[index].force_application_compression_metres = if results[index].normal_impulse_newton_seconds > 0.0 {
-                results[index].force_application_compression_metres / results[index].normal_impulse_newton_seconds
-            } else { results[index].compression_metres };
+            results[index].force_application_compression_metres =
+                if results[index].normal_impulse_newton_seconds > 0.0 {
+                    results[index].force_application_compression_metres
+                        / results[index].normal_impulse_newton_seconds
+                } else {
+                    results[index].compression_metres
+                };
             self.solve_force_geometric(
                 configuration,
                 wheels[index],

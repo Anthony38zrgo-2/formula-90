@@ -111,6 +111,14 @@ pub struct TiresConfiguration {
     /// gradual. `0.0` keeps instantaneous surface steps (legacy).
     #[serde(default)]
     pub surface_transition_tau_s: f64,
+    /// Radial carcass damping ratio used to derive the tire vertical damping.
+    /// Absent keeps the legacy 0.28 calibration.
+    #[serde(default = "default_tire_radial_damping_ratio")]
+    pub radial_damping_ratio: f64,
+}
+
+fn default_tire_radial_damping_ratio() -> f64 {
+    0.28
 }
 
 impl TiresConfiguration {
@@ -129,7 +137,8 @@ impl TiresConfiguration {
                 } else {
                     suspension.rear_spring_length * (1.0 - suspension.rear_resting_ratio)
                 };
-                return geometry.corners.get(wheel).hub_center + Vec3::new(0.0, spring_extension, 0.0);
+                return geometry.corners.get(wheel).hub_center
+                    + Vec3::new(0.0, spring_extension, 0.0);
             }
         }
         let z = if wheel.is_front() {
@@ -178,21 +187,51 @@ mod authored_wheel_center_tests {
     #[test]
     fn williams_solver_anchors_preserve_authored_wheel_centers() {
         let repository_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let configuration = crate::vehicle_configuration::load_vehicle_configuration_from_authorized_root(
-            &repository_root.join("game/data/vehicles/f1_1997/williams/profiles/hockenheim/vehicle.json"),
-            &repository_root,
-        ).expect("Williams profile");
-        let geometry = configuration.suspension.geometric_suspension.as_ref().expect("physical geometry");
-        for wheel in [WheelIndex::FrontLeft, WheelIndex::FrontRight, WheelIndex::RearLeft, WheelIndex::RearRight] {
-            let anchor = configuration.tires.wheel_anchor_local(&configuration.chassis, &configuration.suspension, wheel);
+        let configuration =
+            crate::vehicle_configuration::load_vehicle_configuration_from_authorized_root(
+                &repository_root
+                    .join("game/data/vehicles/f1_1997/williams/profiles/hockenheim/vehicle.json"),
+                &repository_root,
+            )
+            .expect("Williams profile");
+        let geometry = configuration
+            .suspension
+            .geometric_suspension
+            .as_ref()
+            .expect("physical geometry");
+        for wheel in [
+            WheelIndex::FrontLeft,
+            WheelIndex::FrontRight,
+            WheelIndex::RearLeft,
+            WheelIndex::RearRight,
+        ] {
+            let anchor = configuration.tires.wheel_anchor_local(
+                &configuration.chassis,
+                &configuration.suspension,
+                wheel,
+            );
             let extension = if wheel.is_front() {
-                configuration.suspension.front_spring_length * (1.0 - configuration.suspension.front_resting_ratio)
+                configuration.suspension.front_spring_length
+                    * (1.0 - configuration.suspension.front_resting_ratio)
             } else {
-                configuration.suspension.rear_spring_length * (1.0 - configuration.suspension.rear_resting_ratio)
+                configuration.suspension.rear_spring_length
+                    * (1.0 - configuration.suspension.rear_resting_ratio)
             };
-            assert!((anchor - Vec3::new(0.0, extension, 0.0) - geometry.corners.get(wheel).hub_center).length() < 1e-9);
-            let expected_height = if wheel.is_front() { -0.226701 } else { -0.216634 };
-            let expected_longitudinal_position = if wheel.is_front() { -1.146992 } else { 1.743008 };
+            assert!(
+                (anchor - Vec3::new(0.0, extension, 0.0) - geometry.corners.get(wheel).hub_center)
+                    .length()
+                    < 1e-9
+            );
+            let expected_height = if wheel.is_front() {
+                -0.226701
+            } else {
+                -0.216634
+            };
+            let expected_longitudinal_position = if wheel.is_front() {
+                -1.146992
+            } else {
+                1.743008
+            };
             assert!((anchor.y - extension - expected_height).abs() < 1e-9);
             assert!((anchor.z - expected_longitudinal_position).abs() < 1e-9);
         }

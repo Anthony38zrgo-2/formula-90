@@ -56,6 +56,14 @@ pub struct SuspensionConfiguration {
     /// SUS-GEO-02 physical geometry. Required for Geometric, None for Legacy.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub geometric_suspension: Option<GeometricSuspensionConfig>,
+    /// Simplified-backend virtual unsprung mass scale over the resolved corner
+    /// mass. Absent or 1.0 keeps the resolved value.
+    #[serde(default = "default_virtual_unsprung_mass_multiplier")]
+    pub virtual_unsprung_mass_multiplier: f64,
+}
+
+fn default_virtual_unsprung_mass_multiplier() -> f64 {
+    1.0
 }
 
 impl SuspensionConfiguration {

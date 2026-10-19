@@ -70,7 +70,11 @@ impl WheelMechanicalTuning {
         // declares a complete mass inventory (wheel assembly plus upright and
         // corner-attached members). Profiles without one keep the legacy filter
         // heuristic so their behaviour does not change.
-        let unsprung_mass_kg = crate::vehicle_mass_properties::unsprung_mass(config, wheel);
+        let unsprung_mass_kg = crate::vehicle_mass_properties::unsprung_mass(config, wheel)
+            * config
+                .suspension
+                .virtual_unsprung_mass_multiplier
+                .clamp(0.25, 3.0);
 
         // Tune radial stiffness from the existing static corner load. Roughly 8 mm of
         // static radial deflection keeps the carcass visibly/mechanically relevant while
@@ -78,7 +82,7 @@ impl WheelMechanicalTuning {
         let reference_load = static_wheel_load(config, wheel).max(100.0);
         let static_radial_deflection = 0.008;
         let tire_vertical_stiffness_n_m = reference_load / static_radial_deflection;
-        let radial_damping_ratio = 0.28;
+        let radial_damping_ratio = config.tires.radial_damping_ratio.clamp(0.05, 1.5);
         let tire_vertical_damping_n_s_m =
             2.0 * radial_damping_ratio * (tire_vertical_stiffness_n_m * unsprung_mass_kg).sqrt();
 
@@ -107,7 +111,10 @@ impl WheelMechanicalTuning {
 
 #[inline]
 pub fn static_wheel_load(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
-    config.chassis.mass_over_wheel(&config.tires, &config.fuel, wheel) * GRAVITY_M_S2
+    config
+        .chassis
+        .mass_over_wheel(&config.tires, &config.fuel, wheel)
+        * GRAVITY_M_S2
 }
 
 #[inline]

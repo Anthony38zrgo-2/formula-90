@@ -34,6 +34,9 @@ pub(crate) struct JsonTires {
     /// Schema v3: temporal filter for per-wheel surface values (GRIP-06).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) surface_transition_tau_s: Option<f64>,
+    /// Radial carcass damping ratio; absent keeps the 0.28 calibration.
+    #[serde(default = "default_radial_damping_ratio")]
+    pub(crate) radial_damping_ratio: f64,
 }
 impl Default for JsonTires {
     fn default() -> Self {
@@ -50,8 +53,12 @@ impl Default for JsonTires {
             force_model: None,
             pressure_mechanics: None,
             surface_transition_tau_s: None,
+            radial_damping_ratio: default_radial_damping_ratio(),
         }
     }
+}
+pub(crate) fn default_radial_damping_ratio() -> f64 {
+    0.28
 }
 
 // ── Schema v3: tire force model + pressure mechanics ────────────────────────────
@@ -283,7 +290,6 @@ pub(crate) struct JsonTireThermal {
     pub(crate) rear: Option<Box<JsonTireThermal>>,
 }
 
-
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub(crate) struct JsonTireWear {
@@ -328,7 +334,6 @@ pub(crate) struct JsonTireWear {
     #[serde(default)]
     pub(crate) rear: Option<Box<JsonTireWear>>,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]

@@ -1247,7 +1247,17 @@ impl SuspensionSystem {
         let arb_now = coupled_integration.map(|integration| integration.antiroll_force_newtons)
             .unwrap_or_else(|| geometric_arb_force(&selected_antiroll_configuration, q, q_opp, k_wheel_rest));
         let dq = q - q0;
-        let drdq = if dq.abs() > 1e-9 && r0 > 0.0 && r_fin.is_finite() {
+        let table_motion_ratio_rate = self
+            .simplified_prepared
+            .as_ref()
+            .and_then(|prepared| prepared.motion_ratio_rate_at(wheel, q));
+        let drdq = if self.backend == SuspensionBackend::Simplified {
+            coupled_integration
+                .map(|integration| integration.motion_ratio_rate_per_m)
+                .or(table_motion_ratio_rate)
+                .unwrap_or(0.0)
+                .clamp(-10.0, 10.0)
+        } else if dq.abs() > 1e-9 && r0 > 0.0 && r_fin.is_finite() {
             ((r_fin - r0) / dq).clamp(-10.0, 10.0)
         } else {
             0.0

@@ -1,8 +1,10 @@
-use super::*;
+use super::aerodynamics::configuration::{
+    default_aero_blend_full_speed, default_aero_blend_min_speed, default_aero_lag_tau,
+};
 use super::driving_assistance::configuration::default_aids;
 use super::powertrain::document::{default_gear_inertia, default_torque_attack_rate};
 use super::steering::document::default_counter_speed;
-use super::aerodynamics::configuration::{default_aero_blend_full_speed, default_aero_blend_min_speed, default_aero_lag_tau};
+use super::*;
 
 impl VehicleConfiguration {
     /// Resolved F1 2030 geometric profile embedded at build time from its domain manifest.
@@ -163,6 +165,7 @@ impl VehicleConfiguration {
                 suspension_model_version: default_suspension_model_version(),
                 use_authored_wheel_centers: false,
                 geometric_suspension: None,
+                virtual_unsprung_mass_multiplier: 1.0,
             },
 
             // Tires & Contact
@@ -193,6 +196,7 @@ impl VehicleConfiguration {
                 surface_rolling_resistance: surface_rolling_resistance.clone(),
                 surface_longitudinal_grip_ratio: surface_longitudinal_grip_ratio.clone(),
                 surface_transition_tau_s: 0.0,
+                radial_damping_ratio: 0.28,
             },
             brakes: BrakesConfiguration {
                 front_brake_bias: 0.57,
@@ -223,8 +227,10 @@ impl VehicleConfiguration {
 
     /// F1 2026-2008 data profile loaded from the checked-in runtime JSON; no longer the embedded canonical.
     pub fn f1_2026_2008_canonical() -> Self {
-        Self::from_json_str(include_str!("../../../../data/vehicles/f1_2026_2008/f1_2026_2008_physics.json"))
-            .expect("checked-in f1_2026_2008 physics profile must be valid")
+        Self::from_json_str(include_str!(
+            "../../../../data/vehicles/f1_2026_2008/f1_2026_2008_physics.json"
+        ))
+        .expect("checked-in f1_2026_2008 physics profile must be valid")
     }
 
     /// Canonical Jordan 197 specification (legacy — aero extensions use same defaults, not validated).
@@ -355,6 +361,7 @@ impl VehicleConfiguration {
                 suspension_model_version: default_suspension_model_version(),
                 use_authored_wheel_centers: false,
                 geometric_suspension: None,
+                virtual_unsprung_mass_multiplier: 1.0,
             },
 
             // Tires & Brakes
@@ -385,6 +392,7 @@ impl VehicleConfiguration {
                 surface_rolling_resistance,
                 surface_longitudinal_grip_ratio: HashMap::new(),
                 surface_transition_tau_s: 0.0,
+                radial_damping_ratio: 0.28,
             },
             brakes: BrakesConfiguration {
                 front_brake_bias: 0.58,

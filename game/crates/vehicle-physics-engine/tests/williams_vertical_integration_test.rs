@@ -223,7 +223,12 @@ fn invalid_linkage_keeps_the_external_contact_impulse_and_moment() {
     let contact_point_world = body.transform_point(Vec3::new(-0.8, -0.5, 1.1));
     let contact_force_world = Vec3::new(2500.0, 11_000.0, -1300.0);
     let aligning_couple_world = Vec3::new(0.0, 60.0, 0.0);
-    let mut invalid_geometry = configuration.suspension.geometric_suspension.as_ref().unwrap().clone();
+    let mut invalid_geometry = configuration
+        .suspension
+        .geometric_suspension
+        .as_ref()
+        .unwrap()
+        .clone();
     invalid_geometry.corners.rl.lower.inner_rear = invalid_geometry.corners.rl.lower.inner_front;
     for grounded in [false, true] {
         let wrench = suspension.wheel_wrench(
@@ -267,7 +272,10 @@ fn invalid_linkage_keeps_the_external_contact_impulse_and_moment() {
 fn equivalent_suspension_preserves_all_six_chassis_velocities() {
     let configuration = williams_configuration();
     let mut simulator = VehicleSimulator::new(configuration, Vec3::new(2.0, 10.0, -3.0), 0.0);
-    simulator.state.suspension.select_backend(&simulator.config, SuspensionBackend::Simplified);
+    simulator
+        .state
+        .suspension
+        .select_backend(&simulator.config, SuspensionBackend::Simplified);
     let linear_velocity = Vec3::new(2.0, 3.0, -4.0);
     let angular_velocity = Vec3::new(0.2, -0.3, 0.4);
     simulator.state.linear_velocity = linear_velocity;
@@ -289,22 +297,29 @@ fn equivalent_suspension_preserves_all_six_chassis_velocities() {
 }
 
 #[test]
-fn equivalent_suspension_uses_constant_wheel_rates_without_internal_link_forces() {
+fn equivalent_suspension_uses_travel_dependent_wheel_rates_without_internal_link_forces() {
     let configuration = williams_configuration();
     let mut suspension = SuspensionSystem::new(&configuration);
     suspension.select_backend(&configuration, SuspensionBackend::Simplified);
     assert!(!suspension.resolves_internal_link_forces());
-    let simulator = VehicleSimulator::new(configuration.clone(),
-        Vec3::new(0.0, default_spawn_height(&configuration), 0.0), 0.0);
+    let simulator = VehicleSimulator::new(
+        configuration.clone(),
+        Vec3::new(0.0, default_spawn_height(&configuration), 0.0),
+        0.0,
+    );
     let samples = planar_samples(&simulator);
-    let mut reference_ratios = [0.0; 4];
-    for tick in 0..120 {
+    let mut minimum_ratio = [f64::INFINITY; 4];
+    let mut maximum_ratio = [f64::NEG_INFINITY; 4];
+    let mut maximum_ratio_rate = [0.0_f64; 4];
+    for _ in 0..120 {
         suspension.step(&configuration, &samples, 1.0 / 120.0);
         for (index, state) in suspension.wheels.iter().enumerate() {
-            if tick == 0 { reference_ratios[index] = state.motion_ratio; }
-            assert!(reference_ratios[index] > 0.0);
-            assert_eq!(state.motion_ratio, reference_ratios[index]);
-            assert_eq!(state.motion_ratio_rate_per_m, 0.0);
+            assert!(state.motion_ratio.is_finite() && state.motion_ratio > 0.0);
+            assert!(state.motion_ratio_rate_per_m.is_finite());
+            minimum_ratio[index] = minimum_ratio[index].min(state.motion_ratio);
+            maximum_ratio[index] = maximum_ratio[index].max(state.motion_ratio);
+            maximum_ratio_rate[index] =
+                maximum_ratio_rate[index].max(state.motion_ratio_rate_per_m.abs());
             assert_eq!(state.rod_axial_force_n, 0.0);
             assert_eq!(state.load_path_element_n, 0.0);
             assert_eq!(state.load_path_wishbone_n, 0.0);
@@ -313,5 +328,9 @@ fn equivalent_suspension_uses_constant_wheel_rates_without_internal_link_forces(
             assert_eq!(state.hub_long_m, 0.0);
             assert!(state.total_normal_force.is_finite());
         }
+    }
+    for index in 0..4 {
+        assert!(maximum_ratio[index] - minimum_ratio[index] > 1e-6);
+        assert!(maximum_ratio_rate[index] > 1e-6);
     }
 }

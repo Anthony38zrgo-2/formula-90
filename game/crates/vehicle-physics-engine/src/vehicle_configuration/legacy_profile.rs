@@ -1,4 +1,4 @@
-use super::*;
+use super::aerodynamics::document::JsonAero;
 use super::brakes::document::{JsonBrakeThermal, JsonBrakes};
 use super::brakes::validation::validate_brake_thermal;
 use super::chassis::document::{JsonChassis, JsonGeometry, JsonVec3};
@@ -6,20 +6,20 @@ use super::coupled_world::CoupledVehicleWorldConfiguration;
 use super::driving_assistance::document::JsonAids;
 use super::fuel::document::JsonFuel;
 use super::powertrain::document::{JsonDifferential, JsonPowertrain};
+use super::steering::document::default_counter_speed;
 use super::steering::document::JsonSteering;
 use super::suspension::document::{JsonSuspension, JsonSuspensionAxle};
 use super::tires::conversion::{
     build_surface_assist_map, parse_surface_type, surface_type_name, tire_pressure_from_json,
     tire_thermal_from_json, tire_wear_from_json, wheel_name_map,
 };
-use super::aerodynamics::document::JsonAero;
-use super::steering::document::default_counter_speed;
 use super::tires::document::{
-    JsonPressureMechanics, JsonSurfaceEntry, JsonTireAxle, JsonTireForceModel, JsonTireForceProfile,
-    JsonTirePressure, JsonTireThermal, JsonTireWear, JsonTires,
+    JsonPressureMechanics, JsonSurfaceEntry, JsonTireAxle, JsonTireForceModel,
+    JsonTireForceProfile, JsonTirePressure, JsonTireThermal, JsonTireWear, JsonTires,
 };
 use super::underfloor_contact::UnderfloorContactConfig;
 use super::vehicle_configuration::VehicleConfig;
+use super::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -140,7 +140,9 @@ impl JsonVehicleSpec {
             chassis: ChassisConfiguration {
                 vehicle_name: self.chassis.vehicle_name,
                 vehicle_mass: self.chassis.vehicle_mass,
-                vehicle_mass_excludes_wheel_assemblies: self.chassis.vehicle_mass_excludes_wheel_assemblies,
+                vehicle_mass_excludes_wheel_assemblies: self
+                    .chassis
+                    .vehicle_mass_excludes_wheel_assemblies,
                 front_weight_distribution: self.chassis.front_weight_distribution,
                 center_of_gravity_height_offset: self.chassis.center_of_gravity_height_offset,
                 inertia_multipliers: Vec3::new(
@@ -179,19 +181,30 @@ impl JsonVehicleSpec {
                 shift_time: self.powertrain.shift_time,
                 automatic_transmission: self.powertrain.automatic_transmission,
                 downshift_rev_matching_enabled: self.powertrain.downshift_rev_matching_enabled,
-                downshift_maximum_target_revolutions_per_minute_fraction: self.powertrain.downshift_maximum_target_revolutions_per_minute_fraction,
+                downshift_maximum_target_revolutions_per_minute_fraction: self
+                    .powertrain
+                    .downshift_maximum_target_revolutions_per_minute_fraction,
                 downshift_blip_torque_fraction: self.powertrain.downshift_blip_torque_fraction,
-                downshift_minimum_interval_seconds: self.powertrain.downshift_minimum_interval_seconds,
-                downshift_clutch_reengagement_seconds: self.powertrain.downshift_clutch_reengagement_seconds,
+                downshift_minimum_interval_seconds: self
+                    .powertrain
+                    .downshift_minimum_interval_seconds,
+                downshift_clutch_reengagement_seconds: self
+                    .powertrain
+                    .downshift_clutch_reengagement_seconds,
                 front_torque_split: self.powertrain.front_torque_split,
                 diff_preload: self.powertrain.differential.preload_nm,
                 diff_power_ramp_angle_deg: self.powertrain.differential.power_ramp_angle_deg,
                 diff_coast_ramp_angle_deg: self.powertrain.differential.coast_ramp_angle_deg,
                 diff_clutches: self.powertrain.differential.clutches,
-                diff_clutch_friction_coeff: self.powertrain.differential.clutch_friction_coefficient,
+                diff_clutch_friction_coeff: self
+                    .powertrain
+                    .differential
+                    .clutch_friction_coefficient,
                 max_clutch_torque_ratio: self.powertrain.max_clutch_torque_ratio,
                 clutch_out_rpm_offset: self.powertrain.clutch_out_rpm_offset,
-                idle_disengagement_hysteresis_rpm: self.powertrain.idle_disengagement_hysteresis_rpm,
+                idle_disengagement_hysteresis_rpm: self
+                    .powertrain
+                    .idle_disengagement_hysteresis_rpm,
                 variable_drag_ratio: self.powertrain.variable_drag_ratio,
                 constant_brake_ratio: self.powertrain.constant_brake_ratio,
                 handbrake_torque_fraction: self.powertrain.handbrake_torque_fraction,
@@ -229,19 +242,28 @@ impl JsonVehicleSpec {
                 rear_camber: self.suspension.rear.camber,
                 rear_bump_stop_multiplier: self.suspension.rear.bump_stop_multiplier,
                 tri_ray_spacing_ratio: self.suspension.tri_ray_spacing_ratio,
-                front_camber_gain_rad_per_m: self.suspension.front.camber_gain_rad_per_m.unwrap_or(0.0),
-                rear_camber_gain_rad_per_m: self.suspension.rear.camber_gain_rad_per_m.unwrap_or(0.0),
+                front_camber_gain_rad_per_m: self
+                    .suspension
+                    .front
+                    .camber_gain_rad_per_m
+                    .unwrap_or(0.0),
+                rear_camber_gain_rad_per_m: self
+                    .suspension
+                    .rear
+                    .camber_gain_rad_per_m
+                    .unwrap_or(0.0),
                 front_toe_gain_rad_per_m: self.suspension.front.toe_gain_rad_per_m.unwrap_or(0.0),
                 rear_toe_gain_rad_per_m: self.suspension.rear.toe_gain_rad_per_m.unwrap_or(0.0),
-                suspension_model: SuspensionModelKind::from_str_name(self.suspension.model.as_str())
-                    .unwrap_or(SuspensionModelKind::Legacy1Dof),
+                suspension_model: SuspensionModelKind::from_str_name(
+                    self.suspension.model.as_str(),
+                )
+                .unwrap_or(SuspensionModelKind::Legacy1Dof),
                 suspension_model_version: self.suspension.model_version,
                 use_authored_wheel_centers: self.suspension.use_authored_wheel_centers,
-                geometric_suspension: self
-                    .suspension
-                    .geometry_physical
-                    .as_ref()
-                    .map(|v| geometric_from_json_value(v).expect("validated geometry_physical must parse")),
+                geometric_suspension: self.suspension.geometry_physical.as_ref().map(|v| {
+                    geometric_from_json_value(v).expect("validated geometry_physical must parse")
+                }),
+                virtual_unsprung_mass_multiplier: self.suspension.virtual_unsprung_mass_multiplier,
             },
             tires: TiresConfiguration {
                 front_tire_radius: self.tires.front.radius,
@@ -288,7 +310,8 @@ impl JsonVehicleSpec {
                         slip_loss_tau_s: fm.front.slip_loss_tau_s,
                         slip_recovery_tau_s: fm.front.slip_recovery_tau_s,
                         combined_lateral_peak_migration: fm.front.combined_lateral_peak_migration,
-                        combined_longitudinal_peak_migration: fm.front
+                        combined_longitudinal_peak_migration: fm
+                            .front
                             .combined_longitudinal_peak_migration,
                         min_relaxation_tau_s: fm.front.min_relaxation_tau_s,
                         relaxation_recovery_scale: fm.front.relaxation_recovery_scale,
@@ -309,7 +332,8 @@ impl JsonVehicleSpec {
                         slip_loss_tau_s: fm.rear.slip_loss_tau_s,
                         slip_recovery_tau_s: fm.rear.slip_recovery_tau_s,
                         combined_lateral_peak_migration: fm.rear.combined_lateral_peak_migration,
-                        combined_longitudinal_peak_migration: fm.rear
+                        combined_longitudinal_peak_migration: fm
+                            .rear
                             .combined_longitudinal_peak_migration,
                         min_relaxation_tau_s: fm.rear.min_relaxation_tau_s,
                         relaxation_recovery_scale: fm.rear.relaxation_recovery_scale,
@@ -331,10 +355,12 @@ impl JsonVehicleSpec {
                 surface_rolling_resistance,
                 // Surface longitudinal grip ratio (lateral_grip_assist is removed in v3 and
                 // never reaches runtime config).
-                surface_longitudinal_grip_ratio: build_surface_assist_map(&self.tires.surfaces, |e| {
-                    e.longitudinal_grip_ratio
-                }),
+                surface_longitudinal_grip_ratio: build_surface_assist_map(
+                    &self.tires.surfaces,
+                    |e| e.longitudinal_grip_ratio,
+                ),
                 surface_transition_tau_s: self.tires.surface_transition_tau_s.unwrap_or(0.0),
+                radial_damping_ratio: self.tires.radial_damping_ratio,
             },
             brakes: BrakesConfiguration {
                 front_brake_bias: self.brakes.front_brake_bias,
@@ -463,7 +489,9 @@ impl JsonVehicleSpec {
             chassis: JsonChassis {
                 vehicle_name: cfg.chassis.vehicle_name.clone(),
                 vehicle_mass: cfg.chassis.vehicle_mass,
-                vehicle_mass_excludes_wheel_assemblies: cfg.chassis.vehicle_mass_excludes_wheel_assemblies,
+                vehicle_mass_excludes_wheel_assemblies: cfg
+                    .chassis
+                    .vehicle_mass_excludes_wheel_assemblies,
                 front_weight_distribution: cfg.chassis.front_weight_distribution,
                 center_of_gravity_height_offset: cfg.chassis.center_of_gravity_height_offset,
                 inertia_multipliers: JsonVec3 {
@@ -480,7 +508,9 @@ impl JsonVehicleSpec {
                     y: cfg.fuel.tank_position_local_m.y,
                     z: cfg.fuel.tank_position_local_m.z,
                 },
-                brake_specific_consumption_kg_per_kwh: cfg.fuel.brake_specific_consumption_kg_per_kwh,
+                brake_specific_consumption_kg_per_kwh: cfg
+                    .fuel
+                    .brake_specific_consumption_kg_per_kwh,
                 idle_consumption_kg_per_hour: cfg.fuel.idle_consumption_kg_per_hour,
                 estimated_lap_consumption_kg: cfg.fuel.estimated_lap_consumption_kg,
                 reference_lap_time_s: cfg.fuel.reference_lap_time_s,
@@ -514,10 +544,16 @@ impl JsonVehicleSpec {
                 shift_time: cfg.powertrain.shift_time,
                 automatic_transmission: cfg.powertrain.automatic_transmission,
                 downshift_rev_matching_enabled: cfg.powertrain.downshift_rev_matching_enabled,
-                downshift_maximum_target_revolutions_per_minute_fraction: cfg.powertrain.downshift_maximum_target_revolutions_per_minute_fraction,
+                downshift_maximum_target_revolutions_per_minute_fraction: cfg
+                    .powertrain
+                    .downshift_maximum_target_revolutions_per_minute_fraction,
                 downshift_blip_torque_fraction: cfg.powertrain.downshift_blip_torque_fraction,
-                downshift_minimum_interval_seconds: cfg.powertrain.downshift_minimum_interval_seconds,
-                downshift_clutch_reengagement_seconds: cfg.powertrain.downshift_clutch_reengagement_seconds,
+                downshift_minimum_interval_seconds: cfg
+                    .powertrain
+                    .downshift_minimum_interval_seconds,
+                downshift_clutch_reengagement_seconds: cfg
+                    .powertrain
+                    .downshift_clutch_reengagement_seconds,
                 thermal: Some(cfg.powertrain.powertrain_thermal.clone()),
                 front_torque_split: cfg.powertrain.front_torque_split,
                 gear_inertia: 0.02,
@@ -535,7 +571,9 @@ impl JsonVehicleSpec {
                     coast_ramp_angle_deg: cfg.powertrain.diff_coast_ramp_angle_deg,
                     clutches: cfg.powertrain.diff_clutches,
                     clutch_friction_coefficient: cfg.powertrain.diff_clutch_friction_coeff,
-                    slip_transition_threshold_rad_s: cfg.powertrain.diff_slip_transition_threshold_rad_s,
+                    slip_transition_threshold_rad_s: cfg
+                        .powertrain
+                        .diff_slip_transition_threshold_rad_s,
                 },
             },
             suspension: JsonSuspension {
@@ -552,7 +590,8 @@ impl JsonVehicleSpec {
                     bump_stop_multiplier: cfg.suspension.front_bump_stop_multiplier,
                     camber_gain_rad_per_m: (cfg.schema_version >= 3)
                         .then(|| cfg.suspension.front_camber_gain_rad_per_m),
-                    toe_gain_rad_per_m: (cfg.schema_version >= 3).then(|| cfg.suspension.front_toe_gain_rad_per_m),
+                    toe_gain_rad_per_m: (cfg.schema_version >= 3)
+                        .then(|| cfg.suspension.front_toe_gain_rad_per_m),
                 },
                 rear: JsonSuspensionAxle {
                     spring_length: cfg.suspension.rear_spring_length,
@@ -566,7 +605,8 @@ impl JsonVehicleSpec {
                     bump_stop_multiplier: cfg.suspension.rear_bump_stop_multiplier,
                     camber_gain_rad_per_m: (cfg.schema_version >= 3)
                         .then(|| cfg.suspension.rear_camber_gain_rad_per_m),
-                    toe_gain_rad_per_m: (cfg.schema_version >= 3).then(|| cfg.suspension.rear_toe_gain_rad_per_m),
+                    toe_gain_rad_per_m: (cfg.schema_version >= 3)
+                        .then(|| cfg.suspension.rear_toe_gain_rad_per_m),
                 },
                 tri_ray_spacing_ratio: cfg.suspension.tri_ray_spacing_ratio,
                 // Visual-only geometry is not part of the force config; it is
@@ -575,9 +615,11 @@ impl JsonVehicleSpec {
                 model: cfg.suspension.suspension_model.as_str_name().to_string(),
                 model_version: cfg.suspension.suspension_model_version,
                 geometry_physical: cfg
-                    .suspension.geometric_suspension
+                    .suspension
+                    .geometric_suspension
                     .as_ref()
                     .map(geometric_to_json_value),
+                virtual_unsprung_mass_multiplier: cfg.suspension.virtual_unsprung_mass_multiplier,
             },
             tires: JsonTires {
                 front: JsonTireAxle {
@@ -607,6 +649,7 @@ impl JsonVehicleSpec {
                 surfaces,
                 surface_transition_tau_s: (cfg.schema_version >= 3)
                     .then_some(cfg.tires.surface_transition_tau_s),
+                radial_damping_ratio: cfg.tires.radial_damping_ratio,
                 pressure: Some(JsonTirePressure {
                     units: Some("kPa_gauge".to_string()),
                     cold_kpa_gauge: Some(wheel_name_map(cfg.tires.tire_pressure.cold_kpa_gauge)),
@@ -614,16 +657,28 @@ impl JsonVehicleSpec {
                         cfg.tires.tire_pressure.reference_hot_kpa_gauge,
                     )),
                     reference_temperature_c: Some(cfg.tires.tire_pressure.reference_temperature_c),
-                    atmospheric_pressure_kpa: Some(cfg.tires.tire_pressure.atmospheric_pressure_kpa),
+                    atmospheric_pressure_kpa: Some(
+                        cfg.tires.tire_pressure.atmospheric_pressure_kpa,
+                    ),
                 }),
                 thermal: Some(JsonTireThermal::from_config(&cfg.tires.tire_thermal)),
-                wear: (cfg.schema_version >= 3).then(|| JsonTireWear::from_config(&cfg.tires.tire_wear)),
+                wear: (cfg.schema_version >= 3)
+                    .then(|| JsonTireWear::from_config(&cfg.tires.tire_wear)),
                 force_model: (cfg.schema_version >= 3).then(|| JsonTireForceModel {
                     front: JsonTireForceProfile {
-                        lateral_peak_slip_angle_rad: cfg.tires.front_tire_force.lateral_peak_slip_angle_rad,
-                        longitudinal_peak_slip_ratio: cfg.tires.front_tire_force.longitudinal_peak_slip_ratio,
+                        lateral_peak_slip_angle_rad: cfg
+                            .tires
+                            .front_tire_force
+                            .lateral_peak_slip_angle_rad,
+                        longitudinal_peak_slip_ratio: cfg
+                            .tires
+                            .front_tire_force
+                            .longitudinal_peak_slip_ratio,
                         lateral_slide_mu_ratio: cfg.tires.front_tire_force.lateral_slide_mu_ratio,
-                        longitudinal_slide_mu_ratio: cfg.tires.front_tire_force.longitudinal_slide_mu_ratio,
+                        longitudinal_slide_mu_ratio: cfg
+                            .tires
+                            .front_tire_force
+                            .longitudinal_slide_mu_ratio,
                         budget_blend_width: cfg.tires.front_tire_force.budget_blend_width,
                         falloff_sharpness: cfg.tires.front_tire_force.falloff_sharpness,
                         slip_loss_tau_s: cfg.tires.front_tire_force.slip_loss_tau_s,
@@ -637,14 +692,26 @@ impl JsonVehicleSpec {
                             .front_tire_force
                             .combined_longitudinal_peak_migration,
                         min_relaxation_tau_s: cfg.tires.front_tire_force.min_relaxation_tau_s,
-                        relaxation_recovery_scale: cfg.tires.front_tire_force.relaxation_recovery_scale,
+                        relaxation_recovery_scale: cfg
+                            .tires
+                            .front_tire_force
+                            .relaxation_recovery_scale,
                         contact_ramp_tau_s: cfg.tires.front_tire_force.contact_ramp_tau_s,
                     },
                     rear: JsonTireForceProfile {
-                        lateral_peak_slip_angle_rad: cfg.tires.rear_tire_force.lateral_peak_slip_angle_rad,
-                        longitudinal_peak_slip_ratio: cfg.tires.rear_tire_force.longitudinal_peak_slip_ratio,
+                        lateral_peak_slip_angle_rad: cfg
+                            .tires
+                            .rear_tire_force
+                            .lateral_peak_slip_angle_rad,
+                        longitudinal_peak_slip_ratio: cfg
+                            .tires
+                            .rear_tire_force
+                            .longitudinal_peak_slip_ratio,
                         lateral_slide_mu_ratio: cfg.tires.rear_tire_force.lateral_slide_mu_ratio,
-                        longitudinal_slide_mu_ratio: cfg.tires.rear_tire_force.longitudinal_slide_mu_ratio,
+                        longitudinal_slide_mu_ratio: cfg
+                            .tires
+                            .rear_tire_force
+                            .longitudinal_slide_mu_ratio,
                         budget_blend_width: cfg.tires.rear_tire_force.budget_blend_width,
                         falloff_sharpness: cfg.tires.rear_tire_force.falloff_sharpness,
                         slip_loss_tau_s: cfg.tires.rear_tire_force.slip_loss_tau_s,
@@ -658,14 +725,20 @@ impl JsonVehicleSpec {
                             .rear_tire_force
                             .combined_longitudinal_peak_migration,
                         min_relaxation_tau_s: cfg.tires.rear_tire_force.min_relaxation_tau_s,
-                        relaxation_recovery_scale: cfg.tires.rear_tire_force.relaxation_recovery_scale,
+                        relaxation_recovery_scale: cfg
+                            .tires
+                            .rear_tire_force
+                            .relaxation_recovery_scale,
                         contact_ramp_tau_s: cfg.tires.rear_tire_force.contact_ramp_tau_s,
                     },
                 }),
                 pressure_mechanics: (cfg.schema_version >= 3).then(|| JsonPressureMechanics {
                     compliance_sensitivity: cfg.tires.pressure_mechanics.compliance_sensitivity,
                     response_sensitivity: cfg.tires.pressure_mechanics.response_sensitivity,
-                    rolling_resistance_sensitivity: cfg.tires.pressure_mechanics.rolling_resistance_sensitivity,
+                    rolling_resistance_sensitivity: cfg
+                        .tires
+                        .pressure_mechanics
+                        .rolling_resistance_sensitivity,
                 }),
             },
             brakes: JsonBrakes {
@@ -704,7 +777,10 @@ impl JsonVehicleSpec {
                 traction_control_cut_gain: cfg.aids.traction_control_cut_gain,
                 traction_control_actuator: cfg.aids.traction_control_actuator.clone(),
                 traction_control_gear_authority: cfg.aids.traction_control_gear_authority.clone(),
-                traction_control_gear_slip_target: cfg.aids.traction_control_gear_slip_target.clone(),
+                traction_control_gear_slip_target: cfg
+                    .aids
+                    .traction_control_gear_slip_target
+                    .clone(),
                 traction_control_gear_max_cut: cfg.aids.traction_control_gear_max_cut.clone(),
                 traction_control_attack_rate: cfg.aids.traction_control_attack_rate,
                 traction_control_release_rate: cfg.aids.traction_control_release_rate,

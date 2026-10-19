@@ -26,6 +26,9 @@ pub(crate) struct JsonSuspension {
     /// SUS-GEO-02 physical geometry + elements. Required for geometric.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) geometry_physical: Option<serde_json::Value>,
+    /// Simplified-backend virtual unsprung mass scale over the resolved corner mass.
+    #[serde(default = "default_virtual_unsprung_mass_multiplier")]
+    pub(crate) virtual_unsprung_mass_multiplier: f64,
 }
 impl Default for JsonSuspension {
     fn default() -> Self {
@@ -38,8 +41,12 @@ impl Default for JsonSuspension {
             model: default_suspension_model_name(),
             model_version: default_suspension_model_version(),
             geometry_physical: None,
+            virtual_unsprung_mass_multiplier: default_virtual_unsprung_mass_multiplier(),
         }
     }
+}
+pub(crate) fn default_virtual_unsprung_mass_multiplier() -> f64 {
+    1.0
 }
 pub(crate) fn default_suspension_model_name() -> String {
     "legacy_1dof".to_string()

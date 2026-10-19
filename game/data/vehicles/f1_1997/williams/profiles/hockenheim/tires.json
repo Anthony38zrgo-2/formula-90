@@ -1,5 +1,6 @@
 {
   "tires": {
+    "radial_damping_ratio": 0.45,
     "airborne_spin_decay_torque": 1.0,
     "contact_patch": 0.35,
     "force_model": {

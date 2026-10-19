@@ -1,6 +1,7 @@
 {
   "suspension": {
     "use_authored_wheel_centers": true,
+    "virtual_unsprung_mass_multiplier": 1.25,
     "front": {
       "arb_ratio": 1.00,
       "bump_damp_multiplier": 1.0,
@@ -245,12 +246,12 @@
       },
       "rear": {
         "bump_stop_mult": 2.8,
-        "damper_bump_Ns_per_m": 7395.0,
+        "damper_bump_Ns_per_m": 14000.0,
         "damper_fast_factor": 0.5,
         "damper_knee_m_per_s": 0.127,
         "damper_max_m": 0.4,
         "damper_min_m": 0.15,
-        "damper_rebound_Ns_per_m": 11305.0,
+        "damper_rebound_Ns_per_m": 22000.0,
         "spring_free_length_m": 0.2911941727167742,
         "spring_installed_length_m": 0.25,
         "spring_rate_N_per_m": 142800.0,

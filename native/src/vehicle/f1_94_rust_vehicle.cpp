@@ -2212,6 +2212,19 @@ void F194RustVehicle::apply_core_telemetry(const CSimTelemetry &p_telemetry, dou
 	wheel_drive_torques_[2] = p_telemetry.drive_torque;
 	wheel_drive_torques_[3] = p_telemetry.drive_torque;
 
+	DriverTireStateSnapshot normal_load_snapshot{};
+	bool has_normal_load_snapshot = false;
+	if (bridge_controlled_) {
+		has_normal_load_snapshot = core_driver_ && core_driver_->read_driver_tire_state(&normal_load_snapshot);
+	} else if (sim_ptr_ && read_driver_tire_state_function_) {
+		has_normal_load_snapshot = read_driver_tire_state_function_(sim_ptr_, &normal_load_snapshot);
+	}
+	if (has_normal_load_snapshot) {
+		for (int i = 0; i < 4; ++i) {
+			wheel_normal_forces_[i] = normal_load_snapshot.wheel_normal_load_newtons[i];
+		}
+	}
+
 	if (!physical_world_controlled) { update_wheel_visuals(p_dt); }
 }
 
