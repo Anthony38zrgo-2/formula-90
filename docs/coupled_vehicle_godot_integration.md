@@ -14,6 +14,8 @@ The Rust world interface can also own supported track-marker cones and portable 
 
 At physics priority 1000, it queues each vehicle's current input at physical time plus the unconsumed host fraction, then advances the shared Rust world exactly once. Gear requests below -1 mean no change; accepted requests are consumed once. Tree pause pauses the world without consuming physical time.
 
+The controller exposes `vehicle_physical_frequencies` for the explicit per-vehicle rate. The Rust world accepts world-frequency player vehicles and 60 Hz AI vehicles, updates all AI together every second world tick, holds AI between updates, solves player-AI contacts at 120 Hz with the AI treated as fixed, and solves AI-AI contacts only on the AI phase. Dynamic objects remain at 120 Hz. Mixed-frequency scenes still require explicit configuration and runtime acceptance.
+
 Native vehicle proxies have zero collision layer/mask and gravity, use a custom integrator, and remain frozen. Their previous Godot force callback and the legacy core force callback return immediately under Rust ownership. A failed candidate stops scheduling and freezes its explicitly bound bodies.
 
 ## Presentation, telemetry and audio
@@ -49,6 +51,7 @@ Evidence is under `scratch/coupled_vehicle_godot_integration/`:
 - Three Rust presentation tests: physical ownership and clock isolation; rejection of incompatible identity/time/mass; finite, nonzero sampler output from physical snapshots.
 - One existing Rust pit-service facade regression test.
 - Twenty-five coupled world tests.
+- Six mixed-frequency Rust tests: player/AI cadence, held AI contacts, AI-only phase contacts, frequency validation and fixed-entity solve.
 - Godot controller contract with two mock vehicles: input order, one advance, retained host fraction, pause, services and removal.
 - Native Godot harness with two real native vehicle/core pairs and the source-verified Fuji collision package: registration, snapshots, stepping, physically inert Godot proxies, pose agreement, 20 kg refuel and 718 kg operating mass, tire replacement, requested-pose reset, pause and removal.
 - The same native harness instantiates the real wheel/link renderers, checks Rust/rendered hub and damper agreement, and verifies zero second linkage solves.
@@ -56,3 +59,7 @@ Evidence is under `scratch/coupled_vehicle_godot_integration/`:
 - A fresh reduced Godot C++ SDK build and an isolated extension containing the production world-interface, vehicle and core translation units. No SDK object/library caches were copied into the fresh build.
 
 The harness runs in an isolated diagnostic project with audio playback disabled. The Rust sampler test checks signal generation, not a listening judgment. These checks do not replace a full production extension rebuild, canonical scene run, sustained driving, impact matrix, rendered whole-car review, replay parity or full-grid performance acceptance. The previously recorded performance failure remains open.
+
+The Rust candidate now also has an eleven-scenario synthetic impact matrix: frontal and nose-down asphalt, oblique wall, partial curb, bottoming, landing, sidewall, wheel-to-wheel, three- and four-car pileups, and a 300 km/h thin-wall no-tunnel case. It is a candidate diagnostic harness, not the canonical Fuji/runtime matrix.
+
+The new race-cost benchmark measures mixed 20 cars at 36.5 ms mean / 73.9 ms p95 for the player frame and 38.8 ms / 53.2 ms for the 60 Hz AI phase; mixed 50 cars at 95.5 ms / 184.7 ms and 103.2 ms / 137.3 ms. The provisional split budget is not met; see `docs/coupled_vehicle_race_cost_benchmark.md`.

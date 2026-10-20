@@ -11,6 +11,7 @@ signal physical_world_collision_events_published(events: Array)
 @export var vehicle_profile_paths: Array[String] = []
 @export var vehicle_paths: Array[NodePath] = []
 @export var presentation_core_paths: Array[NodePath] = []
+@export var vehicle_physical_frequencies: Array[int] = []
 
 var physical_world_interface: RefCounted
 var world_identifier: int = 0
@@ -36,6 +37,8 @@ func initialize_physical_world() -> bool:
 		return false
 	if physical_package_path.is_empty() or vehicle_paths.is_empty() or vehicle_paths.size() != presentation_core_paths.size() or vehicle_paths.size() != vehicle_profile_paths.size():
 		return fail_physical_world("Explicit package, vehicle, profile and presentation core bindings are required")
+	if not vehicle_physical_frequencies.is_empty() and vehicle_physical_frequencies.size() != vehicle_paths.size():
+		return fail_physical_world("Vehicle physical frequencies must match the vehicle bindings")
 	if not ClassDB.class_exists("PhysicalVehicleWorldInterface"):
 		return fail_physical_world("Native physical world interface is unavailable")
 	physical_world_interface = ClassDB.instantiate("PhysicalVehicleWorldInterface")
@@ -73,11 +76,15 @@ func initialize_physical_world() -> bool:
 	if failed:
 		return false
 	world_identifier = int(created["world_identifier"])
+	var world_frequency := int(profiles[0].get("coupled_world", {}).get("physical_frequency_hertz", 120))
 	for binding_index in range(vehicles.size()):
 		if profiles[binding_index].get("coupled_world") != profiles[0].get("coupled_world"):
 			return fail_physical_world("All vehicles must share one world configuration")
 		var vehicle: Node3D = vehicles[binding_index]
-		var registered := request_physical_world({"operation": "register_vehicle", "vehicle_profile": profiles[binding_index], "position_world_metres": vector_document(vehicle.global_position), "yaw_radians": vehicle.global_rotation.y})
+		var physical_frequency := world_frequency
+		if not vehicle_physical_frequencies.is_empty():
+			physical_frequency = vehicle_physical_frequencies[binding_index]
+		var registered := request_physical_world({"operation": "register_vehicle", "vehicle_profile": profiles[binding_index], "position_world_metres": vector_document(vehicle.global_position), "yaw_radians": vehicle.global_rotation.y, "physical_frequency_hertz": physical_frequency})
 		if failed:
 			return false
 		var entity_identifier := int(registered["entity_identifier"])

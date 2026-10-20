@@ -96,6 +96,32 @@ Suspension advancement uses semi-implicit force reevaluation, localized travel c
   triangle features, and CCD skips persistent/resting pairs to avoid micro-impact
   event storms. Five rest-stability tests pass. Stack/pile-up, long-duration
   friction, curb rest and material calibration remain open.
+- Item 43: eleven synthetic impact-matrix tests cover frontal and nose-down
+  asphalt impacts, oblique wall contact, a partial curb, a bottoming platform,
+  landing with travel-stop diagnostics, a sidewall, wheel-to-wheel pair events,
+  three- and four-vehicle pileups and a 300 km/h thin-wall no-tunnel case. They
+  check uprightness, bounded penetration, finite state, events, islands,
+  passive collision energy and island formation. Most scenarios isolate kinematics
+  with zero restitution and 1e-6 impact friction. Severe impacts exceed the
+  production 10 rad/s angular domain and use a diagnostic 60 rad/s ceiling; the
+  four-vehicle case uses a 1e-5 m/s tolerance instead of the production 1e-6.
+  Synthetic geometry, production restitution/friction, composite curb/sidewall
+  meshes, the Fuji package, item 16 travel-stop ownership, item 23 benches, item 42
+  activation and performance remain open.
+- Item 46: a reproducible release benchmark measures the first 20 and 50 authored
+  Fuji grid spots at 120 Hz with warmup, idle/rolling/mixed packs, mean/p50/p95/p99
+  wall time, hardware, BUILD/HEAD and per-stage profiling. The mixed scheduler runs
+  one 120 Hz player and 60 Hz AI vehicles, updates all AI together every second
+  tick, holds AI between updates, solves player-AI contacts at 120 Hz with the AI
+  fixed, and solves AI-AI contacts only on the AI phase. The provisional split
+  budget fails: 20-car player frame mean 36.5 ms / p95 73.9 ms and AI phase 38.8 ms
+  mean / 53.2 ms p95; 50-car player frame mean 95.5 ms / p95 184.7 ms and AI phase
+  103.2 ms mean / 137.3 ms p95. Six mixed-frequency tests pass. Cached terrain AABBs, cached shape bounds and one
+  fewer shape attachment improved the short uniform 20-car idle sample by about 3
+  percent. The dominant cost is per-vehicle force evaluation (~1.15–1.18
+  ms/car/step), not geometry or the contact matrix. Meeting the budget requires
+  model simplification, deterministic parallelism, fewer evaluations per step or a
+  revised budget.
 
 ## Implemented candidate world and contacts
 

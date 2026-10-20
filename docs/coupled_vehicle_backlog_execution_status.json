@@ -2,8 +2,8 @@
   "schema_version": 1,
   "authorized_scope": "All 50 items in instrucciones.md",
   "source_branch": "main-clean",
-  "source_head": "29d9fc521f28814a7b35e896201971b50614ba18",
-  "source_head_note": "Candidate items 17 and 28-35 were developed on top of this HEAD and are included in the atomic candidate commit; game/BUILD_SOURCE is still awaiting a resealing rebuild.",
+  "source_head": "adcc109f8db03d27f02950c828ac31d99c9c69c1",
+  "source_head_note": "Items 17 and 28-35 are committed here; the item 43 impact-matrix and item 46 race-cost candidates remain in the working tree. game/BUILD_SOURCE is still awaiting a resealing rebuild.",
   "complete_backlog_delivered": false,
   "runtime_activated": false,
   "human_approved": false,
@@ -469,7 +469,7 @@
       ],
       "status": "implemented_awaiting_review",
       "human_approved": false,
-      "candidate_progress": "Native world loader, full source parity gate, owned response buffers and close/removal lifecycle exercised with freshly compiled isolated libraries.",
+      "candidate_progress": "Native world loader, full source parity gate, owned response buffers and close/removal lifecycle exercised with freshly compiled isolated libraries. Vehicle registration accepts an optional per-vehicle physical frequency (player 120 Hz, AI 60 Hz).",
       "remaining_acceptance": "Rebuild and validate the complete production extension and canonical game runtime."
     },
     {
@@ -481,7 +481,7 @@
       ],
       "status": "implemented_awaiting_review",
       "human_approved": false,
-      "candidate_progress": "Opt-in Godot controller queues all vehicle inputs then advances one shared Rust world; native vehicle proxies are frozen with collision layers, masks and gravity disabled. Two-vehicle native smoke passes.",
+      "candidate_progress": "Opt-in Godot controller queues all vehicle inputs then advances one shared Rust world; native vehicle proxies are frozen with collision layers, masks and gravity disabled. The controller can pass per-vehicle physical frequencies; the Rust world runs 120 Hz players and all 60 Hz AI together every second tick with AI held between updates. Two-vehicle native smoke passes.",
       "remaining_acceptance": "Review the complete canonical scene and full race scheduling/performance; obtain human approval before default activation."
     },
     {
@@ -573,8 +573,8 @@
       ],
       "status": "implementing",
       "human_approved": false,
-      "candidate_progress": "Selected analytical contact, friction, braking, energy and timestamp tests pass.",
-      "remaining_acceptance": "Execute complete world geometry, impacts, rest, curb, travel and multi-car acceptance matrix."
+      "candidate_progress": "Eleven synthetic Rust impact-matrix tests pass: frontal wall, nose-down asphalt, oblique wall, partial curb, bottoming platform, landing with travel-stop diagnostics, sidewall, wheel-to-wheel pair events, three- and four-vehicle pileups, and a 300 km/h thin-wall no-tunnel case. The matrix checks uprightness, bounded penetration, finite state, collision events, islands, passive collision energy and island formation. Most scenarios isolate kinematics with zero restitution and 1e-6 impact friction. Severe impacts required a diagnostic angular-domain ceiling of 60 rad/s, and the four-vehicle pileup required a 1e-5 m/s tolerance; production values remain 10 rad/s and 1e-6 m/s.",
+      "remaining_acceptance": "Human review and production calibration of the angular domain, restitution/friction and multi-contact tolerance. The matrix still uses synthetic geometry rather than the complete Fuji package and canonical runtime; composite curb/sidewall/bottoming meshes, travel-stop event ownership (item 16), pre-collision benches (item 23), activation gates (item 42), sustained multi-car/pileup energy closure and performance remain open."
     },
     {
       "identifier": "44",
@@ -620,8 +620,8 @@
       ],
       "status": "implementing",
       "human_approved": false,
-      "candidate_progress": "Short 32-car sample fails real-time target; isolated kernel profiler implemented.",
-      "remaining_acceptance": "Optimize verified geometry/matrix bottlenecks and measure racing median/tail costs on all authored grid spots."
+      "candidate_progress": "Added a reproducible release benchmark for the first 20 and 50 authored Fuji grid spots at 120 Hz, with warmup, idle/rolling/mixed packs, mean/p50/p95/p99 wall time, hardware, BUILD/HEAD, per-stage profiling and a separate 60 Hz AI-phase budget. The mixed scheduler registers one 120 Hz player and 60 Hz AI vehicles, updates all AI together every second world tick, holds AI between updates, solves player-AI contacts at 120 Hz with the AI fixed, and solves AI-AI contacts only on the AI phase. Six mixed-frequency tests pass. Mixed results still fail the provisional budget: 20-car player frame mean 36.5 ms / p95 73.9 ms and AI phase 38.8 ms mean / 53.2 ms p95; 50-car player frame mean 95.5 ms / p95 184.7 ms and AI phase 103.2 ms mean / 137.3 ms p95. Safe optimizations improved the uniform 20-car idle sample by about 3 percent. The dominant cost remains per-vehicle force evaluation (~1.15-1.18 ms/car/step), not geometry or the contact matrix.",
+      "remaining_acceptance": "Human review of the mixed-frequency policy and the provisional split budget. The geometric profile still cannot meet either budget without model simplification, deterministic parallel evaluation, fewer evaluations per step or a revised budget. Add scripted race inputs, full-lap percentiles, rigid multi-car contact and clean BUILD/HEAD runtime measurements; the benchmark excludes rendering, audio, transport and presentation."
     },
     {
       "identifier": "47",

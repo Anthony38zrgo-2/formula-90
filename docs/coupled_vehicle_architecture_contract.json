@@ -178,7 +178,20 @@
   ],
   "transition_contract": {
     "one_physics_clock_per_world": true,
+    "one_world_clock_with_entity_rates": true,
     "one_owner_per_force_and_contact": true,
+    "mixed_frequency_policy": {
+      "player_vehicle_hertz": 120,
+      "ai_vehicle_hertz": 60,
+      "ai_update_phase": "all_ai_together_every_second_world_tick",
+      "ai_phase_order": "ai_phase_before_player_phase_on_update_tick",
+      "ai_held_between_updates": true,
+      "mixed_input_timing": "inputs_applied_at_120_hz_tick_boundaries_ai_inputs_at_next_ai_phase",
+      "player_ai_contact_hertz": 120,
+      "player_ai_ai_response": "fixed_entity_player_response_only",
+      "ai_ai_contact_hertz": 60,
+      "dynamic_object_hertz": 120
+    },
     "target_velocity_coordinate_count": "At least six body, four suspension travel and four wheel spin velocities; drivetrain states remain explicit",
     "reference_velocity_coordinate_count": 10,
     "contact_geometry_updates": "Refresh or conservatively validate during physical subdivisions",

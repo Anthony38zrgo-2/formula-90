@@ -83,27 +83,43 @@ pub fn generalized_contact_relative_velocity(constraint: &GeneralizedContactCons
 
 fn apply_contact_impulse(constraint: &GeneralizedContactConstraint, axis: usize, impulse: f64,
     responses: &[([GeneralizedVehicleVelocity; 3], [GeneralizedVehicleVelocity; 3])], index: usize,
-    velocities: &mut [GeneralizedVehicleVelocity]) {
+    velocities: &mut [GeneralizedVehicleVelocity], fixed_entities: &[bool]) {
     for coordinate in 0..VEHICLE_GENERALIZED_VELOCITY_COUNT {
-        velocities[constraint.first_entity][coordinate] += responses[index].0[axis][coordinate] * impulse;
-        if let Some(entity) = constraint.second_entity { velocities[entity][coordinate] += responses[index].1[axis][coordinate] * impulse; }
+        if !fixed_entities[constraint.first_entity] {
+            velocities[constraint.first_entity][coordinate] += responses[index].0[axis][coordinate] * impulse;
+        }
+        if let Some(entity) = constraint.second_entity {
+            if !fixed_entities[entity] {
+                velocities[entity][coordinate] += responses[index].1[axis][coordinate] * impulse;
+            }
+        }
     }
 }
 
 pub fn solve_generalized_vehicle_contacts(matrices: &[GeneralizedVehicleMatrix], velocities: &mut [GeneralizedVehicleVelocity],
     constraints: &mut [GeneralizedContactConstraint], settings: &GeneralizedContactSettings) -> Result<GeneralizedContactResult, String> {
+    let fixed_entities = vec![false; velocities.len()];
+    solve_generalized_vehicle_contacts_with_fixed_entities(matrices, velocities, constraints, settings, &fixed_entities)
+}
+
+pub fn solve_generalized_vehicle_contacts_with_fixed_entities(matrices: &[GeneralizedVehicleMatrix],
+    velocities: &mut [GeneralizedVehicleVelocity], constraints: &mut [GeneralizedContactConstraint],
+    settings: &GeneralizedContactSettings, fixed_entities: &[bool]) -> Result<GeneralizedContactResult, String> {
     let mut candidate_velocities = velocities.to_vec();
     let mut candidate_constraints = constraints.to_vec();
-    let result = solve_generalized_vehicle_contact_candidate(matrices, &mut candidate_velocities, &mut candidate_constraints, settings)?;
+    let result = solve_generalized_vehicle_contact_candidate(matrices, &mut candidate_velocities,
+        &mut candidate_constraints, settings, fixed_entities)?;
     velocities.copy_from_slice(&candidate_velocities);
     constraints.clone_from_slice(&candidate_constraints);
     Ok(result)
 }
 
 fn solve_generalized_vehicle_contact_candidate(matrices: &[GeneralizedVehicleMatrix], velocities: &mut [GeneralizedVehicleVelocity],
-    constraints: &mut [GeneralizedContactConstraint], settings: &GeneralizedContactSettings) -> Result<GeneralizedContactResult, String> {
+    constraints: &mut [GeneralizedContactConstraint], settings: &GeneralizedContactSettings,
+    fixed_entities: &[bool]) -> Result<GeneralizedContactResult, String> {
     settings.validate()?;
-    if matrices.len() != velocities.len() || velocities.iter().flatten().any(|value| !value.is_finite()) {
+    if matrices.len() != velocities.len() || velocities.iter().flatten().any(|value| !value.is_finite())
+        || fixed_entities.len() != velocities.len() {
         return Err("Invalid generalized contact state dimensions or velocities".into());
     }
     let factors = matrices.iter().map(factor_generalized_vehicle_matrix).collect::<Result<Vec<_>, _>>()?;
@@ -126,11 +142,15 @@ fn solve_generalized_vehicle_contact_candidate(matrices: &[GeneralizedVehicleMat
         let mut second_response = [[0.0; VEHICLE_GENERALIZED_VELOCITY_COUNT]; 3];
         let mut inverse_mass = [0.0; 3];
         for axis in 0..3 {
-            first_response[axis] = solve_factored_vehicle_matrix(&factors[constraint.first_entity], constraint.first_jacobians[axis])?;
-            inverse_mass[axis] = generalized_projection(constraint.first_jacobians[axis], first_response[axis]);
+            if !fixed_entities[constraint.first_entity] {
+                first_response[axis] = solve_factored_vehicle_matrix(&factors[constraint.first_entity], constraint.first_jacobians[axis])?;
+                inverse_mass[axis] = generalized_projection(constraint.first_jacobians[axis], first_response[axis]);
+            }
             if let Some(entity) = constraint.second_entity {
-                second_response[axis] = solve_factored_vehicle_matrix(&factors[entity], constraint.second_jacobians[axis])?;
-                inverse_mass[axis] += generalized_projection(constraint.second_jacobians[axis], second_response[axis]);
+                if !fixed_entities[entity] {
+                    second_response[axis] = solve_factored_vehicle_matrix(&factors[entity], constraint.second_jacobians[axis])?;
+                    inverse_mass[axis] += generalized_projection(constraint.second_jacobians[axis], second_response[axis]);
+                }
             }
             if inverse_mass[axis] <= 0.0 || !inverse_mass[axis].is_finite() { return Err("Contact has singular generalized effective mass".into()); }
         }
@@ -153,12 +173,12 @@ fn solve_generalized_vehicle_contact_candidate(matrices: &[GeneralizedVehicleMat
     for (index, constraint) in constraints.iter().enumerate() {
         let normal_impulse = constraint.normal_impulse_newton_seconds;
         if normal_impulse != 0.0 {
-            apply_contact_impulse(constraint, 0, normal_impulse, &responses, index, velocities);
+            apply_contact_impulse(constraint, 0, normal_impulse, &responses, index, velocities, fixed_entities);
         }
         for tangent in 0..2 {
             let impulse = constraint.tangential_impulse_newton_seconds[tangent];
             if impulse != 0.0 {
-                apply_contact_impulse(constraint, tangent + 1, impulse, &responses, index, velocities);
+                apply_contact_impulse(constraint, tangent + 1, impulse, &responses, index, velocities, fixed_entities);
             }
         }
     }
@@ -193,7 +213,7 @@ fn solve_generalized_vehicle_contact_candidate(matrices: &[GeneralizedVehicleMat
     loop {
         for (index, constraint) in constraints.iter_mut().enumerate() {
             let impulse = constraint.normal_impulse_newton_seconds;
-            if impulse != 0.0 { apply_contact_impulse(constraint, 0, -impulse, &responses, index, velocities); }
+            if impulse != 0.0 { apply_contact_impulse(constraint, 0, -impulse, &responses, index, velocities, fixed_entities); }
             constraint.normal_impulse_newton_seconds = 0.0;
         }
         let current_normal_velocities: Vec<f64> = constraints.iter()
@@ -206,7 +226,7 @@ fn solve_generalized_vehicle_contact_candidate(matrices: &[GeneralizedVehicleMat
         for (index, constraint) in constraints.iter_mut().enumerate() {
             let impulse = resolved_normal_impulses[index];
             constraint.normal_impulse_newton_seconds = impulse;
-            apply_contact_impulse(constraint, 0, impulse, &responses, index, velocities);
+            apply_contact_impulse(constraint, 0, impulse, &responses, index, velocities, fixed_entities);
         }
         for _ in 0..settings.maximum_iterations {
             for (index, constraint) in constraints.iter_mut().enumerate() {
@@ -225,7 +245,7 @@ fn solve_generalized_vehicle_contact_candidate(matrices: &[GeneralizedVehicleMat
                 constraint.tangential_impulse_newton_seconds = next;
                 for tangent in 0..2 {
                     apply_contact_impulse(constraint, tangent + 1, next[tangent] - previous[tangent],
-                        &responses, index, velocities);
+                        &responses, index, velocities, fixed_entities);
                 }
             }
             used_iterations += 1;
@@ -266,9 +286,13 @@ fn solve_generalized_vehicle_contact_candidate(matrices: &[GeneralizedVehicleMat
     for constraint in constraints.iter() {
         let impulses = [constraint.normal_impulse_newton_seconds, constraint.tangential_impulse_newton_seconds[0], constraint.tangential_impulse_newton_seconds[1]];
         for axis in 0..3 {
-            prescribed_actuator_work[constraint.first_entity] -= impulses[axis] * constraint.first_prescribed_velocity_metres_per_second[axis];
+            if !fixed_entities[constraint.first_entity] {
+                prescribed_actuator_work[constraint.first_entity] -= impulses[axis] * constraint.first_prescribed_velocity_metres_per_second[axis];
+            }
             if let Some(entity) = constraint.second_entity {
-                prescribed_actuator_work[entity] -= impulses[axis] * constraint.second_prescribed_velocity_metres_per_second[axis];
+                if !fixed_entities[entity] {
+                    prescribed_actuator_work[entity] -= impulses[axis] * constraint.second_prescribed_velocity_metres_per_second[axis];
+                }
             }
         }
     }

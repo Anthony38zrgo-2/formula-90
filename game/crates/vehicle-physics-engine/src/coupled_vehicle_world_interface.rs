@@ -22,7 +22,7 @@ pub enum CoupledVehicleWorldRequest {
     ResolveVehicleProfile { interface_version: u32, repository_root: PathBuf, vehicle_profile_path: PathBuf, #[serde(default)] resolve_suspension_presentation: bool },
     CreateWorld { interface_version: u32, repository_root: PathBuf, physical_package_path: PathBuf, #[serde(default)] configuration: Option<CoupledVehicleWorldConfiguration>, #[serde(default)] vehicle_profile: Option<String> },
     DestroyWorld { world_identifier: u64 },
-    RegisterVehicle { world_identifier: u64, vehicle_profile: String, position_world_metres: Vec3, yaw_radians: f64 },
+    RegisterVehicle { world_identifier: u64, vehicle_profile: String, position_world_metres: Vec3, yaw_radians: f64, #[serde(default)] physical_frequency_hertz: Option<u32> },
     RemoveVehicle { world_identifier: u64, entity_identifier: u64 },
     RegisterDynamicObject { world_identifier: u64, definition: DynamicWorldObjectDefinition, position_world_metres: Vec3, orientation: Quat },
     RemoveDynamicObject { world_identifier: u64, entity_identifier: u64 },
@@ -99,10 +99,12 @@ impl CoupledVehicleWorldRegistry {
                 self.worlds.remove(&world_identifier);
                 Ok(serde_json::json!({"destroyed": world_identifier}))
             }
-            CoupledVehicleWorldRequest::RegisterVehicle { world_identifier, vehicle_profile, position_world_metres, yaw_radians } => {
+            CoupledVehicleWorldRequest::RegisterVehicle { world_identifier, vehicle_profile, position_world_metres, yaw_radians, physical_frequency_hertz } => {
                 let configuration = VehicleConfig::from_json_str(&vehicle_profile)?;
-                let identifier = self.world(world_identifier)?.register_vehicle(configuration, position_world_metres, yaw_radians)?;
-                Ok(serde_json::json!({"entity_identifier": identifier}))
+                let world = self.world(world_identifier)?;
+                let frequency = physical_frequency_hertz.unwrap_or(world.configuration.physical_frequency_hertz);
+                let identifier = world.register_vehicle_with_frequency(configuration, position_world_metres, yaw_radians, frequency)?;
+                Ok(serde_json::json!({"entity_identifier": identifier, "physical_frequency_hertz": frequency}))
             }
             CoupledVehicleWorldRequest::RemoveVehicle { world_identifier, entity_identifier } => {
                 self.world(world_identifier)?.remove_vehicle(entity_identifier)?;

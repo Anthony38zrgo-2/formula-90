@@ -8,7 +8,7 @@ use crate::dynamic_world_objects::{
     DYNAMIC_WORLD_OBJECT_SUPPORT_NORMAL_MINIMUM_Y,
     DYNAMIC_WORLD_OBJECT_WAKE_RELATIVE_SPEED_METRES_PER_SECOND,
 };
-use crate::generalized_vehicle_contacts::{solve_generalized_vehicle_contacts, GeneralizedContactConstraint, GeneralizedContactSettings};
+use crate::generalized_vehicle_contacts::{solve_generalized_vehicle_contacts_with_fixed_entities, GeneralizedContactConstraint, GeneralizedContactSettings};
 use crate::physical_collision_world::{physical_pose, shape_pair_contact_manifolds, PhysicalCollisionWorld};
 use crate::simulation::{BodyKinematics, CoupledVehicleForceContext, VehicleSimulator};
 use crate::suspension_component_kinematics::wheel_contact_component;
@@ -23,6 +23,7 @@ use parry3d_f64::query::{cast_shapes_nonlinear, NonlinearRigidMotion};
 use parry3d_f64::shape::SharedShape;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::time::Instant;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -87,6 +88,7 @@ pub struct CoupledWorldVehicle {
     pub pending_inputs: VecDeque<TimestampedVehicleInput>,
     pub driving_aids_mask: u32,
     pub last_force_input: CoupledSuspensionInput,
+    pub physical_frequency_hertz: u32,
     pub spawn_position_world_metres: Vec3,
     pub spawn_yaw_radians: f64,
 }
@@ -94,6 +96,7 @@ pub struct CoupledWorldVehicle {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CoupledWorldSnapshot {
     pub entity_identifier: u64,
+    pub physical_frequency_hertz: u32,
     pub state: CoupledVehicleState,
     pub telemetry: TelemetryFrame,
     pub systems_state: crate::simulation::VehicleState,
@@ -261,6 +264,7 @@ pub struct CoupledVehicleWorld {
     pub configuration: CoupledVehicleWorldConfiguration,
     pub vehicles: BTreeMap<u64, CoupledWorldVehicle>,
     pub dynamic_objects: BTreeMap<u64, DynamicWorldObject>,
+    terrain_bounds: Vec<Aabb>,
     pub time_seconds: f64,
     pub accumulated_host_time_seconds: f64,
     pub paused: bool,
@@ -271,16 +275,53 @@ pub struct CoupledVehicleWorld {
     pub contact_island_diagnostics: ContactIslandDiagnostics,
     pub dynamic_object_diagnostics: DynamicWorldObjectDiagnostics,
     pub continuous_collision_diagnostics: ContinuousCollisionDiagnostics,
+    pub step_profile: WorldStepProfile,
     pub physical_step_index: u64,
+    pub physical_interval_index: u64,
     next_entity_identifier: u64,
+}
+
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct WorldStepProfile {
+    pub total_seconds: f64,
+    pub shape_attachment_seconds: f64,
+    pub vehicle_force_seconds: f64,
+    pub dynamic_object_seconds: f64,
+    pub continuous_collision_seconds: f64,
+    pub contact_generation_seconds: f64,
+    pub contact_solve_seconds: f64,
+    pub contact_correction_seconds: f64,
+    pub contact_finalize_seconds: f64,
+    pub ai_phase_seconds: f64,
+    pub player_phase_seconds: f64,
+    pub last_ai_phase_seconds: f64,
+    pub last_player_phase_seconds: f64,
+    pub ai_phase_count: u64,
+    pub player_phase_count: u64,
+    pub physical_step_count: u64,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum WorldContactPhase {
+    Player,
+    Ai,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum WorldEntityKind {
+    PlayerVehicle,
+    AiVehicle,
+    DynamicObject,
 }
 
 struct AttachedWorldShape {
     entity_index: usize,
+    kind: WorldEntityKind,
     identifier: String,
     wheel: Option<WheelIndex>,
     pose: Isometry3<f64>,
     shape: SharedShape,
+    bounds: Aabb,
 }
 
 struct ContactMetadata {
@@ -305,6 +346,26 @@ fn contact_axes(normal: Vec3) -> [Vec3; 3] {
     let reference = if normal.dot(Vec3::UP).abs() < 0.9 { Vec3::UP } else { Vec3::RIGHT };
     let tangent = normal.cross(reference).normalized();
     [normal, tangent, normal.cross(tangent)]
+}
+
+fn phase_allows_terrain(phase: WorldContactPhase, kind: WorldEntityKind) -> bool {
+    match phase {
+        WorldContactPhase::Player => matches!(kind, WorldEntityKind::PlayerVehicle | WorldEntityKind::DynamicObject),
+        WorldContactPhase::Ai => matches!(kind, WorldEntityKind::AiVehicle),
+    }
+}
+
+fn phase_allows_pair(phase: WorldContactPhase, first: WorldEntityKind, second: WorldEntityKind) -> bool {
+    let has_player = matches!(first, WorldEntityKind::PlayerVehicle)
+        || matches!(second, WorldEntityKind::PlayerVehicle);
+    let has_ai = matches!(first, WorldEntityKind::AiVehicle)
+        || matches!(second, WorldEntityKind::AiVehicle);
+    let both_objects = matches!(first, WorldEntityKind::DynamicObject)
+        && matches!(second, WorldEntityKind::DynamicObject);
+    match phase {
+        WorldContactPhase::Player => has_player || both_objects,
+        WorldContactPhase::Ai => has_ai && !has_player,
+    }
 }
 
 fn entity_prescribed_contact_velocity(vehicles: &[&CoupledWorldVehicle], dynamic_objects: &[&DynamicWorldObject],
@@ -505,26 +566,48 @@ fn surface_from_code(code: u32) -> Result<SurfaceType, String> {
 impl CoupledVehicleWorld {
     pub fn new(collision_world: PhysicalCollisionWorld, configuration: CoupledVehicleWorldConfiguration) -> Result<Self, String> {
         configuration.validate()?;
-        Ok(Self { collision_world, configuration, vehicles: BTreeMap::new(), dynamic_objects: BTreeMap::new(), time_seconds: 0.0,
+        let terrain_bounds = collision_world.shapes.iter()
+            .map(|shape| shape.shape.compute_aabb(&Isometry3::identity()))
+            .collect::<Vec<_>>();
+        Ok(Self { collision_world, configuration, vehicles: BTreeMap::new(), dynamic_objects: BTreeMap::new(), terrain_bounds, time_seconds: 0.0,
             accumulated_host_time_seconds: 0.0, paused: false, collision_events: Vec::new(),
             contact_manifolds: BTreeMap::new(), contact_manifold_diagnostics: ContactManifoldDiagnostics::default(),
             contact_classification_diagnostics: ContactClassificationDiagnostics::default(),
             contact_island_diagnostics: ContactIslandDiagnostics::default(),
             dynamic_object_diagnostics: DynamicWorldObjectDiagnostics::default(),
             continuous_collision_diagnostics: ContinuousCollisionDiagnostics::default(),
-            physical_step_index: 0, next_entity_identifier: 1 })
+            step_profile: WorldStepProfile::default(),
+            physical_step_index: 0, physical_interval_index: 0, next_entity_identifier: 1 })
+    }
+
+    pub fn reset_step_profile(&mut self) {
+        self.step_profile = WorldStepProfile::default();
     }
 
     pub fn register_vehicle(&mut self, configuration: VehicleConfig, position: Vec3, yaw_radians: f64) -> Result<u64, String> {
+        let world_frequency = self.configuration.physical_frequency_hertz;
+        self.register_vehicle_with_frequency(configuration, position, yaw_radians, world_frequency)
+    }
+
+    pub fn register_vehicle_with_frequency(&mut self, configuration: VehicleConfig, position: Vec3,
+        yaw_radians: f64, physical_frequency_hertz: u32) -> Result<u64, String> {
         if !crate::suspension_mass_properties::vector_is_finite(position) || !yaw_radians.is_finite() {
             return Err("Invalid vehicle spawn pose".into());
+        }
+        let world_frequency = self.configuration.physical_frequency_hertz;
+        if physical_frequency_hertz == 0 || world_frequency % physical_frequency_hertz != 0
+            || (physical_frequency_hertz != world_frequency && physical_frequency_hertz != 60) {
+            return Err("Only world-frequency player vehicles and 60 Hz AI vehicles are supported".into());
         }
         let selected = configuration.coupled_world.as_ref().ok_or("Vehicle must explicitly select the coupled world")?;
         selected.validate()?;
         if serde_json::to_value(selected).map_err(|error| error.to_string())? != serde_json::to_value(&self.configuration).map_err(|error| error.to_string())? {
             return Err("Vehicles sharing a world require the same world configuration".into());
         }
-        let model = CoupledVehicleModel::new(configuration.clone(), self.configuration.suspension.clone())?;
+        let mut model = CoupledVehicleModel::new(configuration.clone(), self.configuration.suspension.clone())?;
+        if physical_frequency_hertz < world_frequency {
+            model.settings.maximum_substep_seconds = 1.0 / physical_frequency_hertz as f64;
+        }
         let systems = VehicleSimulator::new(configuration, position, yaw_radians);
         let mut state = CoupledVehicleState::at_rest(position);
         state.suspension.body_orientation_world = systems.state.orientation;
@@ -535,7 +618,7 @@ impl CoupledVehicleWorld {
         let driving_aids_mask = systems.aids.to_bits();
         self.vehicles.insert(identifier, CoupledWorldVehicle { model, state, systems, input: VehicleInput::default(),
             pending_inputs: VecDeque::new(), driving_aids_mask, last_force_input: CoupledSuspensionInput::default(),
-            spawn_position_world_metres: position, spawn_yaw_radians: yaw_radians });
+            physical_frequency_hertz, spawn_position_world_metres: position, spawn_yaw_radians: yaw_radians });
         Ok(identifier)
     }
 
@@ -615,7 +698,11 @@ impl CoupledVehicleWorld {
         configuration.fuel.refill_to_initial();
         let position = vehicle.spawn_position_world_metres;
         let yaw = vehicle.spawn_yaw_radians;
-        let model = CoupledVehicleModel::new(configuration.clone(), self.configuration.suspension.clone())?;
+        let frequency = vehicle.physical_frequency_hertz;
+        let mut model = CoupledVehicleModel::new(configuration.clone(), self.configuration.suspension.clone())?;
+        if frequency < self.configuration.physical_frequency_hertz {
+            model.settings.maximum_substep_seconds = 1.0 / frequency as f64;
+        }
         let systems = VehicleSimulator::new(configuration, position, yaw);
         let mut state = CoupledVehicleState::at_rest(position);
         state.suspension.body_orientation_world = systems.state.orientation;
@@ -651,6 +738,7 @@ impl CoupledVehicleWorld {
                 if wheel.is_left() { 1.0 } else { -1.0 }).ok_or("Invalid solved snapshot corner".to_string())).collect::<Result<Vec<_>, _>>()?;
             if solved_suspension_corners.iter().any(|corner| !corner.converged) { return Err("Physical snapshot has unconverged suspension geometry".into()); }
             Ok(CoupledWorldSnapshot { entity_identifier: *identifier,
+            physical_frequency_hertz: vehicle.physical_frequency_hertz,
             state: vehicle.state.clone(), telemetry: vehicle.systems.build_telemetry_frame(),
             systems_state: vehicle.systems.state.clone(), steering_rack_metres: vehicle.last_force_input.steering_rack_metres,
             fuel_mass_kilograms: vehicle.model.configuration.fuel.effective_current_kg(), driver_input: vehicle.input,
@@ -676,6 +764,19 @@ impl CoupledVehicleWorld {
     }
 
     fn advance_physical_step(&mut self, duration: f64) -> Result<(), String> {
+        let interval_index = self.physical_interval_index;
+        self.physical_interval_index = self.physical_interval_index.wrapping_add(1);
+        let mixed = self.vehicles.values()
+            .any(|vehicle| vehicle.physical_frequency_hertz < self.configuration.physical_frequency_hertz);
+        if mixed {
+            self.advance_mixed_physical_step(duration, interval_index)
+        } else {
+            self.advance_uniform_physical_step(duration)
+        }
+    }
+
+    fn advance_uniform_physical_step(&mut self, duration: f64) -> Result<(), String> {
+        let step_started = Instant::now();
         let start_time = self.time_seconds;
         let mut elapsed = 0.0;
         let mut events = 0;
@@ -691,12 +792,24 @@ impl CoupledVehicleWorld {
             let interval = self.vehicles.values().filter_map(|vehicle| vehicle.pending_inputs.front())
                 .map(|sample| sample.time_seconds - self.time_seconds).fold(duration - elapsed, f64::min);
             let initial = self.clone();
+            let shapes_started = Instant::now();
             let previous_shapes = initial.attached_world_shapes()?;
+            self.step_profile.shape_attachment_seconds += shapes_started.elapsed().as_secs_f64();
+            let forces_started = Instant::now();
             for vehicle in self.vehicles.values_mut() {
                 Self::advance_vehicle_forces(&self.collision_world, &self.configuration, vehicle, interval, &mut classification)?;
             }
+            self.step_profile.vehicle_force_seconds += forces_started.elapsed().as_secs_f64();
+            let objects_started = Instant::now();
             self.advance_dynamic_objects(interval)?;
-            let impact = self.earliest_swept_impact(&previous_shapes, interval)?;
+            self.step_profile.dynamic_object_seconds += objects_started.elapsed().as_secs_f64();
+            let shapes_started = Instant::now();
+            let current_shapes = self.attached_world_shapes()?;
+            self.step_profile.shape_attachment_seconds += shapes_started.elapsed().as_secs_f64();
+            let collision_started = Instant::now();
+            let impact = self.earliest_swept_impact(&previous_shapes, &current_shapes, interval, None)?;
+            self.step_profile.continuous_collision_seconds += collision_started.elapsed().as_secs_f64();
+            let mut shapes_for_contacts = current_shapes;
             let mut localized_impact: Option<SweptImpact> = None;
             let accepted_interval = if let Some(impact) = impact {
                 if impact.time_seconds < interval - 1e-10 {
@@ -712,17 +825,24 @@ impl CoupledVehicleWorld {
                     self.continuous_collision_diagnostics.last_impact_entity_identifier = Some(impact.entity_identifier);
                     self.continuous_collision_diagnostics.last_event_interval_seconds = event_interval;
                     localized_impact = Some(impact);
+                    let forces_started = Instant::now();
                     for vehicle in self.vehicles.values_mut() {
                         Self::advance_vehicle_forces(&self.collision_world, &self.configuration, vehicle, event_interval, &mut classification)?;
                     }
+                    self.step_profile.vehicle_force_seconds += forces_started.elapsed().as_secs_f64();
+                    let objects_started = Instant::now();
                     self.advance_dynamic_objects(event_interval)?;
+                    self.step_profile.dynamic_object_seconds += objects_started.elapsed().as_secs_f64();
+                    let shapes_started = Instant::now();
+                    shapes_for_contacts = self.attached_world_shapes()?;
+                    self.step_profile.shape_attachment_seconds += shapes_started.elapsed().as_secs_f64();
                     event_interval
                 } else { interval }
             } else { interval };
             elapsed += accepted_interval;
             self.time_seconds = start_time + elapsed;
             let collision_events_before = self.collision_events.len();
-            self.resolve_world_contacts(accepted_interval)?;
+            self.resolve_world_contacts(accepted_interval, &shapes_for_contacts, None)?;
             if localized_impact.is_some() && self.collision_events.len() == collision_events_before {
                 self.continuous_collision_diagnostics.geometric_miss_count += 1;
             }
@@ -734,6 +854,125 @@ impl CoupledVehicleWorld {
         classification.rigid_impact_contacts = self.contact_classification_diagnostics.rigid_impact_contacts;
         self.contact_classification_diagnostics = classification;
         self.time_seconds = start_time;
+        self.step_profile.total_seconds += step_started.elapsed().as_secs_f64();
+        self.step_profile.physical_step_count += 1;
+        Ok(())
+    }
+
+    fn advance_mixed_physical_step(&mut self, duration: f64, interval_index: u64) -> Result<(), String> {
+        let step_started = Instant::now();
+        let start_time = self.time_seconds;
+        let mut classification = self.contact_classification_diagnostics.clone();
+        for vehicle in self.vehicles.values_mut() {
+            while vehicle.pending_inputs.front().is_some_and(|input| input.time_seconds <= self.time_seconds + 1e-12) {
+                let sample = vehicle.pending_inputs.pop_front().unwrap();
+                vehicle.input = sample.input;
+                vehicle.driving_aids_mask = sample.driving_aids_mask;
+            }
+        }
+        let world_frequency = self.configuration.physical_frequency_hertz;
+        let ai_ratio = (world_frequency / 60) as u64;
+        if interval_index % ai_ratio == 0 {
+            self.time_seconds = start_time;
+            let phase_started = Instant::now();
+            self.advance_contact_phase(duration * ai_ratio as f64, WorldContactPhase::Ai, &mut classification)?;
+            let elapsed = phase_started.elapsed().as_secs_f64();
+            self.step_profile.ai_phase_seconds += elapsed;
+            self.step_profile.last_ai_phase_seconds = elapsed;
+            self.step_profile.ai_phase_count += 1;
+        }
+        self.time_seconds = start_time;
+        let phase_started = Instant::now();
+        self.advance_contact_phase(duration, WorldContactPhase::Player, &mut classification)?;
+        let elapsed = phase_started.elapsed().as_secs_f64();
+        self.step_profile.player_phase_seconds += elapsed;
+        self.step_profile.last_player_phase_seconds = elapsed;
+        self.step_profile.player_phase_count += 1;
+        classification.rigid_impact_contacts = self.contact_classification_diagnostics.rigid_impact_contacts;
+        self.contact_classification_diagnostics = classification;
+        self.time_seconds = start_time;
+        self.step_profile.total_seconds += step_started.elapsed().as_secs_f64();
+        self.step_profile.physical_step_count += 1;
+        Ok(())
+    }
+
+    fn advance_contact_phase(&mut self, duration: f64, phase: WorldContactPhase,
+        classification: &mut ContactClassificationDiagnostics) -> Result<(), String> {
+        if !duration.is_finite() || duration <= 0.0 {
+            return Err("Contact phase requires a finite positive duration".into());
+        }
+        let phase_start_time = self.time_seconds;
+        let mut remaining = duration;
+        let mut events = 0_usize;
+        while remaining > duration * 1e-12 {
+            let initial = self.clone();
+            let previous_shapes = initial.attached_world_shapes()?;
+            let forces_started = Instant::now();
+            for vehicle in self.vehicles.values_mut() {
+                let is_ai = vehicle.physical_frequency_hertz < self.configuration.physical_frequency_hertz;
+                let active = match phase {
+                    WorldContactPhase::Ai => is_ai,
+                    WorldContactPhase::Player => !is_ai,
+                };
+                if active {
+                    Self::advance_vehicle_forces(&self.collision_world, &self.configuration,
+                        vehicle, remaining, classification)?;
+                }
+            }
+            self.step_profile.vehicle_force_seconds += forces_started.elapsed().as_secs_f64();
+            if phase == WorldContactPhase::Player {
+                let objects_started = Instant::now();
+                self.advance_dynamic_objects(remaining)?;
+                self.step_profile.dynamic_object_seconds += objects_started.elapsed().as_secs_f64();
+            }
+            let shapes_started = Instant::now();
+            let current_shapes = self.attached_world_shapes()?;
+            self.step_profile.shape_attachment_seconds += shapes_started.elapsed().as_secs_f64();
+            let collision_started = Instant::now();
+            let impact = self.earliest_swept_impact(&previous_shapes, &current_shapes, remaining, Some(phase))?;
+            self.step_profile.continuous_collision_seconds += collision_started.elapsed().as_secs_f64();
+            let mut shapes_for_contacts = current_shapes;
+            let mut localized = false;
+            let accepted = if let Some(impact) = impact {
+                if impact.time_seconds < remaining - 1e-10 {
+                    events += 1;
+                    if events > self.configuration.contacts.maximum_events_per_step {
+                        return Err(format!("World collision event budget exceeded at {:.6} s on {}; physical step was not committed",
+                            phase_start_time + (duration - remaining) + impact.time_seconds, impact.shape_identifier));
+                    }
+                    *self = initial;
+                    let event_interval = impact.time_seconds.max(1e-10);
+                    self.continuous_collision_diagnostics.last_impact_time_seconds =
+                        Some(phase_start_time + (duration - remaining) + impact.time_seconds);
+                    self.continuous_collision_diagnostics.last_impact_shape_identifier = Some(impact.shape_identifier.clone());
+                    self.continuous_collision_diagnostics.last_impact_entity_identifier = Some(impact.entity_identifier);
+                    self.continuous_collision_diagnostics.last_event_interval_seconds = event_interval;
+                    localized = true;
+                    for vehicle in self.vehicles.values_mut() {
+                        let is_ai = vehicle.physical_frequency_hertz < self.configuration.physical_frequency_hertz;
+                        let active = match phase {
+                            WorldContactPhase::Ai => is_ai,
+                            WorldContactPhase::Player => !is_ai,
+                        };
+                        if active {
+                            Self::advance_vehicle_forces(&self.collision_world, &self.configuration,
+                                vehicle, event_interval, classification)?;
+                        }
+                    }
+                    if phase == WorldContactPhase::Player {
+                        self.advance_dynamic_objects(event_interval)?;
+                    }
+                    shapes_for_contacts = self.attached_world_shapes()?;
+                    event_interval
+                } else { remaining }
+            } else { remaining };
+            let collision_events_before = self.collision_events.len();
+            self.resolve_world_contacts(accepted, &shapes_for_contacts, Some(phase))?;
+            if localized && self.collision_events.len() == collision_events_before {
+                self.continuous_collision_diagnostics.geometric_miss_count += 1;
+            }
+            remaining -= accepted;
+        }
         Ok(())
     }
 
@@ -879,7 +1118,8 @@ impl CoupledVehicleWorld {
         let forward_speed = body.linear_velocity.length();
         if forward_speed > settings.contacts.maximum_supported_speed_metres_per_second
             || body.angular_velocity.length() > settings.contacts.maximum_supported_angular_speed_radians_per_second {
-            return Err("Vehicle exceeded the declared continuous collision speed domain".into());
+            return Err(format!("Vehicle exceeded the declared continuous collision speed domain: linear {forward_speed} m/s, angular {} rad/s",
+                body.angular_velocity.length()));
         }
         vehicle.systems.coupled_force_context = Some(CoupledVehicleForceContext {
             normal_force_newtons: support.suspension_diagnostics.normal_force_newtons,
@@ -979,12 +1219,22 @@ impl CoupledVehicleWorld {
 
     fn attached_world_shapes(&self) -> Result<Vec<AttachedWorldShape>, String> {
         let mut shapes = Vec::new();
+        let world_frequency = self.configuration.physical_frequency_hertz;
         for (entity_index, vehicle) in self.vehicles.values().enumerate() {
+            let kind = if vehicle.physical_frequency_hertz < world_frequency {
+                WorldEntityKind::AiVehicle
+            } else {
+                WorldEntityKind::PlayerVehicle
+            };
             let rotation = vehicle.state.suspension.body_orientation_world.to_mat3();
             for definition in &self.configuration.body_collision_boxes {
+                let pose = physical_pose(vehicle.state.suspension.body_origin_world_metres
+                    + rotation.transform_vector(definition.center_local_metres), rotation);
+                let shape = SharedShape::cuboid(definition.half_extents_metres.x,
+                    definition.half_extents_metres.y, definition.half_extents_metres.z);
+                let bounds = shape.compute_aabb(&pose);
                 shapes.push(AttachedWorldShape { entity_index, identifier: definition.identifier.clone(), wheel: None,
-                    pose: physical_pose(vehicle.state.suspension.body_origin_world_metres + rotation.transform_vector(definition.center_local_metres), rotation),
-                    shape: SharedShape::cuboid(definition.half_extents_metres.x, definition.half_extents_metres.y, definition.half_extents_metres.z) });
+                    pose, shape, bounds, kind });
             }
             let geometry = vehicle.model.configuration.suspension.geometric_suspension.as_ref().unwrap();
             for wheel in WheelIndex::ALL {
@@ -997,18 +1247,27 @@ impl CoupledVehicleWorld {
                 let basis = Mat3::from_cols(rotation.transform_vector(local.y), rotation.transform_vector(local.x), -rotation.transform_vector(local.z));
                 let radius = if wheel.is_front() { vehicle.model.configuration.tires.front_tire_radius } else { vehicle.model.configuration.tires.rear_tire_radius };
                 let width = if wheel.is_front() { vehicle.model.configuration.tires.front_tire_width } else { vehicle.model.configuration.tires.rear_tire_width };
+                let pose = physical_pose(vehicle.state.suspension.body_origin_world_metres
+                    + rotation.transform_vector(solution.hub), basis);
+                let shape = SharedShape::cylinder(width * 0.5, radius);
+                let bounds = shape.compute_aabb(&pose);
                 shapes.push(AttachedWorldShape { entity_index, identifier: format!("wheel_{wheel:?}"), wheel: Some(wheel),
-                    pose: physical_pose(vehicle.state.suspension.body_origin_world_metres + rotation.transform_vector(solution.hub), basis), shape: SharedShape::cylinder(width * 0.5, radius) });
+                    pose, shape, bounds, kind });
             }
         }
         let vehicle_count = self.vehicles.len();
         for (object_index, (identifier, object)) in self.dynamic_objects.iter().enumerate() {
+            let pose = physical_pose(object.state.position_world_metres, object.state.orientation.to_mat3());
+            let shape = object.shared_shape().clone();
+            let bounds = shape.compute_aabb(&pose);
             shapes.push(AttachedWorldShape {
                 entity_index: vehicle_count + object_index,
+                kind: WorldEntityKind::DynamicObject,
                 identifier: object.shape_identifier(*identifier),
                 wheel: None,
-                pose: physical_pose(object.state.position_world_metres, object.state.orientation.to_mat3()),
-                shape: object.shared_shape().clone(),
+                pose,
+                shape,
+                bounds,
             });
         }
         Ok(shapes)
@@ -1024,60 +1283,78 @@ impl CoupledVehicleWorld {
     }
 
     fn narrow_phase_contact_batch(&mut self) -> Result<(Vec<GeneratedContact>, usize, usize, u64), String> {
+        let shapes = self.attached_world_shapes()?;
+        self.narrow_phase_contact_batch_with_shapes(&shapes, None)
+    }
+
+    fn narrow_phase_contact_batch_with_shapes(&mut self, shapes: &[AttachedWorldShape],
+        phase: Option<WorldContactPhase>)
+        -> Result<(Vec<GeneratedContact>, usize, usize, u64), String> {
         self.physical_step_index = self.physical_step_index.wrapping_add(1);
         let prediction = self.configuration.contacts.prediction_distance_metres;
-        let shapes = self.attached_world_shapes()?;
-        let shape_bounds = shapes.iter().map(|shape| shape.shape.compute_aabb(&shape.pose).loosened(prediction)).collect::<Vec<_>>();
+        let contact_bounds = shapes.iter().map(|shape| shape.bounds.loosened(prediction)).collect::<Vec<_>>();
         let vehicles = self.vehicles.values().collect::<Vec<_>>();
         let dynamic_objects = self.dynamic_objects.values().collect::<Vec<_>>();
         let entity_identifiers = self.vehicles.keys().copied().chain(self.dynamic_objects.keys().copied()).collect::<Vec<_>>();
         let mut generated = Vec::new();
         let mut generated_index = 0_usize;
-        for shape in &shapes {
+        for (shape_index, shape) in shapes.iter().enumerate() {
+            if phase.is_some_and(|phase| !phase_allows_terrain(phase, shape.kind)) { continue; }
             let entity_identifier = entity_identifiers[shape.entity_index];
-            for source in self.collision_world.world_contact_manifolds(&shape.pose, &shape.shape, prediction, shape.wheel.is_some())? {
-                let world_shape_identifier = self.collision_world.shapes[source.shape_index].identifier.clone();
-                let axes = contact_axes(source.manifold.normal_toward_first_world);
-                for point in &source.manifold.points {
-                    if point.separation_metres > prediction { continue; }
-                    if -point.separation_metres > self.configuration.maximum_initial_overlap_metres {
-                        return Err("World entity overlap exceeds the supported initialization/recovery domain".into());
+            let shape_bounds = &contact_bounds[shape_index];
+            for (terrain_index, terrain) in self.collision_world.shapes.iter().enumerate() {
+                if !shape_bounds.intersects(&self.terrain_bounds[terrain_index]) { continue; }
+                let collision_shape = if shape.wheel.is_some() && terrain.driveable {
+                    let Some(impact_shape) = &terrain.wheel_impact_shape else { continue; };
+                    impact_shape
+                } else { &terrain.shape };
+                for manifold in shape_pair_contact_manifolds(&Isometry3::identity(), collision_shape,
+                    &shape.pose, &shape.shape, prediction)
+                    .map_err(|error| format!("{error} with world shape {}", terrain.identifier))? {
+                    let world_shape_identifier = terrain.identifier.clone();
+                    let axes = contact_axes(manifold.normal_toward_first_world);
+                    for point in &manifold.points {
+                        if point.separation_metres > prediction { continue; }
+                        if -point.separation_metres > self.configuration.maximum_initial_overlap_metres {
+                            return Err("World entity overlap exceeds the supported initialization/recovery domain".into());
+                        }
+                        let prescribed_velocity = entity_prescribed_contact_velocity(&vehicles, &dynamic_objects,
+                            shape.entity_index, shape.wheel, point.point_on_second_world_metres)?;
+                        let mut jacobians = [[0.0; 14]; 3];
+                        for axis in 0..3 {
+                            jacobians[axis] = entity_contact_jacobian(&vehicles, &dynamic_objects, shape.entity_index,
+                                shape.wheel, point.point_on_second_world_metres, axes[axis])?;
+                        }
+                        generated_index += 1;
+                        generated.push(GeneratedContact {
+                            constraint: GeneralizedContactConstraint { identifier: format!("world_{:08}_entity_{:020}_{}_{}_{}",
+                                    terrain_index, entity_identifier, shape.identifier, point.first_feature_identifier, generated_index),
+                                first_entity: shape.entity_index, second_entity: None, first_jacobians: jacobians, second_jacobians: [[0.0; 14]; 3],
+                                first_prescribed_velocity_metres_per_second: axes.map(|axis| axis.dot(prescribed_velocity)),
+                                second_prescribed_velocity_metres_per_second: [0.0; 3],
+                                surface_code: terrain.surface_code,
+                                normal_impulse_newton_seconds: 0.0, tangential_impulse_newton_seconds: [0.0; 2] },
+                            metadata: ContactMetadata { point_world_metres: point.point_on_first_world_metres, normal_world: axes[0],
+                                surface_code: terrain.surface_code, penetration_metres: (-point.separation_metres).max(0.0),
+                                separation_metres: point.separation_metres },
+                            key: ContactFeatureKey { first_entity_identifier: entity_identifier, second_entity_identifier: None,
+                                world_shape_index: Some(terrain_index), first_shape_identifier: world_shape_identifier.clone(),
+                                second_shape_identifier: shape.identifier.clone(), first_feature_identifier: point.first_feature_identifier,
+                                second_feature_identifier: point.second_feature_identifier },
+                            first_local_point_metres: point.point_on_first_local_metres,
+                            second_local_point_metres: point.point_on_second_local_metres,
+                            first_shape_identifier: world_shape_identifier.clone(),
+                            second_shape_identifier: shape.identifier.clone() });
+                        self.contact_classification_diagnostics.rigid_impact_contacts += 1;
                     }
-                    let prescribed_velocity = entity_prescribed_contact_velocity(&vehicles, &dynamic_objects,
-                        shape.entity_index, shape.wheel, point.point_on_second_world_metres)?;
-                    let mut jacobians = [[0.0; 14]; 3];
-                    for axis in 0..3 {
-                        jacobians[axis] = entity_contact_jacobian(&vehicles, &dynamic_objects, shape.entity_index,
-                            shape.wheel, point.point_on_second_world_metres, axes[axis])?;
-                    }
-                    generated_index += 1;
-                    generated.push(GeneratedContact {
-                        constraint: GeneralizedContactConstraint { identifier: format!("world_{:08}_entity_{:020}_{}_{}_{}",
-                                source.shape_index, entity_identifier, shape.identifier, point.first_feature_identifier, generated_index),
-                            first_entity: shape.entity_index, second_entity: None, first_jacobians: jacobians, second_jacobians: [[0.0; 14]; 3],
-                            first_prescribed_velocity_metres_per_second: axes.map(|axis| axis.dot(prescribed_velocity)),
-                            second_prescribed_velocity_metres_per_second: [0.0; 3],
-                            surface_code: source.surface_code,
-                            normal_impulse_newton_seconds: 0.0, tangential_impulse_newton_seconds: [0.0; 2] },
-                        metadata: ContactMetadata { point_world_metres: point.point_on_first_world_metres, normal_world: axes[0],
-                            surface_code: source.surface_code, penetration_metres: (-point.separation_metres).max(0.0),
-                            separation_metres: point.separation_metres },
-                        key: ContactFeatureKey { first_entity_identifier: entity_identifier, second_entity_identifier: None,
-                            world_shape_index: Some(source.shape_index), first_shape_identifier: world_shape_identifier.clone(),
-                            second_shape_identifier: shape.identifier.clone(), first_feature_identifier: point.first_feature_identifier,
-                            second_feature_identifier: point.second_feature_identifier },
-                        first_local_point_metres: point.point_on_first_local_metres,
-                        second_local_point_metres: point.point_on_second_local_metres,
-                        first_shape_identifier: world_shape_identifier.clone(),
-                        second_shape_identifier: shape.identifier.clone() });
-                    self.contact_classification_diagnostics.rigid_impact_contacts += 1;
                 }
             }
         }
         for first in 0..shapes.len() { for second in first + 1..shapes.len() {
             let first_shape = &shapes[first]; let second_shape = &shapes[second];
             if first_shape.entity_index == second_shape.entity_index { continue; }
-            if !shape_bounds[first].intersects(&shape_bounds[second]) { continue; }
+            if phase.is_some_and(|phase| !phase_allows_pair(phase, first_shape.kind, second_shape.kind)) { continue; }
+            if !contact_bounds[first].intersects(&contact_bounds[second]) { continue; }
             let first_entity_identifier = entity_identifiers[first_shape.entity_index];
             let second_entity_identifier = entity_identifiers[second_shape.entity_index];
             let surface_code = entity_surface_code(&vehicles, &dynamic_objects, first_shape.entity_index)
@@ -1192,17 +1469,25 @@ impl CoupledVehicleWorld {
         Ok((generated, generated_count, reduced_count, warm_started))
     }
 
-    fn resolve_world_contacts(&mut self, duration_seconds: f64) -> Result<(), String> {
-        let (generated, _, _, _) = self.narrow_phase_contact_batch()?;
+    fn resolve_world_contacts(&mut self, duration_seconds: f64, shapes: &[AttachedWorldShape],
+        phase: Option<WorldContactPhase>) -> Result<(), String> {
+        let generation_started = Instant::now();
+        let (generated, _, _, _) = self.narrow_phase_contact_batch_with_shapes(shapes, phase)?;
+        self.step_profile.contact_generation_seconds += generation_started.elapsed().as_secs_f64();
         let entity_count = self.vehicles.len() + self.dynamic_objects.len();
         if generated.is_empty() {
+            let finalize_started = Instant::now();
             let no_support = vec![false; entity_count];
             self.contact_island_diagnostics = ContactIslandDiagnostics::default();
-            self.update_dynamic_object_sleep_states(duration_seconds, &no_support)?;
+            if phase != Some(WorldContactPhase::Ai) {
+                self.update_dynamic_object_sleep_states(duration_seconds, &no_support)?;
+            }
             self.prune_contact_manifolds();
             self.refresh_manifold_diagnostics();
+            self.step_profile.contact_finalize_seconds += finalize_started.elapsed().as_secs_f64();
             return Ok(());
         }
+        let solve_started = Instant::now();
         let mut supported_entities = vec![false; entity_count];
         for contact in &generated {
             if contact.metadata.normal_world.y >= DYNAMIC_WORLD_OBJECT_SUPPORT_NORMAL_MINIMUM_Y {
@@ -1238,8 +1523,16 @@ impl CoupledVehicleWorld {
         for (object_index, object) in self.dynamic_objects.values().enumerate() {
             sleeping_entities[vehicle_count + object_index] = object.state.sleeping;
         }
+        let mut fixed_entities = vec![false; entity_count];
+        if phase == Some(WorldContactPhase::Player) {
+            let world_frequency = self.configuration.physical_frequency_hertz;
+            for (index, vehicle) in self.vehicles.values().enumerate() {
+                fixed_entities[index] = vehicle.physical_frequency_hertz < world_frequency;
+            }
+        }
         let before = velocities.clone();
-        let result = solve_generalized_vehicle_contacts(&matrices, &mut velocities, &mut constraints, &self.configuration.contacts)?;
+        let result = solve_generalized_vehicle_contacts_with_fixed_entities(&matrices, &mut velocities,
+            &mut constraints, &self.configuration.contacts, &fixed_entities)?;
         let (island_count, largest_island_entities, largest_island_constraints) =
             contact_island_summary(&constraints, entity_count);
         self.contact_island_diagnostics = ContactIslandDiagnostics {
@@ -1253,6 +1546,7 @@ impl CoupledVehicleWorld {
         };
         let identities = self.vehicles.keys().copied().chain(self.dynamic_objects.keys().copied()).collect::<Vec<_>>();
         for (index, vehicle) in self.vehicles.values_mut().enumerate() {
+            if fixed_entities[index] { continue; }
             let previous = crate::coupled_vehicle_dynamics::generalized_vehicle_energy(&matrices[index], before[index]);
             let current = crate::coupled_vehicle_dynamics::generalized_vehicle_energy(&matrices[index], velocities[index]);
             let velocity_change = std::array::from_fn(|coordinate| velocities[index][coordinate] - before[index][coordinate]);
@@ -1271,6 +1565,8 @@ impl CoupledVehicleWorld {
             object.state.collision_energy_change_joules += current - previous;
             object.set_velocity(velocities[index])?;
         }
+        self.step_profile.contact_solve_seconds += solve_started.elapsed().as_secs_f64();
+        let correction_started = Instant::now();
         let factors = matrices.iter().map(crate::coupled_vehicle_dynamics::factor_generalized_vehicle_matrix).collect::<Result<Vec<_>, _>>()?;
         let mut corrections = vec![[0.0; 14]; entity_count];
         for (index, constraint) in constraints.iter().enumerate() {
@@ -1295,7 +1591,9 @@ impl CoupledVehicleWorld {
         for (index, constraint) in constraints.iter().enumerate() {
             if result.normal_impulses_newton_seconds[index] <= 0.0 { continue; }
             if sleeping_entities.get(constraint.first_entity).copied().unwrap_or(false)
+                || fixed_entities.get(constraint.first_entity).copied().unwrap_or(false)
                 || constraint.second_entity.and_then(|entity| sleeping_entities.get(entity).copied()).unwrap_or(false)
+                || constraint.second_entity.and_then(|entity| fixed_entities.get(entity).copied()).unwrap_or(false)
             { continue; }
             let age_steps = self.contact_manifolds.get(&keys[index]).map(|entry| entry.age_steps).unwrap_or(0);
             if age_steps == 0 { continue; }
@@ -1378,6 +1676,7 @@ impl CoupledVehicleWorld {
             self.contact_manifold_diagnostics.tangential_position_correction_total += 1;
         }
         for (index, vehicle) in self.vehicles.values_mut().enumerate() {
+            if fixed_entities[index] { continue; }
             if corrections[index].iter().all(|value| *value == 0.0) { continue; }
             let previous = vehicle.model.evaluate(&vehicle.state, &vehicle.last_force_input, [0.0; 4])?;
             let correction = corrections[index];
@@ -1404,6 +1703,8 @@ impl CoupledVehicleWorld {
             object.apply_position_correction(corrections[index])?;
             object.state.position_correction_energy_joules += object.mechanical_energy_joules(gravity_world) - previous;
         }
+        self.step_profile.contact_correction_seconds += correction_started.elapsed().as_secs_f64();
+        let finalize_started = Instant::now();
         for index in 0..constraints.len() {
             let axes = contact_axes(metadata[index].normal_world);
             let entry = self.contact_manifolds.entry(keys[index].clone()).or_insert_with(|| {
@@ -1446,9 +1747,12 @@ impl CoupledVehicleWorld {
                 surface_code: metadata[index].surface_code, manifold_age_steps,
                 response_owner: ContactResponseOwner::RigidImpact });
         }
-        self.update_dynamic_object_sleep_states(duration_seconds, &supported_entities)?;
+        if phase != Some(WorldContactPhase::Ai) {
+            self.update_dynamic_object_sleep_states(duration_seconds, &supported_entities)?;
+        }
         self.prune_contact_manifolds();
         self.refresh_manifold_diagnostics();
+        self.step_profile.contact_finalize_seconds += finalize_started.elapsed().as_secs_f64();
         Ok(())
     }
 
@@ -1480,8 +1784,9 @@ impl CoupledVehicleWorld {
             .count();
     }
 
-    fn earliest_swept_impact(&self, previous_shapes: &[AttachedWorldShape], duration: f64) -> Result<Option<SweptImpact>, String> {
-        let current_shapes = self.attached_world_shapes()?;
+    fn earliest_swept_impact(&self, previous_shapes: &[AttachedWorldShape],
+        current_shapes: &[AttachedWorldShape], duration: f64,
+        phase: Option<WorldContactPhase>) -> Result<Option<SweptImpact>, String> {
         let entity_identifiers = self.vehicles.keys().copied().chain(self.dynamic_objects.keys().copied()).collect::<Vec<_>>();
         if previous_shapes.len() != current_shapes.len() { return Err("Shape attachments changed during a physical step".into()); }
         let persistent_terrain_contacts = self.contact_manifolds.iter()
@@ -1515,10 +1820,11 @@ impl CoupledVehicleWorld {
         let mut earliest: Option<SweptImpact> = None;
         for (index, shape) in previous_shapes.iter().enumerate() {
             if !sweeping[index] { continue; }
+            if phase.is_some_and(|phase| !phase_allows_terrain(phase, shape.kind)) { continue; }
             let entity_identifier = entity_identifiers[shape.entity_index];
             for (terrain_index, terrain) in self.collision_world.shapes.iter().enumerate() {
                 if persistent_terrain_contacts.contains(&(entity_identifier, terrain_index, shape.identifier.clone())) { continue; }
-                if !swept_bounds[index].intersects(&terrain.shape.compute_aabb(&Isometry3::identity())) { continue; }
+                if !swept_bounds[index].intersects(&self.terrain_bounds[terrain_index]) { continue; }
                 let collision_shape = if shape.wheel.is_some() && terrain.driveable {
                     let Some(impact_shape) = &terrain.wheel_impact_shape else { continue; };
                     impact_shape
@@ -1537,6 +1843,7 @@ impl CoupledVehicleWorld {
         for first in 0..previous_shapes.len() { for second in first + 1..previous_shapes.len() {
             let first_shape = &previous_shapes[first]; let second_shape = &previous_shapes[second];
             if first_shape.entity_index == second_shape.entity_index { continue; }
+            if phase.is_some_and(|phase| !phase_allows_pair(phase, first_shape.kind, second_shape.kind)) { continue; }
             if !sweeping[first] && !sweeping[second] { continue; }
             let first_entity_identifier = entity_identifiers[first_shape.entity_index];
             let second_entity_identifier = entity_identifiers[second_shape.entity_index];
