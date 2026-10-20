@@ -3,6 +3,7 @@ use std::time::Instant;
 use vehicle_physics_engine::coupled_vehicle_world::CoupledVehicleWorld;
 use vehicle_physics_engine::physical_collision_world::{PhysicalCollisionWorld, PhysicalWorldPackage};
 use vehicle_physics_engine::vehicle_configuration::load_vehicle_configuration;
+use vehicle_physics_engine::vehicle_dynamics_fidelity::VehicleDynamicsFidelity;
 use vehicle_physics_engine::{Vec3, WheelIndex};
 
 fn percentile(sorted_values: &[f64], fraction: f64) -> f64 {
@@ -33,11 +34,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if measured_steps == 0 || measured_steps > 10_000 {
         return Err("Measured steps must be between one and ten thousand".into());
     }
-    if !matches!(mode, "idle" | "rolling" | "mixed" | "mixed-rolling") {
-        return Err("Mode must be idle, rolling, mixed or mixed-rolling".into());
+    if !matches!(mode, "idle" | "rolling" | "mixed" | "mixed-rolling" | "mixed-full" | "mixed-full-rolling") {
+        return Err("Mode must be idle, rolling, mixed, mixed-rolling, mixed-full or mixed-full-rolling".into());
     }
-    let mixed = matches!(mode, "mixed" | "mixed-rolling");
-    let moving = matches!(mode, "rolling" | "mixed-rolling");
+    let mixed = matches!(mode, "mixed" | "mixed-rolling" | "mixed-full" | "mixed-full-rolling");
+    let simplified_artificial_intelligence = matches!(mode, "mixed" | "mixed-rolling");
+    let moving = matches!(mode, "rolling" | "mixed-rolling" | "mixed-full-rolling");
     let grid_spots = metadata["grid_spots"].as_array().ok_or("Track metadata has no grid spots")?;
     if grid_spots.len() < vehicle_count {
         return Err(format!("Requested fleet of {vehicle_count} exceeds the {} authored grid spots", grid_spots.len()).into());
@@ -57,7 +59,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let coordinate = |index: usize| grid_spot["pos"][index].as_f64().ok_or("Grid position is missing");
         let position = Vec3::new(coordinate(0)?, coordinate(1)? + origin_height, coordinate(2)?);
         let frequency = if mixed && grid_index > 0 { 60 } else { 120 };
-        let identifier = world.register_vehicle_with_frequency(configuration.clone(), position, yaw, frequency)?;
+        let fidelity = if simplified_artificial_intelligence && grid_index > 0 {
+            VehicleDynamicsFidelity::Simplified
+        } else {
+            VehicleDynamicsFidelity::Full
+        };
+        let identifier = world.register_vehicle_with_frequency_and_fidelity(configuration.clone(),
+            position, yaw, frequency, fidelity)?;
         identifiers.push(identifier);
         physical_frequencies.push(frequency);
     }
@@ -72,15 +80,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     world.reset_step_profile();
     let mut step_milliseconds = Vec::with_capacity(measured_steps);
+    let mut player_phase_milliseconds = Vec::with_capacity(measured_steps);
+    let mut projected_asynchronous_tick_milliseconds = Vec::with_capacity(measured_steps);
     let mut ai_phase_milliseconds = Vec::with_capacity(measured_steps / 2 + 1);
     for _ in 0..measured_steps {
         let ai_phase_count_before = world.step_profile.ai_phase_count;
+        let player_phase_count_before = world.step_profile.player_phase_count;
         let started = Instant::now();
         world.advance_host_interval(step_seconds)?;
-        step_milliseconds.push(started.elapsed().as_secs_f64() * 1000.0);
+        let step_milliseconds_value = started.elapsed().as_secs_f64() * 1000.0;
+        step_milliseconds.push(step_milliseconds_value);
+        let ai_phase_milliseconds_value = if world.step_profile.ai_phase_count > ai_phase_count_before {
+            world.step_profile.last_ai_phase_seconds * 1000.0
+        } else {
+            0.0
+        };
         if world.step_profile.ai_phase_count > ai_phase_count_before {
-            ai_phase_milliseconds.push(world.step_profile.last_ai_phase_seconds * 1000.0);
+            ai_phase_milliseconds.push(ai_phase_milliseconds_value);
         }
+        if world.step_profile.player_phase_count > player_phase_count_before {
+            player_phase_milliseconds.push(world.step_profile.last_player_phase_seconds * 1000.0);
+        }
+        projected_asynchronous_tick_milliseconds.push(
+            (step_milliseconds_value - ai_phase_milliseconds_value).max(0.0));
     }
     let mut sorted = step_milliseconds.clone();
     sorted.sort_by(|first, second| first.partial_cmp(second).unwrap_or(std::cmp::Ordering::Equal));
@@ -94,6 +116,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let ai_p95 = percentile(&ai_sorted, 0.95);
     let ai_interval_milliseconds = 1000.0 / 60.0;
+    let mut player_sorted = player_phase_milliseconds.clone();
+    player_sorted.sort_by(|first, second| first.partial_cmp(second).unwrap_or(std::cmp::Ordering::Equal));
+    let player_mean = if player_phase_milliseconds.is_empty() { 0.0 } else {
+        player_phase_milliseconds.iter().sum::<f64>() / player_phase_milliseconds.len() as f64
+    };
+    let player_p95 = percentile(&player_sorted, 0.95);
+    let mut projected_sorted = projected_asynchronous_tick_milliseconds.clone();
+    projected_sorted.sort_by(|first, second| first.partial_cmp(second).unwrap_or(std::cmp::Ordering::Equal));
+    let projected_mean = if projected_asynchronous_tick_milliseconds.is_empty() { 0.0 } else {
+        projected_asynchronous_tick_milliseconds.iter().sum::<f64>()
+            / projected_asynchronous_tick_milliseconds.len() as f64
+    };
+    let projected_p95 = percentile(&projected_sorted, 0.95);
+    let asynchronous_gate_evaluated = mixed && vehicle_count == 22;
+    let asynchronous_player_budget_milliseconds = interval_milliseconds;
+    let asynchronous_player_p95_budget_milliseconds = interval_milliseconds * 1.5;
+    let asynchronous_ai_budget_milliseconds = ai_interval_milliseconds;
+    let asynchronous_ai_p95_budget_milliseconds = ai_interval_milliseconds;
+    let asynchronous_tick_budget_milliseconds = interval_milliseconds;
+    let asynchronous_tick_p95_budget_milliseconds = interval_milliseconds * 1.5;
+    let asynchronous_player_passed = asynchronous_gate_evaluated
+        && player_mean <= asynchronous_player_budget_milliseconds
+        && player_p95 <= asynchronous_player_p95_budget_milliseconds;
+    let asynchronous_ai_passed = asynchronous_gate_evaluated
+        && ai_mean <= asynchronous_ai_budget_milliseconds
+        && ai_p95 <= asynchronous_ai_p95_budget_milliseconds;
+    let asynchronous_tick_passed = asynchronous_gate_evaluated
+        && projected_mean <= asynchronous_tick_budget_milliseconds
+        && projected_p95 <= asynchronous_tick_p95_budget_milliseconds;
     let player_gate_passed = if vehicle_count <= 20 {
         mean / interval_milliseconds <= 0.30 && p95 / interval_milliseconds <= 0.50
     } else {
@@ -155,6 +206,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "interval": ai_interval_milliseconds,
                 "mean_ratio_to_ai_interval": ai_mean / ai_interval_milliseconds,
                 "p95_ratio_to_ai_interval": ai_p95 / ai_interval_milliseconds
+            },
+            "player_phase_timing_milliseconds": {
+                "sample_count": player_phase_milliseconds.len(),
+                "mean": player_mean,
+                "p95": player_p95
+            },
+            "projected_asynchronous_tick_timing_milliseconds": {
+                "mean": projected_mean,
+                "p95": projected_p95
             }
         },
         "step_profile": world.step_profile,
@@ -166,6 +226,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "ai_batch_passed": ai_gate_passed,
             "passed": player_gate_passed && ai_gate_passed,
             "approval_state": "provisional_pending_human_approval"
+        },
+        "asynchronous_budget": {
+            "vehicle_count": 22,
+            "evaluated": asynchronous_gate_evaluated,
+            "execution_model": "asynchronous_double_buffered_artificial_intelligence_phase",
+            "player_phase_budget_milliseconds": {
+                "mean": asynchronous_player_budget_milliseconds,
+                "p95": asynchronous_player_p95_budget_milliseconds
+            },
+            "artificial_intelligence_phase_budget_milliseconds": {
+                "mean": asynchronous_ai_budget_milliseconds,
+                "p95": asynchronous_ai_p95_budget_milliseconds
+            },
+            "player_tick_budget_milliseconds": {
+                "mean": asynchronous_tick_budget_milliseconds,
+                "p95": asynchronous_tick_p95_budget_milliseconds
+            },
+            "player_phase_passed": asynchronous_player_passed,
+            "artificial_intelligence_phase_passed": asynchronous_ai_passed,
+            "player_tick_passed": asynchronous_tick_passed,
+            "passed": asynchronous_player_passed && asynchronous_ai_passed && asynchronous_tick_passed,
+            "approval_state": "human_approved_budget_pending_implementation"
         },
         "vehicle_identifiers": identifiers
     });

@@ -143,6 +143,42 @@ pub enum MassComponentAttachment {
     SteeringRack,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AttachmentFrameKind {
+    Upright,
+    WheelRotor,
+    LowerWishbone,
+    UpperWishbone,
+    TrackRod,
+    ActuationRod,
+    Rocker,
+    DamperCylinder,
+    DamperPiston,
+    Driveshaft,
+}
+
+impl AttachmentFrameKind {
+    pub const ALL: [AttachmentFrameKind; 10] = [
+        Self::Upright,
+        Self::WheelRotor,
+        Self::LowerWishbone,
+        Self::UpperWishbone,
+        Self::TrackRod,
+        Self::ActuationRod,
+        Self::Rocker,
+        Self::DamperCylinder,
+        Self::DamperPiston,
+        Self::Driveshaft,
+    ];
+
+    pub fn index(self) -> usize {
+        Self::ALL
+            .iter()
+            .position(|kind| *kind == self)
+            .expect("AttachmentFrameKind::ALL must contain every variant")
+    }
+}
+
 impl MassComponentAttachment {
     pub fn wheel(&self) -> Option<WheelIndex> {
         match self {
@@ -157,6 +193,22 @@ impl MassComponentAttachment {
             | Self::DamperCylinder { wheel }
             | Self::DamperPiston { wheel }
             | Self::Driveshaft { wheel } => Some(*wheel),
+        }
+    }
+
+    pub fn attachment_frame_kind(&self) -> Option<AttachmentFrameKind> {
+        match self {
+            Self::Body | Self::SteeringRack => None,
+            Self::Upright { .. } => Some(AttachmentFrameKind::Upright),
+            Self::WheelRotor { .. } => Some(AttachmentFrameKind::WheelRotor),
+            Self::LowerWishbone { .. } => Some(AttachmentFrameKind::LowerWishbone),
+            Self::UpperWishbone { .. } => Some(AttachmentFrameKind::UpperWishbone),
+            Self::TrackRod { .. } => Some(AttachmentFrameKind::TrackRod),
+            Self::ActuationRod { .. } => Some(AttachmentFrameKind::ActuationRod),
+            Self::Rocker { .. } => Some(AttachmentFrameKind::Rocker),
+            Self::DamperCylinder { .. } => Some(AttachmentFrameKind::DamperCylinder),
+            Self::DamperPiston { .. } => Some(AttachmentFrameKind::DamperPiston),
+            Self::Driveshaft { .. } => Some(AttachmentFrameKind::Driveshaft),
         }
     }
 }

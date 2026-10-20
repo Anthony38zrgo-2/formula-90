@@ -160,6 +160,7 @@ pub enum TireBackend {
     Standard,
     SimplifiedWithoutRelaxation,
     SimplifiedWithRelaxation,
+    SimplifiedArtificialIntelligence,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -179,6 +180,10 @@ impl TireSystem {
         if backend == TireBackend::SimplifiedWithRelaxation {
             eprintln!("TIRE_BACKEND_READY backend=simplified relaxation=single_distance_based");
         }
+        Self::new_with_backend(config, backend)
+    }
+
+    pub fn new_with_backend(config: &VehicleConfig, backend: TireBackend) -> Self {
         Self {
             backend,
             wheels: [
@@ -550,6 +555,70 @@ impl TireSystem {
         };
         let alpha_with_camber = state.effective_slip_angle_rad
             + signed_camber * tuning.camber_thrust_gain;
+
+        if self.backend == TireBackend::SimplifiedArtificialIntelligence {
+            let lateral_response = pure_curve_coefficient(
+                alpha_with_camber.abs(),
+                profile.lateral_peak_slip_angle_rad,
+                profile.lateral_slide_mu_ratio,
+                rise_gamma,
+                profile.falloff_sharpness,
+            );
+            let longitudinal_response = pure_curve_coefficient(
+                state.effective_slip_ratio.abs(),
+                profile.longitudinal_peak_slip_ratio,
+                profile.longitudinal_slide_mu_ratio,
+                rise_gamma,
+                profile.falloff_sharpness,
+            );
+            let demand = (lateral_response.force_coefficient.powi(2)
+                + longitudinal_response.force_coefficient.powi(2)).sqrt();
+            let budget_scale = combined_budget_scale(demand, profile.budget_blend_width);
+            let mut longitudinal_force = fx_max
+                * longitudinal_response.force_coefficient
+                * state.effective_slip_ratio.signum()
+                * budget_scale;
+            let lateral_force = fy_max
+                * lateral_response.force_coefficient
+                * alpha_with_camber.signum()
+                * budget_scale;
+            state.effective_lateral_peak_slip_rad = profile.lateral_peak_slip_angle_rad;
+            state.effective_longitudinal_peak_slip_ratio = profile.longitudinal_peak_slip_ratio;
+            state.post_peak_decay_lat = lateral_response.decay_weight;
+            state.post_peak_decay_lon = longitudinal_response.decay_weight;
+            state.combined_demand = demand;
+            state.combined_utilization = (demand * budget_scale * state.contact_blend).clamp(0.0, 1.0);
+            state.limit_spin = state.combined_utilization >= 0.995
+                || lateral_response.regime == TireSlipRegime::PostPeak
+                || longitudinal_response.regime == TireSlipRegime::PostPeak;
+            state.tire_regime = match (lateral_response.regime, longitudinal_response.regime) {
+                (TireSlipRegime::PrePeak, TireSlipRegime::PrePeak) => 0,
+                (TireSlipRegime::PostPeak, TireSlipRegime::PrePeak) => 1,
+                (TireSlipRegime::PrePeak, TireSlipRegime::PostPeak) => 2,
+                (TireSlipRegime::PostPeak, TireSlipRegime::PostPeak) => 3,
+            };
+            state.rolling_resistance = rolling_resistance_force(v_forward, fz)
+                * effective_rolling_resistance.max(0.0)
+                * modifiers.rolling_resistance_scale;
+            if v_forward.abs() > 0.05 {
+                longitudinal_force -= state.rolling_resistance * v_forward.signum();
+            }
+            let contact_blend = state.contact_blend;
+            state.rolling_resistance *= contact_blend;
+            state.lateral_force = finite_or_zero(lateral_force * contact_blend);
+            state.longitudinal_force = finite_or_zero(longitudinal_force * contact_blend);
+            let normalized_longitudinal = (longitudinal_force.abs() / fx_max).clamp(0.0, 1.0);
+            let normalized_lateral = (lateral_force.abs() / fy_max).clamp(0.0, 1.0);
+            let trail = tuning.pneumatic_trail_m
+                * (-2.5 * normalized_lateral).exp()
+                * (1.0 - 0.65 * normalized_longitudinal * normalized_longitudinal).max(0.0)
+                * state.contact_fraction.sqrt()
+                * modifiers.pneumatic_trail_scale;
+            state.aligning_torque = finite_or_zero(-state.lateral_force * trail);
+            state.reaction_torque = finite_or_zero(
+                -state.longitudinal_force * state.effective_rolling_radius);
+            return;
+        }
 
         // TIRE-101 / GRIP-02 / GRIP-04: pure-slip curve evaluation lives outside
         // combined-slip projection. Base responses first measure each axis' demand,

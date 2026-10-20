@@ -3,6 +3,7 @@ use crate::dynamic_world_objects::DynamicWorldObjectDefinition;
 use crate::physical_collision_world::{PhysicalCollisionWorld, PhysicalWorldPackage};
 use crate::types::{Quat, Vec3};
 use crate::vehicle_config::VehicleConfig;
+use crate::vehicle_dynamics_fidelity::VehicleDynamicsFidelity;
 use crate::vehicle_configuration::{
     load_physical_configuration, load_vehicle_configuration_from_authorized_root,
     resolve_domain_document_path, ResolvedVehicleConfiguration, VehicleProfileLoadRequest,
@@ -22,7 +23,7 @@ pub enum CoupledVehicleWorldRequest {
     ResolveVehicleProfile { interface_version: u32, repository_root: PathBuf, vehicle_profile_path: PathBuf, #[serde(default)] resolve_suspension_presentation: bool },
     CreateWorld { interface_version: u32, repository_root: PathBuf, physical_package_path: PathBuf, #[serde(default)] configuration: Option<CoupledVehicleWorldConfiguration>, #[serde(default)] vehicle_profile: Option<String> },
     DestroyWorld { world_identifier: u64 },
-    RegisterVehicle { world_identifier: u64, vehicle_profile: String, position_world_metres: Vec3, yaw_radians: f64, #[serde(default)] physical_frequency_hertz: Option<u32> },
+    RegisterVehicle { world_identifier: u64, vehicle_profile: String, position_world_metres: Vec3, yaw_radians: f64, #[serde(default)] physical_frequency_hertz: Option<u32>, #[serde(default)] dynamics_fidelity: Option<VehicleDynamicsFidelity> },
     RemoveVehicle { world_identifier: u64, entity_identifier: u64 },
     RegisterDynamicObject { world_identifier: u64, definition: DynamicWorldObjectDefinition, position_world_metres: Vec3, orientation: Quat },
     RemoveDynamicObject { world_identifier: u64, entity_identifier: u64 },
@@ -99,12 +100,15 @@ impl CoupledVehicleWorldRegistry {
                 self.worlds.remove(&world_identifier);
                 Ok(serde_json::json!({"destroyed": world_identifier}))
             }
-            CoupledVehicleWorldRequest::RegisterVehicle { world_identifier, vehicle_profile, position_world_metres, yaw_radians, physical_frequency_hertz } => {
+            CoupledVehicleWorldRequest::RegisterVehicle { world_identifier, vehicle_profile, position_world_metres, yaw_radians, physical_frequency_hertz, dynamics_fidelity } => {
                 let configuration = VehicleConfig::from_json_str(&vehicle_profile)?;
                 let world = self.world(world_identifier)?;
                 let frequency = physical_frequency_hertz.unwrap_or(world.configuration.physical_frequency_hertz);
-                let identifier = world.register_vehicle_with_frequency(configuration, position_world_metres, yaw_radians, frequency)?;
-                Ok(serde_json::json!({"entity_identifier": identifier, "physical_frequency_hertz": frequency}))
+                let fidelity = dynamics_fidelity.unwrap_or_default();
+                let identifier = world.register_vehicle_with_frequency_and_fidelity(configuration,
+                    position_world_metres, yaw_radians, frequency, fidelity)?;
+                Ok(serde_json::json!({"entity_identifier": identifier,
+                    "physical_frequency_hertz": frequency, "dynamics_fidelity": fidelity}))
             }
             CoupledVehicleWorldRequest::RemoveVehicle { world_identifier, entity_identifier } => {
                 self.world(world_identifier)?.remove_vehicle(entity_identifier)?;

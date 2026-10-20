@@ -108,20 +108,22 @@ Suspension advancement uses semi-implicit force reevaluation, localized travel c
   Synthetic geometry, production restitution/friction, composite curb/sidewall
   meshes, the Fuji package, item 16 travel-stop ownership, item 23 benches, item 42
   activation and performance remain open.
-- Item 46: a reproducible release benchmark measures the first 20 and 50 authored
-  Fuji grid spots at 120 Hz with warmup, idle/rolling/mixed packs, mean/p50/p95/p99
-  wall time, hardware, BUILD/HEAD and per-stage profiling. The mixed scheduler runs
-  one 120 Hz player and 60 Hz AI vehicles, updates all AI together every second
-  tick, holds AI between updates, solves player-AI contacts at 120 Hz with the AI
-  fixed, and solves AI-AI contacts only on the AI phase. The provisional split
-  budget fails: 20-car player frame mean 36.5 ms / p95 73.9 ms and AI phase 38.8 ms
-  mean / 53.2 ms p95; 50-car player frame mean 95.5 ms / p95 184.7 ms and AI phase
-  103.2 ms mean / 137.3 ms p95. Six mixed-frequency tests pass. Cached terrain AABBs, cached shape bounds and one
-  fewer shape attachment improved the short uniform 20-car idle sample by about 3
-  percent. The dominant cost is per-vehicle force evaluation (~1.15–1.18
-  ms/car/step), not geometry or the contact matrix. Meeting the budget requires
-  model simplification, deterministic parallelism, fewer evaluations per step or a
-  revised budget.
+- Item 46: a reproducible release benchmark measures the 22-car production target
+  at 120 Hz with warmup, idle/rolling/mixed packs, mean/p50/p95/p99 wall time,
+  hardware, BUILD/HEAD, per-stage profiling and separate player-phase, AI-phase and
+  projected asynchronous tick budgets. The human-approved C-async budget
+  (2026-10-20) requires player phase mean 8.333 ms / p95 12.5 ms, AI phase mean
+  16.667 ms / p95 16.667 ms and player tick mean 8.333 ms / p95 12.5 ms. The mixed
+  scheduler runs one 120 Hz player and 60 Hz AI vehicles, holds AI between updates,
+  solves player-AI contacts at 120 Hz with the AI fixed, and solves AI-AI contacts
+  only on the AI phase. Explicit per-vehicle fidelity, a precomputed suspension
+  kinematics table, an AI tire backend and low-frequency lumped slow states are
+  implemented. The 22-car, 40-step candidate measures player phase 9.218 ms mean /
+  12.452 ms p95, AI phase 32.928 ms mean / 35.340 ms p95 and projected asynchronous
+  tick 17.618 ms mean / 20.918 ms p95. The C-async budget fails: the AI phase needs
+  ~2× and the projected tick needs ~2.1×. The transactional clone and bookkeeping
+  outside the player phase remain major costs, so asynchronous AI alone is not
+  sufficient. The original 30/50 split remains the final 60 FPS headroom gate.
 
 ## Implemented candidate world and contacts
 

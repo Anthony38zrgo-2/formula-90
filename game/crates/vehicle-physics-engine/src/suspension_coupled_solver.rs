@@ -3,7 +3,8 @@ use crate::suspension_component_kinematics::{
     ComponentKinematicInput, SuspensionGeometryEvaluationCache, SharedSuspensionGeometrySolutions,
 };
 use crate::suspension_geo_config::AntiRollConfig;
-use crate::suspension_kinematics::{jacobian, travel_envelope};
+use crate::suspension_kinematics::{jacobian, solve_corner, travel_envelope, KinematicSolution};
+use crate::suspension_kinematics_table::SuspensionKinematicsTable;
 use crate::suspension_mass_properties::{
     composite_mass_properties, vector_is_finite, SuspensionMassInventory,
 };
@@ -11,9 +12,10 @@ use crate::suspension_multibody::{
     CoupledSuspensionEquations, GeneralizedSuspensionVector, MovingSuspensionComponent,
     SUSPENSION_GENERALIZED_VELOCITY_COUNT,
 };
-use crate::types::{Quat, Vec3, WheelIndex};
+use crate::types::{Mat3, Quat, Vec3, WheelIndex};
 use crate::vehicle_config::VehicleConfig;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -172,6 +174,7 @@ pub struct CoupledSuspensionModel {
     wheel_travel_limits_metres: [(f64, f64); 4],
     antiroll_stiffness_newtons_per_metre: [f64; 2],
     shared_geometry_solutions: SharedSuspensionGeometrySolutions,
+    kinematics_table: Option<Arc<SuspensionKinematicsTable>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -254,6 +257,24 @@ impl CoupledSuspensionModel {
         inventory: SuspensionMassInventory,
         settings: CoupledSuspensionSettings,
     ) -> Result<Self, String> {
+        Self::build(configuration, inventory, settings, None)
+    }
+
+    pub fn new_with_kinematics_table(
+        configuration: VehicleConfig,
+        inventory: SuspensionMassInventory,
+        settings: CoupledSuspensionSettings,
+        kinematics_table: Arc<SuspensionKinematicsTable>,
+    ) -> Result<Self, String> {
+        Self::build(configuration, inventory, settings, Some(kinematics_table))
+    }
+
+    fn build(
+        configuration: VehicleConfig,
+        inventory: SuspensionMassInventory,
+        settings: CoupledSuspensionSettings,
+        kinematics_table: Option<Arc<SuspensionKinematicsTable>>,
+    ) -> Result<Self, String> {
         inventory.validate()?;
         settings.validate()?;
         if configuration.suspension.geometric_suspension.is_none() {
@@ -325,12 +346,53 @@ impl CoupledSuspensionModel {
             wheel_travel_limits_metres,
             antiroll_stiffness_newtons_per_metre,
             shared_geometry_solutions,
+            kinematics_table,
         };
         model.evaluate(
             &CoupledSuspensionState::at_rest(Vec3::ZERO),
             &CoupledSuspensionInput::default(),
         )?;
         Ok(model)
+    }
+
+    pub fn corner_solution(&self, wheel: WheelIndex, travel_metres: f64,
+        steering_rack_metres: f64) -> Result<KinematicSolution, String> {
+        if let Some(table) = self.kinematics_table.as_deref() {
+            if let Some(mut solution) = table.wheel_frame(wheel, travel_metres, steering_rack_metres) {
+                let side = if wheel.is_left() { 1.0 } else { -1.0 };
+                let toe = if wheel.is_front() { self.configuration.suspension.front_toe }
+                    else { self.configuration.suspension.rear_toe };
+                let camber = if wheel.is_front() { self.configuration.suspension.front_camber }
+                    else { self.configuration.suspension.rear_camber };
+                let toe_basis = crate::types::Mat3::from_axis_angle(Vec3::UP, toe * side);
+                let camber_basis = crate::types::Mat3::from_axis_angle(Vec3::BACK, camber * side);
+                let alignment = Mat3::from_cols(
+                    toe_basis.transform_vector(camber_basis.x),
+                    toe_basis.transform_vector(camber_basis.y),
+                    toe_basis.transform_vector(camber_basis.z),
+                );
+                solution.wheel_basis = Mat3::from_cols(
+                    solution.upright_basis.transform_vector(alignment.x),
+                    solution.upright_basis.transform_vector(alignment.y),
+                    solution.upright_basis.transform_vector(alignment.z),
+                );
+                return Ok(solution);
+            }
+        }
+        let geometry = self.configuration.suspension.geometric_suspension.as_ref()
+            .ok_or("Missing geometric suspension")?;
+        let side = if wheel.is_left() { 1.0 } else { -1.0 };
+        let camber = if wheel.is_front() { self.configuration.suspension.front_camber }
+            else { self.configuration.suspension.rear_camber };
+        let toe = if wheel.is_front() { self.configuration.suspension.front_toe }
+            else { self.configuration.suspension.rear_toe };
+        let solution = solve_corner(geometry.corners.get(wheel), travel_metres,
+            steering_rack_metres, wheel.is_front(), camber, toe, side)
+            .ok_or("Coupled wheel trajectory failed")?;
+        if !solution.converged || solution.rocker_clamped || solution.steering_clamped {
+            return Err("Coupled wheel trajectory is outside its supported domain".into());
+        }
+        Ok(solution)
     }
 
     pub fn evaluate(
@@ -375,7 +437,13 @@ impl CoupledSuspensionModel {
                 .steering_rack_acceleration_metres_per_second_squared,
             differentiation_step_metres: self.settings.differentiation_step_metres,
         };
-        let mut geometry_cache = SuspensionGeometryEvaluationCache::with_shared_solutions(&self.configuration, &self.shared_geometry_solutions)?;
+        let mut geometry_cache = if let Some(table) = self.kinematics_table.as_deref() {
+            SuspensionGeometryEvaluationCache::with_shared_solutions_and_table(
+                &self.configuration, &self.shared_geometry_solutions, table)?
+        } else {
+            SuspensionGeometryEvaluationCache::with_shared_solutions(
+                &self.configuration, &self.shared_geometry_solutions)?
+        };
         let mut components = moving_inventory_with_geometry_cache(
             &self.inventory,
             kinematic_input,

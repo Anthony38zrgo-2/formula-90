@@ -99,6 +99,7 @@ fn simplified_pure_curves_preserve_standard_steady_envelopes() {
                     for backend in [
                         TireBackend::SimplifiedWithoutRelaxation,
                         TireBackend::SimplifiedWithRelaxation,
+                        TireBackend::SimplifiedArtificialIntelligence,
                     ] {
                         let candidate = settled(
                             &configuration,

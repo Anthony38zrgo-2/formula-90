@@ -10,6 +10,8 @@ Fecha: 2026-10-19. Rama: `main-clean`.
 - **Cambios ajenos preservados:** audio, DLLs, `game/BUILD_SOURCE`, `recorded_engine_profile.rs`, `.import`/`.uid` generados y demás trabajo no relacionado.
 - **Runtime:** no se ha ejecutado rebuild, launcher canónico, Godot MCP, revisión visual, audio ni benchmark de juego. Solo hay evidencia Rust offline.
 
+> **Actualización 2026-10-20:** HEAD es `9c526db39fe666aad9016fb5a4cba81bf07ceeda`; items 43/46 y la frecuencia mixta quedaron commiteados en `9c526db`. La continuación de 2026-10-20 incluye fidelidad explícita por vehículo, tabla de cinemática de suspensión, neumático IA simplificado y benchmark de 22 coches. El presupuesto M3 aprobado es **C-async para 22 coches**: fase jugador media 8,333 ms / p95 12,5 ms; fase IA media 16,667 ms / p95 16,667 ms; tick del jugador media 8,333 ms / p95 12,5 ms. La medición de 22 coches con IA simplificada da fase jugador 9,218/12,452 ms, fase IA 32,928/35,340 ms y tick asíncrono proyectado 17,618/20,918 ms: **el presupuesto C-async no se cumple**. Faltan la fase IA asíncrona real y la reducción del clon transaccional/bookkeeping. Evidencia: `scratch/m2_item46_ai_simplification_20261019/`. No hay rebuild ni validación runtime.
+
 ---
 
 ## 1. Qué está commiteado

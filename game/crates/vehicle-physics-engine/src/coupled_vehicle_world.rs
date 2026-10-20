@@ -13,16 +13,18 @@ use crate::physical_collision_world::{physical_pose, shape_pair_contact_manifold
 use crate::simulation::{BodyKinematics, CoupledVehicleForceContext, VehicleSimulator};
 use crate::suspension_component_kinematics::wheel_contact_component;
 use crate::suspension_coupled_solver::{CoupledSuspensionInput, CoupledSuspensionSettings, CoupledWheelContact};
-use crate::suspension_kinematics::solve_corner;
+use crate::suspension_kinematics_table::SuspensionKinematicsTable;
 use crate::telemetry::TelemetryFrame;
 use crate::types::{Mat3, Quat, RaycastHit, SurfaceType, Transform3D, TriRaycastSample, Vec3, VehicleInput, WheelIndex};
 use crate::vehicle_config::VehicleConfig;
+use crate::vehicle_dynamics_fidelity::VehicleDynamicsFidelity;
 use parry3d_f64::na::{Isometry3, Point3};
 use parry3d_f64::bounding_volume::{Aabb, BoundingVolume};
 use parry3d_f64::query::{cast_shapes_nonlinear, NonlinearRigidMotion};
 use parry3d_f64::shape::SharedShape;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::sync::Arc;
 use std::time::Instant;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -89,6 +91,7 @@ pub struct CoupledWorldVehicle {
     pub driving_aids_mask: u32,
     pub last_force_input: CoupledSuspensionInput,
     pub physical_frequency_hertz: u32,
+    pub dynamics_fidelity: VehicleDynamicsFidelity,
     pub spawn_position_world_metres: Vec3,
     pub spawn_yaw_radians: f64,
 }
@@ -97,6 +100,8 @@ pub struct CoupledWorldVehicle {
 pub struct CoupledWorldSnapshot {
     pub entity_identifier: u64,
     pub physical_frequency_hertz: u32,
+    #[serde(default)]
+    pub dynamics_fidelity: VehicleDynamicsFidelity,
     pub state: CoupledVehicleState,
     pub telemetry: TelemetryFrame,
     pub systems_state: crate::simulation::VehicleState,
@@ -278,6 +283,7 @@ pub struct CoupledVehicleWorld {
     pub step_profile: WorldStepProfile,
     pub physical_step_index: u64,
     pub physical_interval_index: u64,
+    simplified_suspension_kinematics: Option<(u64, Arc<SuspensionKinematicsTable>)>,
     next_entity_identifier: u64,
 }
 
@@ -577,7 +583,8 @@ impl CoupledVehicleWorld {
             dynamic_object_diagnostics: DynamicWorldObjectDiagnostics::default(),
             continuous_collision_diagnostics: ContinuousCollisionDiagnostics::default(),
             step_profile: WorldStepProfile::default(),
-            physical_step_index: 0, physical_interval_index: 0, next_entity_identifier: 1 })
+            physical_step_index: 0, physical_interval_index: 0,
+            simplified_suspension_kinematics: None, next_entity_identifier: 1 })
     }
 
     pub fn reset_step_profile(&mut self) {
@@ -591,6 +598,13 @@ impl CoupledVehicleWorld {
 
     pub fn register_vehicle_with_frequency(&mut self, configuration: VehicleConfig, position: Vec3,
         yaw_radians: f64, physical_frequency_hertz: u32) -> Result<u64, String> {
+        self.register_vehicle_with_frequency_and_fidelity(configuration, position, yaw_radians,
+            physical_frequency_hertz, VehicleDynamicsFidelity::Full)
+    }
+
+    pub fn register_vehicle_with_frequency_and_fidelity(&mut self, configuration: VehicleConfig,
+        position: Vec3, yaw_radians: f64, physical_frequency_hertz: u32,
+        dynamics_fidelity: VehicleDynamicsFidelity) -> Result<u64, String> {
         if !crate::suspension_mass_properties::vector_is_finite(position) || !yaw_radians.is_finite() {
             return Err("Invalid vehicle spawn pose".into());
         }
@@ -604,11 +618,18 @@ impl CoupledVehicleWorld {
         if serde_json::to_value(selected).map_err(|error| error.to_string())? != serde_json::to_value(&self.configuration).map_err(|error| error.to_string())? {
             return Err("Vehicles sharing a world require the same world configuration".into());
         }
-        let mut model = CoupledVehicleModel::new(configuration.clone(), self.configuration.suspension.clone())?;
+        let kinematics_table = if dynamics_fidelity.is_simplified() {
+            Some(self.simplified_suspension_kinematics_for(&configuration)?)
+        } else {
+            None
+        };
+        let mut model = CoupledVehicleModel::new_with_fidelity(configuration.clone(),
+            self.configuration.suspension.clone(), dynamics_fidelity, kinematics_table)?;
         if physical_frequency_hertz < world_frequency {
             model.settings.maximum_substep_seconds = 1.0 / physical_frequency_hertz as f64;
         }
-        let systems = VehicleSimulator::new(configuration, position, yaw_radians);
+        let systems = VehicleSimulator::new_with_fidelity(configuration, position, yaw_radians,
+            dynamics_fidelity);
         let mut state = CoupledVehicleState::at_rest(position);
         state.suspension.body_orientation_world = systems.state.orientation;
         state.suspension.simulated_time_seconds = self.time_seconds;
@@ -618,8 +639,30 @@ impl CoupledVehicleWorld {
         let driving_aids_mask = systems.aids.to_bits();
         self.vehicles.insert(identifier, CoupledWorldVehicle { model, state, systems, input: VehicleInput::default(),
             pending_inputs: VecDeque::new(), driving_aids_mask, last_force_input: CoupledSuspensionInput::default(),
-            physical_frequency_hertz, spawn_position_world_metres: position, spawn_yaw_radians: yaw_radians });
+            physical_frequency_hertz, dynamics_fidelity,
+            spawn_position_world_metres: position, spawn_yaw_radians: yaw_radians });
         Ok(identifier)
+    }
+
+    fn simplified_suspension_kinematics_for(&mut self, configuration: &VehicleConfig)
+        -> Result<Arc<SuspensionKinematicsTable>, String> {
+        use std::hash::{Hash, Hasher};
+        let geometry = configuration.suspension.geometric_suspension.as_ref()
+            .ok_or("Simplified vehicle dynamics requires geometric hardpoints")?;
+        let signature_source = serde_json::to_string(geometry).map_err(|error| error.to_string())?;
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        signature_source.hash(&mut hasher);
+        self.configuration.steering_rack_travel_metres.to_bits().hash(&mut hasher);
+        let signature = hasher.finish();
+        if let Some((cached_signature, table)) = &self.simplified_suspension_kinematics {
+            if *cached_signature == signature {
+                return Ok(table.clone());
+            }
+        }
+        let table = Arc::new(SuspensionKinematicsTable::build(configuration,
+            self.configuration.steering_rack_travel_metres)?);
+        self.simplified_suspension_kinematics = Some((signature, table.clone()));
+        Ok(table)
     }
 
     pub fn remove_vehicle(&mut self, identifier: u64) -> Result<(), String> {
@@ -693,17 +736,22 @@ impl CoupledVehicleWorld {
     }
 
     pub fn reset_vehicle(&mut self, identifier: u64) -> Result<(), String> {
-        let vehicle = self.vehicles.get(&identifier).ok_or("Stale or unknown coupled vehicle identifier")?;
-        let mut configuration = vehicle.model.configuration.clone();
+        let (mut configuration, position, yaw, frequency, dynamics_fidelity) = {
+            let vehicle = self.vehicles.get(&identifier).ok_or("Stale or unknown coupled vehicle identifier")?;
+            (vehicle.model.configuration.clone(), vehicle.spawn_position_world_metres,
+                vehicle.spawn_yaw_radians, vehicle.physical_frequency_hertz, vehicle.dynamics_fidelity)
+        };
         configuration.fuel.refill_to_initial();
-        let position = vehicle.spawn_position_world_metres;
-        let yaw = vehicle.spawn_yaw_radians;
-        let frequency = vehicle.physical_frequency_hertz;
-        let mut model = CoupledVehicleModel::new(configuration.clone(), self.configuration.suspension.clone())?;
+        let kinematics_table = if dynamics_fidelity.is_simplified() {
+            Some(self.simplified_suspension_kinematics_for(&configuration)?)
+        } else { None };
+        let mut model = CoupledVehicleModel::new_with_fidelity(configuration.clone(),
+            self.configuration.suspension.clone(), dynamics_fidelity, kinematics_table)?;
         if frequency < self.configuration.physical_frequency_hertz {
             model.settings.maximum_substep_seconds = 1.0 / frequency as f64;
         }
-        let systems = VehicleSimulator::new(configuration, position, yaw);
+        let systems = VehicleSimulator::new_with_fidelity(configuration, position, yaw,
+            dynamics_fidelity);
         let mut state = CoupledVehicleState::at_rest(position);
         state.suspension.body_orientation_world = systems.state.orientation;
         state.suspension.simulated_time_seconds = self.time_seconds;
@@ -730,15 +778,15 @@ impl CoupledVehicleWorld {
 
     pub fn snapshots(&self) -> Result<Vec<CoupledWorldSnapshot>, String> {
         self.vehicles.iter().map(|(identifier, vehicle)| {
-            let geometry = vehicle.model.configuration.suspension.geometric_suspension.as_ref().ok_or("Missing snapshot geometry")?;
-            let solved_suspension_corners = WheelIndex::ALL.iter().map(|wheel| solve_corner(geometry.corners.get(*wheel),
-                vehicle.state.suspension.wheel_travel_metres[*wheel as usize], vehicle.last_force_input.steering_rack_metres, wheel.is_front(),
-                if wheel.is_front() { vehicle.model.configuration.suspension.front_camber } else { vehicle.model.configuration.suspension.rear_camber },
-                if wheel.is_front() { vehicle.model.configuration.suspension.front_toe } else { vehicle.model.configuration.suspension.rear_toe },
-                if wheel.is_left() { 1.0 } else { -1.0 }).ok_or("Invalid solved snapshot corner".to_string())).collect::<Result<Vec<_>, _>>()?;
+            let solved_suspension_corners = WheelIndex::ALL.iter().map(|wheel|
+                vehicle.model.corner_solution(*wheel,
+                    vehicle.state.suspension.wheel_travel_metres[*wheel as usize],
+                    vehicle.last_force_input.steering_rack_metres))
+                .collect::<Result<Vec<_>, _>>()?;
             if solved_suspension_corners.iter().any(|corner| !corner.converged) { return Err("Physical snapshot has unconverged suspension geometry".into()); }
             Ok(CoupledWorldSnapshot { entity_identifier: *identifier,
             physical_frequency_hertz: vehicle.physical_frequency_hertz,
+            dynamics_fidelity: vehicle.dynamics_fidelity,
             state: vehicle.state.clone(), telemetry: vehicle.systems.build_telemetry_frame(),
             systems_state: vehicle.systems.state.clone(), steering_rack_metres: vehicle.last_force_input.steering_rack_metres,
             fuel_mass_kilograms: vehicle.model.configuration.fuel.effective_current_kg(), driver_input: vehicle.input,
@@ -1072,11 +1120,8 @@ impl CoupledVehicleWorld {
         let mut forwards = [Vec3::FORWARD; 4];
         for wheel in WheelIndex::ALL {
             let index = wheel as usize;
-            let solution = solve_corner(geometry.corners.get(wheel), vehicle.state.suspension.wheel_travel_metres[index],
-                input.steering_rack_metres, wheel.is_front(),
-                if wheel.is_front() { vehicle.model.configuration.suspension.front_camber } else { vehicle.model.configuration.suspension.rear_camber },
-                if wheel.is_front() { vehicle.model.configuration.suspension.front_toe } else { vehicle.model.configuration.suspension.rear_toe },
-                if wheel.is_left() { 1.0 } else { -1.0 }).ok_or("Coupled wheel trajectory failed")?;
+            let solution = vehicle.model.corner_solution(wheel,
+                vehicle.state.suspension.wheel_travel_metres[index], input.steering_rack_metres)?;
             if !solution.converged || solution.steering_clamped || solution.rocker_clamped { return Err("Coupled wheel trajectory is outside its supported domain".into()); }
             forwards[index] = rotation.transform_vector(solution.wheel_basis.transform_vector(Vec3::FORWARD));
             let side = if wheel.is_left() { 1.0 } else { -1.0 };
@@ -1236,13 +1281,10 @@ impl CoupledVehicleWorld {
                 shapes.push(AttachedWorldShape { entity_index, identifier: definition.identifier.clone(), wheel: None,
                     pose, shape, bounds, kind });
             }
-            let geometry = vehicle.model.configuration.suspension.geometric_suspension.as_ref().unwrap();
             for wheel in WheelIndex::ALL {
-                let solution = solve_corner(geometry.corners.get(wheel), vehicle.state.suspension.wheel_travel_metres[wheel as usize],
-                    vehicle.last_force_input.steering_rack_metres, wheel.is_front(),
-                    if wheel.is_front() { vehicle.model.configuration.suspension.front_camber } else { vehicle.model.configuration.suspension.rear_camber },
-                    if wheel.is_front() { vehicle.model.configuration.suspension.front_toe } else { vehicle.model.configuration.suspension.rear_toe },
-                    if wheel.is_left() { 1.0 } else { -1.0 }).ok_or("Collision wheel trajectory failed")?;
+                let solution = vehicle.model.corner_solution(wheel,
+                    vehicle.state.suspension.wheel_travel_metres[wheel as usize],
+                    vehicle.last_force_input.steering_rack_metres)?;
                 let local = solution.wheel_basis;
                 let basis = Mat3::from_cols(rotation.transform_vector(local.y), rotation.transform_vector(local.x), -rotation.transform_vector(local.z));
                 let radius = if wheel.is_front() { vehicle.model.configuration.tires.front_tire_radius } else { vehicle.model.configuration.tires.rear_tire_radius };

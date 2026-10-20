@@ -1,10 +1,13 @@
 use crate::suspension_component_kinematics::{component_pose, wheel_contact_component, ComponentKinematicInput};
 use crate::suspension_coupled_solver::{CoupledSuspensionDiagnostics, CoupledSuspensionInput, CoupledSuspensionModel, CoupledSuspensionSettings, CoupledSuspensionState};
-use crate::suspension_kinematics::{solve_corner, travel_envelope};
+use crate::suspension_kinematics::{travel_envelope, KinematicSolution};
+use crate::suspension_kinematics_table::SuspensionKinematicsTable;
 use crate::types::{Vec3, WheelIndex};
 use crate::vehicle_config::VehicleConfig;
+use crate::vehicle_dynamics_fidelity::VehicleDynamicsFidelity;
 use crate::vehicle_mass_inventory::VehicleMassInventory;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 pub const VEHICLE_GENERALIZED_VELOCITY_COUNT: usize = 14;
 pub type GeneralizedVehicleVelocity = [f64; VEHICLE_GENERALIZED_VELOCITY_COUNT];
@@ -114,6 +117,7 @@ pub struct CoupledVehicleModel {
     pub configuration: VehicleConfig,
     pub inventory: VehicleMassInventory,
     pub settings: CoupledSuspensionSettings,
+    pub fidelity: VehicleDynamicsFidelity,
     suspension_model: CoupledSuspensionModel,
     pub travel_limits_metres: [(f64, f64); 4],
 }
@@ -166,16 +170,33 @@ pub fn generalized_projection(first: GeneralizedVehicleVelocity, second: General
 
 impl CoupledVehicleModel {
     pub fn new(configuration: VehicleConfig, settings: CoupledSuspensionSettings) -> Result<Self, String> {
+        Self::new_with_fidelity(configuration, settings, VehicleDynamicsFidelity::Full, None)
+    }
+
+    pub fn new_with_fidelity(configuration: VehicleConfig, settings: CoupledSuspensionSettings,
+        fidelity: VehicleDynamicsFidelity, kinematics_table: Option<Arc<SuspensionKinematicsTable>>)
+        -> Result<Self, String> {
         let inventory = configuration.chassis.physical_mass_inventory.clone().ok_or("Coupled vehicle requires a complete physical mass inventory")?;
         inventory.validate(&configuration)?;
-        let suspension_model = CoupledSuspensionModel::new(configuration.clone(), inventory.reference_inventory(), settings.clone())?;
+        let suspension_model = if fidelity.is_simplified() {
+            let table = kinematics_table.ok_or("Simplified vehicle dynamics requires a suspension kinematics table")?;
+            CoupledSuspensionModel::new_with_kinematics_table(configuration.clone(),
+                inventory.reference_inventory(), settings.clone(), table)?
+        } else {
+            CoupledSuspensionModel::new(configuration.clone(), inventory.reference_inventory(), settings.clone())?
+        };
         let geometry = configuration.suspension.geometric_suspension.as_ref().ok_or("Missing coupled vehicle hardpoints")?;
         let mut travel_limits_metres = [(0.0, 0.0); 4];
         for wheel in WheelIndex::ALL {
             let axle = geometry.axle(wheel);
             travel_limits_metres[wheel as usize] = travel_envelope(geometry.corners.get(wheel), axle.wheel_droop_m, axle.wheel_bump_m, 0.0, wheel.is_front());
         }
-        Ok(Self { configuration, inventory, settings, suspension_model, travel_limits_metres })
+        Ok(Self { configuration, inventory, settings, fidelity, suspension_model, travel_limits_metres })
+    }
+
+    pub fn corner_solution(&self, wheel: WheelIndex, travel_metres: f64,
+        steering_rack_metres: f64) -> Result<KinematicSolution, String> {
+        self.suspension_model.corner_solution(wheel, travel_metres, steering_rack_metres)
     }
 
     pub fn kinematic_input(&self, state: &CoupledVehicleState, input: &CoupledSuspensionInput) -> ComponentKinematicInput {
@@ -235,13 +256,9 @@ impl CoupledVehicleModel {
         let mut rotating_axes = vec![None; reference.components.len()];
         let mut rotating_kinetic_energy_joules = 0.0;
         let mut wheel_axes_world = [Vec3::ZERO; 4];
-        let geometry = self.configuration.suspension.geometric_suspension.as_ref().ok_or("Coupled spin requires physical hardpoints")?;
         for wheel in WheelIndex::ALL {
-            let solution = solve_corner(geometry.corners.get(wheel), state.suspension.wheel_travel_metres[wheel as usize],
-                input.steering_rack_metres, wheel.is_front(),
-                if wheel.is_front() { self.configuration.suspension.front_camber } else { self.configuration.suspension.rear_camber },
-                if wheel.is_front() { self.configuration.suspension.front_toe } else { self.configuration.suspension.rear_toe },
-                if wheel.is_left() { 1.0 } else { -1.0 }).ok_or("Wheel spin frame is unreachable")?;
+            let solution = self.corner_solution(wheel, state.suspension.wheel_travel_metres[wheel as usize],
+                input.steering_rack_metres)?;
             if !solution.converged || solution.rocker_clamped || solution.steering_clamped { return Err("Wheel spin frame is outside the supported domain".into()); }
             wheel_axes_world[wheel as usize] = state.suspension.body_orientation_world.to_mat3().transform_vector(solution.wheel_basis.x);
         }

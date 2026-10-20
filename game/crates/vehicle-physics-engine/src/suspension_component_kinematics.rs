@@ -1,6 +1,7 @@
 use crate::suspension_kinematics::{solve_corner, KinematicSolution};
+use crate::suspension_kinematics_table::SuspensionKinematicsTable;
 use crate::suspension_mass_properties::{
-    MassComponentAttachment, SuspensionMassComponent, SuspensionMassInventory,
+    AttachmentFrameKind, MassComponentAttachment, SuspensionMassComponent, SuspensionMassInventory,
 };
 use crate::suspension_multibody::{
     GeneralizedSuspensionVector, MovingSuspensionComponent, SUSPENSION_GENERALIZED_VELOCITY_COUNT,
@@ -27,6 +28,7 @@ pub struct SuspensionGeometryEvaluationCache<'configuration> {
     configuration: &'configuration VehicleConfig,
     solutions: HashMap<(usize, u64, u64), KinematicSolution>,
     shared_solutions: Option<&'configuration SharedSuspensionGeometrySolutions>,
+    kinematics_table: Option<&'configuration SuspensionKinematicsTable>,
 }
 
 impl<'configuration> SuspensionGeometryEvaluationCache<'configuration> {
@@ -35,6 +37,7 @@ impl<'configuration> SuspensionGeometryEvaluationCache<'configuration> {
             configuration,
             solutions: HashMap::new(),
             shared_solutions: None,
+            kinematics_table: None,
         }
     }
 
@@ -43,7 +46,22 @@ impl<'configuration> SuspensionGeometryEvaluationCache<'configuration> {
         if configuration.suspension.geometric_suspension.as_ref() != Some(&shared_solutions.geometry) {
             return Err("Shared geometry cache does not match the configured hardpoints".into());
         }
-        Ok(Self { configuration, solutions: HashMap::new(), shared_solutions: Some(shared_solutions) })
+        Ok(Self { configuration, solutions: HashMap::new(), shared_solutions: Some(shared_solutions), kinematics_table: None })
+    }
+
+    pub fn with_shared_solutions_and_table(configuration: &'configuration VehicleConfig,
+        shared_solutions: &'configuration SharedSuspensionGeometrySolutions,
+        kinematics_table: &'configuration SuspensionKinematicsTable) -> Result<Self, String> {
+        if configuration.suspension.geometric_suspension.as_ref() != Some(&shared_solutions.geometry) {
+            return Err("Shared geometry cache does not match the configured hardpoints".into());
+        }
+        Ok(Self { configuration, solutions: HashMap::new(), shared_solutions: Some(shared_solutions),
+            kinematics_table: Some(kinematics_table) })
+    }
+
+    pub fn attachment_frame(&self, wheel: WheelIndex, kind: AttachmentFrameKind,
+        travel_metres: f64, steering_rack_metres: f64) -> Option<(Vec3, Mat3)> {
+        self.kinematics_table?.attachment_frame(wheel, kind, travel_metres, steering_rack_metres)
     }
 
     pub fn solution(
@@ -54,6 +72,11 @@ impl<'configuration> SuspensionGeometryEvaluationCache<'configuration> {
     ) -> Result<KinematicSolution, String> {
         if !travel_metres.is_finite() || !steering_rack_metres.is_finite() {
             return Err("Nonfinite cached geometry request".into());
+        }
+        if let Some(table) = self.kinematics_table {
+            if let Some(solution) = table.wheel_frame(wheel, travel_metres, steering_rack_metres) {
+                return Ok(solution);
+            }
         }
         let key = (
             wheel as usize,
@@ -161,71 +184,18 @@ fn component_pose_with_geometry_cache(
     cache: &mut SuspensionGeometryEvaluationCache<'_>,
 ) -> Result<SuspensionComponentPose, String> {
     let (origin, orientation_local) = if let Some(wheel) = component.attachment.wheel() {
-        let solution = cache.solution(
-            wheel,
-            wheel_travel_metres[wheel as usize],
-            steering_rack_metres,
-        )?;
-        let geometry = cache
-            .configuration
-            .suspension.geometric_suspension
-            .as_ref()
-            .ok_or("Physical component trajectories require geometric suspension")?;
-        let corner = geometry.corners.get(wheel);
-        match component.attachment {
-            MassComponentAttachment::Upright { .. } => (solution.hub, solution.upright_basis),
-            MassComponentAttachment::WheelRotor { .. } => {
-                let configuration = cache.configuration;
-                let camber = if wheel.is_front() { configuration.suspension.front_camber } else { configuration.suspension.rear_camber };
-                let toe = if wheel.is_front() { configuration.suspension.front_toe } else { configuration.suspension.rear_toe };
-                let side = if wheel.is_left() { 1.0 } else { -1.0 };
-                let alignment = multiply_rotations(Mat3::from_axis_angle(Vec3::UP, toe * side),
-                    Mat3::from_axis_angle(Vec3::BACK, camber * side));
-                (solution.hub, multiply_rotations(solution.upright_basis, alignment))
-            }
-            MassComponentAttachment::LowerWishbone { .. } => {
-                let pivot = (corner.lower.inner_front + corner.lower.inner_rear) * 0.5;
-                attachment_frame(
-                    pivot,
-                    corner.lower.inner_rear - corner.lower.inner_front,
-                    solution.lbj - pivot,
-                )?
-            }
-            MassComponentAttachment::UpperWishbone { .. } => {
-                let pivot = (corner.upper.inner_front + corner.upper.inner_rear) * 0.5;
-                attachment_frame(
-                    pivot,
-                    corner.upper.inner_rear - corner.upper.inner_front,
-                    solution.ubj - pivot,
-                )?
-            }
-            MassComponentAttachment::TrackRod { .. } => {
-                let inner = corner.trackrod_inner
-                    + if wheel.is_front() {
-                        Vec3::RIGHT * steering_rack_metres
-                    } else {
-                        Vec3::ZERO
-                    };
-                rod_attachment_frame(inner, solution.trackrod_outer)?
-            }
-            MassComponentAttachment::ActuationRod { .. } => {
-                rod_attachment_frame(solution.rocker_end, solution.pushrod_outer)?
-            }
-            MassComponentAttachment::Rocker { .. } => (
-                corner.rocker_pivot,
-                Mat3::from_axis_angle(corner.rocker_axis, solution.rocker_angle),
-            ),
-            MassComponentAttachment::DamperCylinder { .. } => {
-                rod_attachment_frame(corner.damper_chassis, solution.damper_end)?
-            }
-            MassComponentAttachment::DamperPiston { .. } => {
-                rod_attachment_frame(solution.damper_end, corner.damper_chassis)?
-            }
-            MassComponentAttachment::Driveshaft { .. } => {
-                let inner = corner.driveshaft_inner.ok_or("Driveshaft attachment requires measured inner hardpoint")?;
-                rod_attachment_frame(inner, solution.hub)?
-            }
-            MassComponentAttachment::Body | MassComponentAttachment::SteeringRack => unreachable!(),
+        let kind = component.attachment.attachment_frame_kind()
+            .ok_or("Wheel attachment is missing an attachment frame kind")?;
+        if let Some(frame) = cache.attachment_frame(wheel, kind,
+            wheel_travel_metres[wheel as usize], steering_rack_metres) {
+            frame
+        } else {
+            let solution = cache.solution(
+                wheel,
+                wheel_travel_metres[wheel as usize],
+                steering_rack_metres,
+            )?;
+            attachment_frame_from_solution(cache.configuration, wheel, kind, &solution, steering_rack_metres)?
         }
     } else {
         (
@@ -254,6 +224,47 @@ fn rod_attachment_frame(inner: Vec3, outer: Vec3) -> Result<(Vec3, Mat3), String
         Vec3::RIGHT
     };
     attachment_frame(inner, axis, reference)
+}
+
+pub(crate) fn attachment_frame_from_solution(configuration: &VehicleConfig, wheel: WheelIndex,
+    kind: AttachmentFrameKind, solution: &KinematicSolution, steering_rack_metres: f64)
+    -> Result<(Vec3, Mat3), String> {
+    let geometry = configuration.suspension.geometric_suspension.as_ref()
+        .ok_or("Physical component trajectories require geometric suspension")?;
+    let corner = geometry.corners.get(wheel);
+    match kind {
+        AttachmentFrameKind::Upright => Ok((solution.hub, solution.upright_basis)),
+        AttachmentFrameKind::WheelRotor => {
+            let camber = if wheel.is_front() { configuration.suspension.front_camber } else { configuration.suspension.rear_camber };
+            let toe = if wheel.is_front() { configuration.suspension.front_toe } else { configuration.suspension.rear_toe };
+            let side = if wheel.is_left() { 1.0 } else { -1.0 };
+            let alignment = multiply_rotations(Mat3::from_axis_angle(Vec3::UP, toe * side),
+                Mat3::from_axis_angle(Vec3::BACK, camber * side));
+            Ok((solution.hub, multiply_rotations(solution.upright_basis, alignment)))
+        }
+        AttachmentFrameKind::LowerWishbone => {
+            let pivot = (corner.lower.inner_front + corner.lower.inner_rear) * 0.5;
+            attachment_frame(pivot, corner.lower.inner_rear - corner.lower.inner_front, solution.lbj - pivot)
+        }
+        AttachmentFrameKind::UpperWishbone => {
+            let pivot = (corner.upper.inner_front + corner.upper.inner_rear) * 0.5;
+            attachment_frame(pivot, corner.upper.inner_rear - corner.upper.inner_front, solution.ubj - pivot)
+        }
+        AttachmentFrameKind::TrackRod => {
+            let inner = corner.trackrod_inner
+                + if wheel.is_front() { Vec3::RIGHT * steering_rack_metres } else { Vec3::ZERO };
+            rod_attachment_frame(inner, solution.trackrod_outer)
+        }
+        AttachmentFrameKind::ActuationRod => rod_attachment_frame(solution.rocker_end, solution.pushrod_outer),
+        AttachmentFrameKind::Rocker => Ok((corner.rocker_pivot,
+            Mat3::from_axis_angle(corner.rocker_axis, solution.rocker_angle))),
+        AttachmentFrameKind::DamperCylinder => rod_attachment_frame(corner.damper_chassis, solution.damper_end),
+        AttachmentFrameKind::DamperPiston => rod_attachment_frame(solution.damper_end, corner.damper_chassis),
+        AttachmentFrameKind::Driveshaft => {
+            let inner = corner.driveshaft_inner.ok_or("Driveshaft attachment requires measured inner hardpoint")?;
+            rod_attachment_frame(inner, solution.hub)
+        }
+    }
 }
 
 fn angular_derivative(center: Mat3, positive: Mat3, negative: Mat3, separation: f64) -> Vec3 {

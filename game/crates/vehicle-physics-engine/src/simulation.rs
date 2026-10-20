@@ -7,13 +7,14 @@ use crate::suspension::{rest_compression_m, SuspensionBackend, SuspensionSystem}
 use crate::static_lateral_contact::{solve_static_lateral_contact_forces, StaticLateralContact};
 use crate::suspension_geo_config::SuspensionModelKind;
 use crate::telemetry::TelemetryFrame;
-use crate::tire::TireSystem;
+use crate::tire::{TireBackend, TireSystem};
 use crate::tire_thermals::{
     normalized_contact_zone_weights, TireEnvironment, TireThermalInput, TireThermalSystem,
 };
 use crate::tire_wear::TireWearSystem;
 use crate::types::{Mat3, Quat, Transform3D, TriRaycastSample, Vec3, VehicleInput, WheelIndex};
 use crate::vehicle_config::VehicleConfig;
+use crate::vehicle_dynamics_fidelity::VehicleDynamicsFidelity;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -59,7 +60,27 @@ pub struct VehicleState {
 
 impl VehicleState {
     pub fn new(config: &VehicleConfig, spawn_position: Vec3, spawn_yaw_rad: f64) -> Self {
+        Self::new_with_fidelity(config, spawn_position, spawn_yaw_rad, VehicleDynamicsFidelity::Full)
+    }
+
+    pub fn new_with_fidelity(config: &VehicleConfig, spawn_position: Vec3, spawn_yaw_rad: f64,
+        fidelity: VehicleDynamicsFidelity) -> Self {
         let basis = Mat3::from_euler_yxz(spawn_yaw_rad, 0.0, 0.0);
+        let simplified = fidelity.is_simplified();
+        let tires = if simplified {
+            TireSystem::new_with_backend(config, TireBackend::SimplifiedArtificialIntelligence)
+        } else {
+            TireSystem::new(config)
+        };
+        let slow_states = if simplified {
+            let mut system = SlowStateSystem::new(SlowStateBackend::Simplified);
+            system.frequencies.tire_frequency_hertz = 2.0;
+            system.frequencies.brake_frequency_hertz = 1.0;
+            system.frequencies.powertrain_frequency_hertz = 2.0;
+            system
+        } else {
+            SlowStateSystem::from_execution_environment()
+        };
         Self {
             transform: Transform3D::new(spawn_position, basis),
             orientation: Quat::from_mat3(&basis),
@@ -72,7 +93,7 @@ impl VehicleState {
             brake_input_smoothed: 0.0,
             powertrain: PowertrainState::new(config),
             suspension: SuspensionSystem::new(config),
-            tires: TireSystem::new(config),
+            tires,
             tire_thermal: TireThermalSystem::new_with_axles(
                 &config.tires.tire_pressure,
                 &config.tires.tire_thermal,
@@ -80,7 +101,7 @@ impl VehicleState {
             tire_wear: TireWearSystem::new_with_axles(&config.tires.tire_wear),
             brake_thermal: BrakeThermalSystem::new(&config.brakes.brake_thermal),
             powertrain_thermal: PowertrainThermalSystem::new(&config.powertrain.powertrain_thermal),
-            slow_states: SlowStateSystem::from_execution_environment(),
+            slow_states,
             aero: AeroForces::zero(),
             sim_time: 0.0,
             physics_hz: 120,
@@ -212,7 +233,12 @@ pub struct CoupledThermalAdvanceContext {
 }
 impl VehicleSimulator {
     pub fn new(config: VehicleConfig, spawn_pos: Vec3, spawn_yaw: f64) -> Self {
-        let state = VehicleState::new(&config, spawn_pos, spawn_yaw);
+        Self::new_with_fidelity(config, spawn_pos, spawn_yaw, VehicleDynamicsFidelity::Full)
+    }
+
+    pub fn new_with_fidelity(config: VehicleConfig, spawn_pos: Vec3, spawn_yaw: f64,
+        fidelity: VehicleDynamicsFidelity) -> Self {
+        let state = VehicleState::new_with_fidelity(&config, spawn_pos, spawn_yaw, fidelity);
         let aids = AidsMask::from_config(&config);
         Self {
             config,

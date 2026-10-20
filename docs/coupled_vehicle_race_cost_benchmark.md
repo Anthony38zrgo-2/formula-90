@@ -66,6 +66,35 @@ mean ≤30%/p95 ≤50% (20 cars) or p95 ≤60% (50 cars); AI phase mean ≤30%/p
 of the 16.67 ms AI interval (20 cars) or p95 ≤60% (50 cars). Every mixed case fails
 the player and AI budgets.
 
+## Approved 22-car asynchronous budget
+
+The production target grid is 22 cars. The human-approved C-async budget
+(2026-10-20) replaces the provisional 20/50-car split for this milestone:
+
+| Scope | Mean budget | p95 budget |
+|---|---:|---:|
+| Player phase, 120 Hz | 8.333 ms | 12.500 ms |
+| AI phase, 60 Hz, asynchronous/double-buffered | 16.667 ms | 16.667 ms |
+| Player tick | 8.333 ms | 12.500 ms |
+
+The benchmark records the player phase, the AI phase and a projected asynchronous
+tick that removes the measured AI phase from the whole tick. This is a measurement
+model, not proof that the asynchronous scheduler exists. The original 30/50 split
+remains the final 60 FPS headroom gate.
+
+22-car, 40-step results:
+
+| Scenario | Player phase mean | Player p95 | AI phase mean | AI p95 | Projected async tick mean | Projected p95 |
+|---|---:|---:|---:|---:|---:|---:|
+| Full AI | 9.488 ms | 11.674 ms | 44.410 ms | 62.200 ms | 17.093 ms | 19.892 ms |
+| Simplified AI | 9.218 ms | 12.452 ms | 32.928 ms | 35.340 ms | 17.618 ms | 20.918 ms |
+
+The C-async budget fails. The player phase exceeds its mean by 1.11× but passes
+p95; the AI phase exceeds its mean by 1.98× and p95 by 2.12×; the projected
+asynchronous tick exceeds its mean by 2.11× and p95 by 1.67×. The transactional
+world clone and bookkeeping outside the player phase remain a major cost, so
+asynchronous AI alone is not sufficient.
+
 Mixed frequency improves the mean only modestly in the idle pack (20 cars 36.5 ms
 versus 39.0 ms uniform) and worsens p95 because all AI update together. The AI
 phase itself costs 38.8 ms for 20 cars and 103.2 ms for 50, well above its 16.67 ms

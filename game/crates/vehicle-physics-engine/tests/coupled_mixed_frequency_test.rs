@@ -3,6 +3,7 @@ use parry3d_f64::shape::{SharedShape, TriMesh};
 use vehicle_physics_engine::coupled_vehicle_world::*;
 use vehicle_physics_engine::physical_collision_world::{PhysicalCollisionWorld, PhysicalWorldShape};
 use vehicle_physics_engine::types::Vec3;
+use vehicle_physics_engine::vehicle_dynamics_fidelity::VehicleDynamicsFidelity;
 use vehicle_physics_engine::VehicleConfig;
 
 fn actual_configuration() -> VehicleConfig {
@@ -145,12 +146,14 @@ fn native_interface_accepts_an_ai_frequency() {
         "vehicle_profile": "{}",
         "position_world_metres": {"x": 0.0, "y": 0.35, "z": 0.0},
         "yaw_radians": 0.0,
-        "physical_frequency_hertz": 60
+        "physical_frequency_hertz": 60,
+        "dynamics_fidelity": "simplified"
     }"#;
     let request: CoupledVehicleWorldRequest = serde_json::from_str(document).unwrap();
     assert!(matches!(
         request,
-        CoupledVehicleWorldRequest::RegisterVehicle { physical_frequency_hertz: Some(60), .. }
+        CoupledVehicleWorldRequest::RegisterVehicle { physical_frequency_hertz: Some(60),
+            dynamics_fidelity: Some(VehicleDynamicsFidelity::Simplified), .. }
     ));
 }
 
@@ -196,4 +199,27 @@ fn fixed_contact_entity_keeps_its_velocity_while_relative_motion_closes() {
     assert!(velocities[1][0] == 2.0, "fixed entity velocity changed");
     assert!((velocities[0][0] - 2.0).abs() < 1e-9, "relative contact velocity did not close");
     assert!(result.normal_impulses_newton_seconds[0] > 0.0);
+}
+
+#[test]
+fn simplified_artificial_intelligence_vehicle_registers_and_advances() {
+    let configuration = actual_configuration();
+    let settings = configuration.coupled_world.clone().unwrap();
+    let mut world = CoupledVehicleWorld::new(PhysicalCollisionWorld {
+        source_digest: "analytical_simplified_mixed_world".into(),
+        shapes: Vec::new(),
+    }, settings).unwrap();
+    let player = world.register_vehicle_with_frequency_and_fidelity(configuration.clone(),
+        Vec3::new(0.0, 10.0, 0.0), 0.0, 120, VehicleDynamicsFidelity::Full).unwrap();
+    let ai = world.register_vehicle_with_frequency_and_fidelity(configuration,
+        Vec3::new(10.0, 10.0, 0.0), 0.0, 60, VehicleDynamicsFidelity::Simplified).unwrap();
+    assert_eq!(world.vehicles[&player].dynamics_fidelity, VehicleDynamicsFidelity::Full);
+    assert_eq!(world.vehicles[&ai].dynamics_fidelity, VehicleDynamicsFidelity::Simplified);
+    for _ in 0..4 { world.advance_host_interval(1.0 / 120.0).unwrap(); }
+    for vehicle in world.vehicles.values() {
+        assert!(vehicle.state.suspension.generalized_velocity.iter().all(|value| value.is_finite()));
+    }
+    let snapshots = world.snapshots().unwrap();
+    assert_eq!(snapshots.iter().find(|snapshot| snapshot.entity_identifier == ai)
+        .unwrap().dynamics_fidelity, VehicleDynamicsFidelity::Simplified);
 }
